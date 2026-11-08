@@ -8,12 +8,19 @@ __pycache__/
 backend/data/users.json
 backend/data/players/
 
+# 日志
+backend/uvicorn*.log
+
 # Node / 前端（另行开发）
 node_modules/
 frontend/dist/
 
-# 临时验证目录（无头测试脚本等）
+# 临时验证目录与临时文件（无头测试脚本、探针页等）
 .tmp-qk/
+.workbuddy/
+design/_probe.html
+design/_login_test.html
+design/_login_test.png
 
 # 系统
 .DS_Store
