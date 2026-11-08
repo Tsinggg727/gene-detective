@@ -1,0 +1,76 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 1600 1000" preserveAspectRatio="xMidYMid slice">
+  <defs>
+    <!-- 水彩扩散边：湍流位移把规则椭圆撕成有机形状 -->
+    <filter id="wcA" x="-40%" y="-40%" width="180%" height="180%" color-interpolation-filters="sRGB">
+      <feTurbulence type="fractalNoise" baseFrequency="0.006 0.009" numOctaves="4" seed="17" result="n"/>
+      <feDisplacementMap in="SourceGraphic" in2="n" scale="150" xChannelSelector="R" yChannelSelector="G" result="d"/>
+      <feGaussianBlur in="d" stdDeviation="9"/>
+    </filter>
+    <filter id="wcB" x="-40%" y="-40%" width="180%" height="180%" color-interpolation-filters="sRGB">
+      <feTurbulence type="fractalNoise" baseFrequency="0.008 0.005" numOctaves="4" seed="43" result="n"/>
+      <feDisplacementMap in="SourceGraphic" in2="n" scale="170" xChannelSelector="R" yChannelSelector="G" result="d"/>
+      <feGaussianBlur in="d" stdDeviation="11"/>
+    </filter>
+    <filter id="wcC" x="-40%" y="-40%" width="180%" height="180%" color-interpolation-filters="sRGB">
+      <feTurbulence type="fractalNoise" baseFrequency="0.007" numOctaves="3" seed="71" result="n"/>
+      <feDisplacementMap in="SourceGraphic" in2="n" scale="130" xChannelSelector="R" yChannelSelector="G" result="d"/>
+      <feGaussianBlur in="d" stdDeviation="14"/>
+    </filter>
+    <!-- 颜料不匀：低频噪声做云絮，压在水彩色块上 -->
+    <filter id="pigment" x="0" y="0" width="100%" height="100%">
+      <feTurbulence type="fractalNoise" baseFrequency="0.0045" numOctaves="5" seed="5"/>
+      <feColorMatrix type="saturate" values="0"/>
+      <feComponentTransfer>
+        <feFuncA type="linear" slope="1" intercept="0"/>
+      </feComponentTransfer>
+    </filter>
+
+    <radialGradient id="gBlue" cx="38%" cy="34%" r="72%">
+      <stop offset="0" stop-color="#5c7ecc" stop-opacity=".52"/>
+      <stop offset=".55" stop-color="#6d8dd4" stop-opacity=".37"/>
+      <stop offset=".86" stop-color="#5470b4" stop-opacity=".40"/>
+      <stop offset="1" stop-color="#5470b4" stop-opacity="0"/>
+    </radialGradient>
+    <radialGradient id="gViolet" cx="58%" cy="40%" r="70%">
+      <stop offset="0" stop-color="#8372c6" stop-opacity=".36"/>
+      <stop offset=".5" stop-color="#9084cb" stop-opacity=".24"/>
+      <stop offset=".85" stop-color="#675aa4" stop-opacity=".36"/>
+      <stop offset="1" stop-color="#675aa4" stop-opacity="0"/>
+    </radialGradient>
+    <radialGradient id="gAqua" cx="50%" cy="48%" r="72%">
+      <stop offset="0" stop-color="#8fbcc9" stop-opacity=".26"/>
+      <stop offset=".7" stop-color="#8fbcc9" stop-opacity=".12"/>
+      <stop offset="1" stop-color="#8fbcc9" stop-opacity="0"/>
+    </radialGradient>
+  </defs>
+
+  <!-- 主蓝：左上（最重的一笔，占比最大） -->
+  <g filter="url(#wcA)">
+    <ellipse cx="120" cy="60" rx="700" ry="540" fill="url(#gBlue)"/>
+    <ellipse cx="40" cy="470" rx="420" ry="440" fill="url(#gBlue)" opacity=".55"/>
+  </g>
+  <!-- 湿紫：右上 -->
+  <g filter="url(#wcB)">
+    <ellipse cx="1520" cy="40" rx="490" ry="390" fill="url(#gViolet)"/>
+  </g>
+  <!-- 蓝：左下 -->
+  <g filter="url(#wcC)">
+    <ellipse cx="40" cy="1010" rx="560" ry="430" fill="url(#gBlue)" opacity=".82"/>
+  </g>
+  <!-- 湿紫：右下（比右上淡，形成疏密） -->
+  <g filter="url(#wcA)">
+    <ellipse cx="1520" cy="1010" rx="470" ry="360" fill="url(#gViolet)" opacity=".72"/>
+  </g>
+  <!-- 浅青留白：中偏下，只占一成 -->
+  <g filter="url(#wcC)">
+    <ellipse cx="880" cy="700" rx="330" ry="260" fill="url(#gAqua)"/>
+  </g>
+  <!-- 一滴浓紫（视觉重心） -->
+  <g filter="url(#wcB)">
+    <ellipse cx="1330" cy="250" rx="150" ry="120" fill="#6d57a8" opacity=".18"/>
+  </g>
+
+  <!-- 颜料颗粒不匀层 -->
+  <rect width="1600" height="1000" filter="url(#pigment)" opacity=".10"
+        style="mix-blend-mode:soft-light"/>
+</svg>

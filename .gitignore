@@ -1,0 +1,20 @@
+# Python
+__pycache__/
+*.py[cod]
+.venv/
+.pytest_cache/
+
+# 运行时生成的用户数据
+backend/data/users.json
+backend/data/players/
+
+# Node / 前端（另行开发）
+node_modules/
+frontend/dist/
+
+# 临时验证目录（无头测试脚本等）
+.tmp-qk/
+
+# 系统
+.DS_Store
+Thumbs.db

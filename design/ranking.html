@@ -1,0 +1,239 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <link rel="icon" type="image/svg+xml" href="favicon.svg">
+    <link rel="icon" type="image/png" sizes="64x64" href="favicon.png">
+<title>排行榜 · 基因侦探</title>
+<link rel="stylesheet" href="site.css">
+<style>
+/* ==========================================================
+   侦探排行榜 · 领奖台 + 榜单
+   结案数优先；同结案数比总用时；0 结案不上榜
+   ========================================================== */
+.page-head { padding-top: calc(var(--nav-h) + 52px); padding-bottom: 0; }
+.page-head::before { background-position: 50% 16%; opacity: .5; }
+.page-head .lead { margin-top: 2px; }
+
+/* ---------- 整体白底卡：柔和流动渐变 ---------- */
+.board-card { max-width: 720px; margin: 0 auto;
+  background:
+    radial-gradient(120% 100% at 8% 0%, rgb(138 120 196 / .10), transparent 55%),
+    radial-gradient(130% 110% at 100% 10%, rgb(118 146 206 / .11), transparent 58%),
+    radial-gradient(120% 100% at 50% 110%, rgb(196 140 96 / .06), transparent 55%),
+    linear-gradient(135deg, #fdfbf6 0%, #f8f5f0 38%, #f6f7fb 66%, #faf6f0 100%);
+  animation: board-flow 14s ease-in-out infinite;
+  border: 1px solid rgb(var(--wc-blue-deep) / .16);
+  border-radius: 12px;
+  box-shadow: var(--shadow-soft);
+  padding: 10px 26px 8px; }
+@keyframes board-flow {
+  0%, 100% { background-position: 0% 50%; }
+  50% { background-position: 100% 50%; }
+}
+
+/* ---------- 领奖台 ---------- */
+.podium { display: flex; align-items: end; justify-content: center; gap: 18px;
+  margin: 26px auto 22px; max-width: 600px; }
+.p-col { position: relative; display: grid; justify-items: center; gap: 7px; width: 118px; }
+/* 头像 */
+.p-av { width: 54px; height: 54px; border-radius: 14px 12px 15px 13px; object-fit: cover;
+  border: 1.5px solid rgb(var(--wc-blue-deep) / .25); overflow: hidden;
+  display: grid; place-items: center; }
+.p-av img { width: 100%; height: 100%; object-fit: cover; display: block; }
+.p-av span { font-family: var(--font-display); font-weight: 800; font-size: 20px;
+  color: var(--blue-900); }
+.p-col.p1 .p-av { width: 54px; height: 54px; }
+/* 名字 */
+.p-name { max-width: 100%; font-size: 13.5px; font-weight: 600; color: var(--text-1);
+  overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.p-col.me .p-name { color: var(--blue-700); }
+.p-col.me .p-name::after { content: "（我）"; font-size: 11px; }
+/* 名次底座：窄柱 + 上色下白的明显渐变，无边框 */
+.p-base { position: relative; width: 56px; border-radius: 4px;
+  padding: 14px 2px 28px; }
+.p1 .p-base { height: 188px;
+  background: linear-gradient(180deg, transparent 0%, #dcc58b 42%, #e6d9bc 100%); }
+.p2 .p-base { height: 164px;
+  background: linear-gradient(180deg, transparent 0%, #aeb6c7 46%, #c4cbd9 100%); }
+.p3 .p-base { height: 128px;
+  background: linear-gradient(180deg, transparent 0%, #d8b98f 48%, #e5d3bf 100%); }
+.p-base b { display: block; text-align: center;
+  font-family: var(--font-display); font-size: 20px; font-weight: 900;
+  color: var(--blue-900); line-height: 1; }
+.p-base span { position: absolute; left: 2px; right: 2px; bottom: 8px; text-align: center;
+  font-family: var(--font-mono); font-size: 9px; color: var(--text-2);
+  letter-spacing: .02em; white-space: normal; line-height: 1.35; }
+.p-empty { visibility: hidden; }
+
+/* ---------- 4 名以后的榜单 ---------- */
+.lb-list { margin: 0 -10px; padding-bottom: 8px; }
+.lb-row { display: flex; align-items: center; gap: 14px; padding: 11px 10px;
+  border-bottom: 1px dashed rgb(var(--wc-blue-deep) / .14); }
+.lb-row:last-child { border-bottom: none; }
+.lb-av { flex: none; width: 36px; height: 36px; border-radius: 10px 8px 11px 9px;
+  border: 1px solid rgb(var(--wc-blue-deep) / .2); overflow: hidden;
+  display: grid; place-items: center; }
+.lb-av img { width: 100%; height: 100%; object-fit: cover; display: block; }
+.lb-av span { font-family: var(--font-display); font-weight: 800; font-size: 14px;
+  color: var(--blue-900); }
+.lb-name { flex: 1; min-width: 0; font-size: 14px; font-weight: 600; color: var(--text-1);
+  overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.lb-done { flex: none; font-family: var(--font-mono); font-size: 12.5px; color: var(--text-2); }
+.lb-time { flex: none; width: 70px; text-align: right; font-family: var(--font-mono);
+  font-size: 12.5px; color: var(--text-3); white-space: nowrap; }
+.lb-row.me { background: linear-gradient(90deg, rgb(var(--wc-blue) / .16), rgb(var(--wc-violet) / .08));
+  border-radius: 4px;
+  box-shadow: inset 0 0 0 1.5px rgb(var(--wc-blue-deep) / .32); }
+.lb-row.me .lb-name::after { content: "（我）"; color: var(--blue-700); font-size: 11px; }
+.lb-empty { text-align: center; color: var(--text-3); font-size: 13px; padding: 30px 0; }
+
+@media (max-width: 600px) {
+  .board-card { padding: 4px 14px 4px; }
+  .podium { gap: 8px; }
+  .p-col { width: 96px; }
+  .p-base { width: 50px; }
+  .p1 .p-base { height: 160px; }
+  .p2 .p-base { height: 140px; }
+  .p3 .p-base { height: 108px; }
+  .lb-list { margin: 0 -6px; }
+  .lb-row { gap: 10px; }
+  .lb-time { width: auto; }
+}
+</style>
+</head>
+<body>
+
+<svg width="0" height="0" style="position:absolute" aria-hidden="true"><defs>
+  <symbol id="i-dna" viewBox="0 0 24 24"><path d="M8.5 2.5c0 4.6 7 6.6 7 9.5s-7 4.9-7 9.5"/><path d="M15.5 2.5c0 4.6-7 6.6-7 9.5s7 4.9 7 9.5"/><path d="M9.6 6.2h4.8M9 12h6M9.6 17.8h4.8"/></symbol>
+  <symbol id="i-home" viewBox="0 0 24 24"><path d="M3.6 10.4 12 3.4l8.4 7"/><path d="M5.6 11.6V20h12.8v-8.4"/><path d="M9.8 20v-5.2h4.4V20"/></symbol>
+  <symbol id="i-book" viewBox="0 0 24 24"><path d="M12 6.4C10.4 5 8 4.4 4.4 4.6v13.2c3.6-.2 6 .4 7.6 1.8 1.6-1.4 4-2 7.6-1.8V4.6C16 4.4 13.6 5 12 6.4Z"/><path d="M12 6.4v13.2"/></symbol>
+  <symbol id="i-case" viewBox="0 0 24 24"><path d="M3.4 8.2h17.2v10.4a1.6 1.6 0 0 1-1.6 1.6H5a1.6 1.6 0 0 1-1.6-1.6Z"/><path d="M8.4 8.2V5.6A1.6 1.6 0 0 1 10 4h4a1.6 1.6 0 0 1 1.6 1.6v2.6"/><path d="M3.4 12.6h17.2M10 12.6h4"/></symbol>
+  <symbol id="i-medal" viewBox="0 0 24 24"><circle cx="12" cy="14.6" r="5.4"/><path d="M9.2 9.6 6.6 3.4h10.8l-2.6 6.2"/></symbol>
+</defs></svg>
+
+<div id="wc" aria-hidden="true"><span class="wc-veil"></span></div>
+<div id="grain" aria-hidden="true"></div>
+<div id="progress"></div>
+
+<div class="nav-shell">
+  <nav class="top">
+    <a class="logo" href="home.html"><svg class="mark ic"><use href="#i-dna"/></svg><span class="word">基因侦探</span></a>
+    <span class="nav-div" aria-hidden="true"></span>
+    <div class="nav-links">
+      <a href="home.html"><span class="hl"></span><svg class="ic"><use href="#i-home"/></svg><span class="lbl">首页</span></a>
+      <a href="science.html"><span class="hl"></span><svg class="ic"><use href="#i-book"/></svg><span class="lbl">手册</span></a>
+      <a href="cases.html"><span class="hl"></span><svg class="ic" viewBox="0 0 24 24"><path d="M6.4 3.6h8l3.2 3.2v9.2a1.4 1.4 0 0 1-1.4 1.4H6.4a1.4 1.4 0 0 1-1.4-1.4V5a1.4 1.4 0 0 1 1.4-1.4Z"/><path d="M14 3.6V7h3.4"/><path d="M8.4 11.4h5.2M8.4 14.6h5.2"/></svg><span class="lbl">案件簿</span></a>
+      <a href="ranking.html" class="on"><span class="hl"></span><svg class="ic" viewBox="0 0 24 24"><path d="M3.6 20h16.8"/><path d="M6.8 16.4V10h4.2V20"/><path d="M13.8 20V4.8h4.2V20"/></svg><span class="lbl">排行榜</span></a>
+      <a href="report.html"><span class="hl"></span><svg class="ic"><use href="#i-medal"/></svg><span class="lbl">我的报告</span></a>
+    </div>
+  </nav>
+</div>
+
+<section class="page-head">
+  <div class="wrap">
+    <span class="kicker rv">Ranking · 排行榜</span>
+    <h2 class="rv">侦探排行榜</h2>
+    <p class="lead rv" style="--i:1">结案数优先，用时短者靠前。</p>
+  </div>
+</section>
+
+<section id="board">
+  <div class="wrap">
+    <div class="board-card rv" style="--i:2">
+      <div class="podium" id="podium"></div>
+      <div class="lb-list" id="lb-list" hidden></div>
+    </div>
+  </div>
+</section>
+
+<footer>
+  <div class="wrap">
+    <div class="f-top">
+      <b>基因侦探 Gene Detective</b>
+
+    </div>
+    <span>数据来源：NCBI ClinVar 公共数据库（教学用子集）</span>
+    <span>本站为课程作业，数据与流程均做了教学简化，不构成任何医学建议</span>
+  </div>
+</footer>
+
+<script src="site.js"></script>
+<script src="terms.js"></script>
+<script src="api.js"></script>
+<script>
+/* ============================================================
+   排行榜页 · 前三上领奖台，其余进榜单
+   结案数优先，同结案数比总用时；0 结案不上榜
+   ============================================================ */
+(function () {
+  'use strict';
+
+  function lbEsc(s) {
+    return String(s).replace(/[&<>"']/g, function (c) {
+      return { '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' }[c];
+    });
+  }
+  function avHtml(av) {
+    var img = GD.avatarImg(av);
+    if (img) return '<img src="' + img + '" alt="">';
+    var ch = (GD.getUser() || '侦').slice(0, 1).toUpperCase();
+    return '<span>' + lbEsc(ch) + '</span>';
+  }
+
+  /* 领奖台：亚军 | 冠军 | 季军；不足三人的空位隐藏 */
+  function renderPodium(top, me) {
+    var podium = document.getElementById('podium');
+    var slots = [
+      { e: top[1], place: 2, cls: 'p2' },
+      { e: top[0], place: 1, cls: 'p1' },
+      { e: top[2], place: 3, cls: 'p3' }
+    ];
+    podium.innerHTML = slots.map(function (s) {
+      if (!s.e) return '<div class="p-col p-empty"></div>';
+      var done = s.e.done + ' 案';
+      var time = s.e.totalSec != null ? GD.fmtSec(s.e.totalSec) : '—';
+      return '<div class="p-col ' + s.cls + (s.e.username === me ? ' me' : '') + '">' +
+        '<span class="p-av">' + avHtml(s.e.avatar) + '</span>' +
+        '<span class="p-name">' + lbEsc(s.e.username) + '</span>' +
+        '<div class="p-base"><b>' + s.place + '</b><span>' + done + '<br>' + time + '</span></div>' +
+      '</div>';
+    }).join('');
+  }
+
+  /* 第 4 名起进普通榜单（总榜只保留前 10 名） */
+  function renderRows(rest, me) {
+    var list = document.getElementById('lb-list');
+    list.hidden = rest.length === 0;
+    if (!rest.length) return;
+    list.innerHTML = rest.map(function (e, i) {
+      return '<div class="lb-row' + (e.username === me ? ' me' : '') + '">' +
+        '<span class="lb-av">' + avHtml(e.avatar) + '</span>' +
+        '<span class="lb-name">' + lbEsc(e.username) + '</span>' +
+        '<span class="lb-done">' + e.done + ' 案</span>' +
+        '<span class="lb-time">' + (e.totalSec != null ? GD.fmtSec(e.totalSec) : '—') + '</span>' +
+      '</div>';
+    }).join('');
+  }
+
+  GD.api('/leaderboard').then(function (d) {
+    var board = (d.board || []).slice(0, 10);
+    var me = GD.getUser();
+    if (!board.length) {
+      document.getElementById('podium').innerHTML =
+        '<div class="lb-empty">还没有人结案——第一个破案的侦探就是榜首。</div>';
+      document.getElementById('lb-list').hidden = true;
+      return;
+    }
+    renderPodium(board.slice(0, 3), me);
+    renderRows(board.slice(3), me);
+  }).catch(function () {
+    document.getElementById('podium').innerHTML =
+      '<div class="lb-empty">榜单离线——启动后端后自动恢复。</div>';
+  });
+})();
+</script>
+<script src="helix.js"></script>
+</body>
+</html>

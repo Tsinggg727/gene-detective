@@ -1,0 +1,162 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <link rel="icon" type="image/svg+xml" href="favicon.svg">
+    <link rel="icon" type="image/png" sizes="64x64" href="favicon.png">
+<title>基因侦探 Gene Detective · 一场从 DNA 序列到临床诊断的解谜之旅</title>
+<link rel="stylesheet" href="site.css">
+<style>
+/* ==========================================================
+   封面 · 只做一件事：把人送进侦探社
+   没有导航、没有目录——陈探长还没出场，不该有菜单。
+   ========================================================== */
+#hero { min-height: 100vh; min-height: 100svh; display: flex;
+  justify-content: center; align-items: center;
+  padding: 56px 0 64px; background: transparent; }
+#hero::before { background-position: 50% 26%; opacity: .66;
+  -webkit-mask-image: linear-gradient(180deg, #000 0, #000 74%, transparent 100%);
+  mask-image: linear-gradient(180deg, #000 0, #000 74%, transparent 100%); }
+
+.hero-grid { position: relative; z-index: 2; display: grid;
+  grid-template-columns: 1.06fr .94fr; gap: 56px; align-items: center;
+  width: 100%; max-width: 1080px; margin: 0 auto; padding: 0 28px; }
+
+/* ---------- 标题：墨色更沉，配英文名 ---------- */
+#hero h1 { font-family: var(--font-display); font-size: clamp(54px, 8.4vw, 102px);
+  font-weight: 900; line-height: 1.02; letter-spacing: .06em;
+  background: linear-gradient(134deg, #2f3a57 0%, #36415f 24%, #46527a 64%, #554f88 100%);
+  -webkit-background-clip: text; background-clip: text; color: transparent;
+  background-size: 200% 100%; animation: ink-flow 14s var(--ease-in-out) infinite alternate; }
+@keyframes ink-flow { 0% { background-position: 0% 50% } 100% { background-position: 100% 50% } }
+
+.hero-en { margin-top: 14px; font-family: var(--font-mono);
+  font-size: clamp(11px, 1.35vw, 13.5px); font-weight: 700;
+  letter-spacing: .42em; text-transform: uppercase;
+  color: var(--blue-700); opacity: .9; }
+
+.hero-sub { margin-top: 26px; font-family: var(--font-mono);
+  font-size: clamp(13px, 1.7vw, 15.5px); color: var(--blue-700);
+  min-height: 1.9em; letter-spacing: .04em; opacity: .92; }
+.hero-sub .caret { display: inline-block; width: 2px; height: 1.05em; vertical-align: -.18em;
+  background: var(--blue-500); margin-left: 3px; animation: blink 1s steps(1) infinite; }
+@keyframes blink { 50% { opacity: 0 } }
+
+.hero-cta { margin-top: 40px; display: flex; gap: 14px; flex-wrap: wrap; align-items: center; }
+.hero-cta .btn { font-size: 15.5px; padding: 15px 32px; }
+
+/* ---------- 陈探长：画纸照片卡 ---------- */
+.hero-ip { display: flex; justify-content: center; position: relative; opacity: 1;
+  animation: rv-in 820ms var(--ease-out-expo) 120ms; }
+@keyframes rv-in {
+  from { opacity: 0; transform: translateY(26px) scale(.97); }
+  to   { opacity: 1; transform: none; }
+}
+.ip-frame { position: relative; width: min(420px, 82vw); border-radius: var(--r-2xl);
+  overflow: visible; background: var(--card); padding: 10px 10px 8px;
+  border: 1px solid rgb(var(--wc-blue-deep) / .14); box-shadow: var(--shadow-soft-lg);
+  transform: rotate(-1.4deg);
+  transition: transform var(--t-state) var(--ease-out-quart), box-shadow var(--t-state);
+  animation: floaty 6.5s var(--ease-in-out) infinite; }
+.ip-frame::before { content: ""; position: absolute; z-index: -1; inset: -46px;
+  background:
+    radial-gradient(closest-side at 24% 18%, rgb(var(--wc-blue) / .30), transparent),
+    radial-gradient(closest-side at 80% 84%, rgb(var(--wc-violet) / .16), transparent);
+  border-radius: 46% 54% 58% 42% / 52% 44% 56% 48%; }
+/* 顶部纸胶带 */
+.ip-frame::after { content: ""; position: absolute; top: -12px; left: 50%;
+  width: 88px; height: 24px; transform: translateX(-50%) rotate(-2.4deg);
+  background: linear-gradient(180deg, rgb(214 226 240 / .92), rgb(196 212 232 / .78));
+  border-left: 1px dashed rgb(255 255 255 / .8); border-right: 1px dashed rgb(255 255 255 / .8);
+  box-shadow: 0 2px 8px -3px rgb(63 74 107 / .4); }
+.ip-frame:hover { transform: rotate(-.4deg) translateY(-6px) scale(1.015);
+  box-shadow: var(--shadow-soft-lg), 0 0 0 6px rgb(var(--wc-blue) / .13); }
+.ip-frame img { display: block; width: 100%; border-radius: 21px; }
+@keyframes floaty { 0%, 100% { transform: rotate(-1.4deg) translateY(0) }
+  50% { transform: rotate(-1.4deg) translateY(-7px) } }
+
+/* 照片下的签名牌：这位就是陈探长 */
+.ip-name { display: flex; align-items: baseline; gap: 8px;
+  padding: 9px 4px 2px; }
+.ip-name b { font-family: var(--font-display); font-size: 15px; font-weight: 900;
+  color: var(--blue-900); letter-spacing: .06em; }
+.ip-name span { font-family: var(--font-mono); font-size: 10px; color: var(--text-2);
+  letter-spacing: .06em; margin-left: auto; white-space: nowrap; }
+
+@media (max-width: 900px) {
+  .hero-grid { grid-template-columns: 1fr; gap: 34px; text-align: left; }
+  .hero-ip { order: -1; }
+  .ip-frame { width: min(280px, 66vw); }
+  #hero h1 { font-size: clamp(48px, 13vw, 76px); }
+  .hero-cta { margin-top: 30px; }
+  .hero-cta .btn { width: 100%; justify-content: center; }
+  #hero { padding: 34px 0 46px; }
+}
+</style>
+</head>
+<body>
+
+<!-- ===== 自绘图标（只用得到的） ===== -->
+<svg width="0" height="0" style="position:absolute" aria-hidden="true"><defs>
+  <symbol id="i-dna" viewBox="0 0 24 24">
+    <path d="M8.5 2.5c0 4.6 7 6.6 7 9.5s-7 4.9-7 9.5"/>
+    <path d="M15.5 2.5c0 4.6-7 6.6-7 9.5s7 4.9 7 9.5"/>
+    <path d="M9.6 6.2h4.8M9 12h6M9.6 17.8h4.8"/>
+  </symbol>
+  <symbol id="i-arrow" viewBox="0 0 24 24">
+    <path d="M4 12h15"/><path d="M13.4 6l6 6-6 6"/>
+  </symbol>
+</defs></svg>
+
+<div id="wc" aria-hidden="true"><span class="wc-veil"></span></div>
+<div id="grain" aria-hidden="true"></div>
+
+<!-- ============ 封面 ============ -->
+<section id="hero">
+  <div class="hero-grid">
+    <div class="hero-copy">
+      <h1>基因侦探</h1>
+      <p class="hero-en">Gene Detective</p>
+      <p class="hero-sub"><span id="typed"></span><span class="caret"></span></p>
+      <div class="hero-cta">
+        <a class="btn btn-primary" id="start" href="entry.html">
+          开始探索 <svg class="ic arrow"><use href="#i-arrow"/></svg>
+        </a>
+      </div>
+    </div>
+
+    <div class="hero-ip">
+      <div class="ip-frame">
+        <img src="assets/ip-chen.jpg" alt="陈探长：水彩蓝 DNA 发型、紫框眼镜、风衣，手持放大镜" width="420" height="420">
+        <div class="ip-name"><b>陈探长</b><span>精准医学侦探社 · 负责人</span></div>
+      </div>
+    </div>
+  </div>
+</section>
+
+<script src="terms.js"></script>
+<script src="api.js"></script>
+<script src="helix.js"></script>
+<script>
+/* ---------- 开始探索：登记过就直接进资料室，没登记先去见探长 ---------- */
+(function () {
+  var btn = document.getElementById('start');
+  btn.addEventListener('click', function (e) {
+    if (!window.GD) return;
+    if (GD.getToken()) { e.preventDefault(); location.href = 'science.html'; }
+  });
+})();
+
+/* ---------- 打一行小字 ---------- */
+var typedEl = document.getElementById('typed');
+var msg = '> 一场从 DNA 序列到临床诊断的解谜之旅_';
+var ti = 0;
+(function type() {
+  typedEl.textContent = msg.slice(0, ti++);
+  if (ti <= msg.length) setTimeout(type, 78);
+})();
+
+</script>
+</body>
+</html>

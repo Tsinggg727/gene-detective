@@ -1,0 +1,947 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <link rel="icon" type="image/svg+xml" href="favicon.svg">
+    <link rel="icon" type="image/png" sizes="64x64" href="favicon.png">
+<title>基因侦探 · UI 视觉效果方案（动效演示版）</title>
+<style>
+/* ==========================================================
+   基因侦探 Gene Detective — Design Tokens
+   色彩源自 IP 形象：蓝紫渐变 DNA 发型 / 紫框眼镜 / 水彩米白底
+   ========================================================== */
+:root {
+  /* 水彩主色：墨蓝 + 紫（IP 发色 / 风衣，降饱和） */
+  --ink-900: #3f3a66;
+  --ink-700: #55519c;
+  --ink-500: #7b86c9;
+  --ink-300: #a9b0dd;
+  /* 辅色：水彩紫（风衣 / 眼镜） */
+  --violet-700: #6d539b;
+  --violet-500: #9a7fc0;
+  --violet-300: #cfc4e4;
+  /* 点缀：淡青（水彩留白处，极少量） */
+  --aqua-500: #8fc3c9;
+  --aqua-300: #c2e0e0;
+  /* 底色：水彩米白（IP 画纸底色） */
+  --paper: #f7f2e9;
+  --paper-2: #efe7d8;
+  --card: #fdfaf3;
+  /* 语义色（水彩化：降饱和） */
+  --pathogenic: #c96a72;   /* 致病 · 水彩玫瑰红 */
+  --benign: #7fae94;       /* 良性 · 灰叶绿 */
+  --vus: #d3a05c;          /* 意义不明 · 赭石 */
+  /* 文本（墨色） */
+  --text-1: #3f3a5e;
+  --text-2: #736e91;
+  --text-3: #a29db9;
+  /* 动效 tokens（100/300/500 法则） */
+  --ease-out-quart: cubic-bezier(.25, 1, .5, 1);
+  --ease-out-expo: cubic-bezier(.16, 1, .3, 1);
+  --ease-in-out: cubic-bezier(.65, 0, .35, 1);
+  --t-fast: 150ms;
+  --t-state: 300ms;
+  --t-layout: 450ms;
+  --t-enter: 650ms;
+  /* 字体 */
+  --font-display: "Noto Serif SC", "Source Han Serif SC", "STZhongsong", "SimSun", serif;
+  --font-body: "Noto Sans SC", "Source Han Sans SC", "Microsoft YaHei", sans-serif;
+  --font-mono: "JetBrains Mono", "Cascadia Code", Consolas, monospace;
+  /* 圆角与阴影 */
+  --r-sm: 8px; --r-md: 14px; --r-lg: 22px;
+  /* 水彩晕染式阴影（紫调软阴影） */
+  --shadow-sm: 0 1px 3px rgb(63 58 94 / .06), 0 3px 10px rgb(109 83 155 / .08);
+  --shadow-md: 0 6px 20px rgb(63 58 94 / .10), 0 10px 28px rgb(109 83 155 / .12);
+  --shadow-lg: 0 16px 44px rgb(63 58 94 / .14), 0 22px 52px rgb(109 83 155 / .16);
+}
+
+* { margin: 0; padding: 0; box-sizing: border-box; }
+html { scroll-behavior: smooth; }
+body {
+  font-family: var(--font-body);
+  background: #fbf8f2;
+  color: var(--text-1);
+  line-height: 1.75;
+  overflow-x: hidden;
+}
+::selection { background: var(--violet-300); color: var(--ink-900); }
+
+/* ---------- 全局水彩背景（与首页同一张湿画纸） ---------- */
+#wc { position: fixed; inset: -2%; z-index: -2;
+  background: #fbf8f2 url("watercolor-bg.svg") center / cover no-repeat;
+  animation: wc-breathe 150s var(--ease-in-out) infinite alternate; }
+.wc-veil { position: absolute; inset: 0; pointer-events: none;
+  background:
+    radial-gradient(62% 48% at 42% 46%, rgb(252 249 243 / .56), rgb(252 249 243 / 0) 100%),
+    linear-gradient(180deg, rgb(251 248 242 / .16) 0%, rgb(251 248 242 / .02) 34%,
+      rgb(251 248 242 / .20) 100%); }
+@keyframes wc-breathe {
+  0%   { transform: scale(1) translate(0, 0); }
+  100% { transform: scale(1.04) translate(-.8%, -.6%); }
+}
+
+/* ---------- 水彩纸纹理（全局颗粒，multiply 叠加） ---------- */
+body::after {
+  content: ""; position: fixed; inset: 0; z-index: 999; pointer-events: none;
+  mix-blend-mode: multiply; opacity: .44;
+  background-image: url("data:image/svg+xml;utf8,<svg xmlns='http://www.w3.org/2000/svg' width='260' height='260'><filter id='n'><feTurbulence type='fractalNoise' baseFrequency='0.85' numOctaves='2' stitchTiles='stitch'/><feColorMatrix type='saturate' values='0'/><feComponentTransfer><feFuncA type='linear' slope='0.045'/></feComponentTransfer></filter><rect width='100%25' height='100%25' filter='url(%23n)'/></svg>");
+}
+
+/* ---------- 顶部滚动进度线 ---------- */
+#progress {
+  position: fixed; top: 0; left: 0; height: 3px; width: 100%;
+  transform-origin: 0 50%; transform: scaleX(0);
+  background: linear-gradient(90deg, var(--ink-500), var(--violet-500), var(--aqua-500));
+  z-index: 100;
+}
+
+/* ---------- 侧边锚点导航 ---------- */
+#dots {
+  position: fixed; right: 22px; top: 50%; transform: translateY(-50%);
+  display: flex; flex-direction: column; gap: 14px; z-index: 90;
+}
+#dots a {
+  width: 9px; height: 9px; border-radius: 50%;
+  background: var(--text-3); opacity: .45;
+  transition: all var(--t-state) var(--ease-out-quart);
+}
+#dots a:hover { transform: scale(1.6); opacity: .9; }
+#dots a.on {
+  background: var(--ink-500); opacity: 1;
+  transform: scale(1.45);
+  box-shadow: 0 0 0 4px rgb(122 120 190 / .18);
+}
+
+/* ---------- 通用版式 ---------- */
+.wrap { max-width: 1080px; margin: 0 auto; padding: 0 28px; }
+section { padding: 96px 0; position: relative; }
+.kicker {
+  display: inline-flex; align-items: center; gap: 8px;
+  font-size: 13px; letter-spacing: .22em; color: var(--ink-500);
+  font-weight: 600; text-transform: uppercase;
+}
+.kicker::before {
+  content: ""; width: 26px; height: 1.5px;
+  background: linear-gradient(90deg, var(--ink-500), transparent);
+}
+h2 {
+  font-family: var(--font-display); font-size: clamp(26px, 3.6vw, 40px);
+  font-weight: 700; margin: 10px 0 14px; letter-spacing: .02em;
+}
+.lead { color: var(--text-2); max-width: 640px; font-size: 15.5px; }
+
+/* ---------- 滚动渐入动效（全局 reveal） ---------- */
+.rv {
+  opacity: 0; transform: translateY(34px);
+  transition: opacity var(--t-enter) var(--ease-out-expo),
+              transform var(--t-enter) var(--ease-out-expo);
+  transition-delay: calc(var(--i, 0) * 90ms);
+}
+.rv.in { opacity: 1; transform: none; }
+
+/* ==========================================================
+   HERO
+   ========================================================== */
+#hero {
+  min-height: 100vh; display: flex; align-items: center;
+  padding: 0; overflow: hidden;
+  background: transparent;
+}
+#helix { position: absolute; inset: 0; width: 100%; height: 100%; }
+.hero-grid {
+  position: relative; z-index: 2;
+  display: grid; grid-template-columns: 1.15fr .85fr; gap: 40px; align-items: center;
+  width: 100%; max-width: 1080px; margin: 0 auto; padding: 0 28px;
+}
+.hero-badge {
+  display: inline-flex; gap: 8px; align-items: center;
+  font-size: 13px; color: var(--violet-700); font-weight: 600;
+  border: 1px solid rgb(154 127 192 / .35); border-radius: 999px;
+  padding: 5px 16px; background: rgb(255 253 249 / .75);
+  animation: floaty 4.5s var(--ease-in-out) infinite;
+}
+@keyframes floaty { 0%,100% { transform: translateY(0) } 50% { transform: translateY(-6px) } }
+#hero h1 {
+  font-family: var(--font-display);
+  font-size: clamp(44px, 7.5vw, 84px);
+  font-weight: 900; line-height: 1.12; margin: 22px 0 6px;
+  background: linear-gradient(115deg, var(--ink-900) 20%, var(--violet-500) 55%, var(--aqua-500) 90%);
+  -webkit-background-clip: text; background-clip: text; color: transparent;
+  background-size: 220% 100%;
+  animation: sheen 7s var(--ease-in-out) infinite;
+}
+@keyframes sheen { 0%,100% { background-position: 0% 0 } 50% { background-position: 100% 0 } }
+.hero-sub {
+  font-family: var(--font-mono); font-size: clamp(15px, 2vw, 19px);
+  color: var(--ink-700); min-height: 1.8em; letter-spacing: .04em;
+}
+.hero-sub .caret {
+  display: inline-block; width: 2px; height: 1.05em; vertical-align: -.18em;
+  background: var(--aqua-500); margin-left: 3px;
+  animation: blink 1s steps(1) infinite;
+}
+@keyframes blink { 50% { opacity: 0 } }
+.hero-desc { color: var(--text-2); margin: 20px 0 30px; max-width: 460px; font-size: 15.5px; }
+.hero-cta { display: flex; gap: 16px; flex-wrap: wrap; }
+.hero-ip {
+  position: relative; display: flex; justify-content: center;
+}
+.hero-ip .ip-frame {
+  position: relative; width: min(360px, 78vw); border-radius: 30px;
+  overflow: hidden; box-shadow: var(--shadow-lg);
+  border: 6px solid rgb(255 255 255 / .8);
+  transform: rotate(2.2deg);
+  transition: transform var(--t-layout) var(--ease-out-quart);
+  animation: floaty 6s var(--ease-in-out) infinite;
+}
+.hero-ip .ip-frame:hover { transform: rotate(0deg) scale(1.03); }
+.hero-ip img { display: block; width: 100%; }
+.ip-tag {
+  position: absolute; bottom: 14px; left: 14px;
+  background: rgb(63 58 94 / .82); color: #fff; backdrop-filter: blur(4px);
+  font-size: 12px; padding: 6px 14px; border-radius: 999px; letter-spacing: .12em;
+}
+/* 侦探放大镜光标跟随（hero 区域限定） */
+#lens {
+  position: fixed; width: 120px; height: 120px; border-radius: 50%;
+  pointer-events: none; z-index: 60; opacity: 0; scale: .6;
+  border: 2.5px solid rgb(154 127 192 / .55);
+  background: radial-gradient(circle at 35% 32%, rgb(255 255 255 / .5), rgb(194 224 224 / .12) 60%);
+  box-shadow: 0 8px 30px rgb(63 58 94 / .18), inset 0 0 24px rgb(255 255 255 / .35);
+  transition: opacity var(--t-state), scale var(--t-state) var(--ease-out-quart);
+  transform: translate(-50%, -50%);
+}
+.hero-hint { position:absolute; bottom: 26px; left: 50%; transform: translateX(-50%);
+  font-size: 12px; color: var(--text-3); letter-spacing: .3em; animation: floaty 3s infinite; }
+
+/* ==========================================================
+   按钮 / 徽章等基础组件
+   ========================================================== */
+/* 按钮：墨蓝实底 + 纸白字，硬投影压在手绘纸上（不用胶囊、不用玻璃） */
+.btn {
+  display: inline-flex; align-items: center; justify-content: center; gap: 10px;
+  font-family: var(--font-body); font-size: 14.5px; font-weight: 700; letter-spacing: .06em;
+  padding: 12px 26px; cursor: pointer; position: relative;
+  border: 1.4px solid rgb(38 47 71 / .55);
+  border-radius: 9px 14px 8px 13px / 13px 9px 14px 8px;
+  transition: transform 160ms var(--ease-out-quart), box-shadow 200ms var(--ease-out-quart),
+              background 200ms var(--ease-out-quart), color 200ms var(--ease-out-quart);
+}
+.btn:active { transform: translate(1px, 1px); }
+.btn-primary {
+  color: #fdfaf3;
+  background: linear-gradient(178deg, #4b577b 0%, #414c6d 58%, #38425f 100%);
+  box-shadow: 3px 3px 0 rgb(38 47 71 / .30), 0 12px 24px -18px rgb(38 47 71 / .7);
+}
+.btn-primary:hover { color: #fffef9; transform: translate(-1px, -1px);
+  border-color: rgb(30 38 58 / .7);
+  background: linear-gradient(178deg, #55628a 0%, #48547a 58%, #3d4865 100%);
+  box-shadow: 4px 4px 0 rgb(38 47 71 / .32), 0 16px 26px -18px rgb(38 47 71 / .72);
+}
+.btn-primary:active { transform: translate(1px, 1px);
+  box-shadow: 1px 1px 0 rgb(38 47 71 / .34); }
+.btn-ghost {
+  color: #46537a; background: transparent;
+  border: 1.3px solid rgb(61 58 143 / .34); box-shadow: none;
+}
+.btn-ghost:hover { color: var(--ink-900); background: rgb(255 253 248 / .78);
+  border-color: rgb(61 58 143 / .6); transform: translateY(-1px);
+  box-shadow: 2px 2px 0 rgb(61 58 143 / .1); }
+.btn-ghost:active { transform: translateY(0); box-shadow: none; }
+
+/* ==========================================================
+   色彩系统
+   ========================================================== */
+.swatches { display: grid; grid-template-columns: repeat(auto-fit, minmax(150px, 1fr)); gap: 16px; margin-top: 34px; }
+.sw {
+  border-radius: var(--r-md); padding: 14px; cursor: pointer;
+  background: var(--card); border: 1px solid rgb(63 58 94 / .07);
+  box-shadow: var(--shadow-sm);
+  transition: transform var(--t-state) var(--ease-out-quart), box-shadow var(--t-state);
+}
+.sw:hover { transform: translateY(-6px) rotate(-1deg); box-shadow: var(--shadow-md); }
+.sw .chip { height: 64px; border-radius: 10px; margin-bottom: 10px; position: relative; overflow: hidden; }
+.sw .chip::after {
+  content: ""; position: absolute; inset: 0;
+  background: linear-gradient(115deg, transparent 30%, rgb(255 255 255 / .45) 50%, transparent 70%);
+  transform: translateX(-120%);
+  transition: transform .7s var(--ease-out-quart);
+}
+.sw:hover .chip::after { transform: translateX(120%); }
+.sw b { font-size: 13.5px; display: block; }
+.sw span { font-family: var(--font-mono); font-size: 12px; color: var(--text-3); }
+
+/* ==========================================================
+   字体系统
+   ========================================================== */
+.type-spec { display: grid; gap: 6px; margin-top: 30px; }
+.type-row {
+  display: flex; align-items: baseline; gap: 26px; padding: 18px 6px;
+  border-bottom: 1px dashed rgb(63 58 94 / .12);
+  transition: background var(--t-state), padding-left var(--t-state);
+}
+.type-row:hover { background: rgb(122 120 190 / .05); padding-left: 16px; }
+.type-row .meta { flex: 0 0 168px; font-size: 12px; color: var(--text-3); font-family: var(--font-mono); }
+
+/* ==========================================================
+   动效演示区
+   ========================================================== */
+.demo-grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(320px, 1fr)); gap: 22px; margin-top: 38px; }
+.demo-card {
+  background: var(--card); border-radius: var(--r-lg); padding: 26px;
+  border: 1px solid rgb(63 58 94 / .07); box-shadow: var(--shadow-sm);
+  transition: box-shadow var(--t-state), transform var(--t-state) var(--ease-out-quart);
+}
+.demo-card:hover { box-shadow: var(--shadow-md); }
+.demo-card h3 { font-size: 16.5px; margin-bottom: 4px; display: flex; align-items: center; gap: 8px; }
+.demo-card h3 .no {
+  font-family: var(--font-mono); font-size: 11px; color: #fff;
+  background: var(--ink-500); border-radius: 6px; padding: 2px 8px;
+}
+.demo-card p { font-size: 13px; color: var(--text-2); margin-bottom: 16px; }
+.demo-stage {
+  background: linear-gradient(160deg, var(--paper-2), var(--card));
+  border-radius: var(--r-md); padding: 20px; min-height: 150px;
+  display: flex; flex-direction: column; align-items: center; justify-content: center; gap: 14px;
+  position: relative; overflow: hidden;
+}
+.demo-tag { font-size: 11px; font-family: var(--font-mono); color: var(--text-3); letter-spacing: .1em; }
+
+/* --- A1 碱基波浪 --- */
+.bases { display: flex; gap: 7px; }
+.base {
+  width: 30px; height: 30px; border-radius: 8px; display: grid; place-items: center;
+  font-family: var(--font-mono); font-size: 13px; font-weight: 700; color: #fff;
+  animation: bob 2.4s var(--ease-in-out) infinite;
+  animation-delay: calc(var(--i) * .12s);
+}
+@keyframes bob { 0%,100% { transform: translateY(0) } 50% { transform: translateY(-9px) } }
+.b-A { background: var(--ink-500); } .b-T { background: var(--violet-500); }
+.b-C { background: var(--aqua-500); } .b-G { background: var(--ink-700); }
+
+/* --- A2 质量修剪（关卡一） --- */
+.trim-row { display: flex; gap: 4px; align-items: flex-end; height: 74px; }
+.qcol { display: flex; flex-direction: column; align-items: center; gap: 4px; width: 17px;
+  transition: opacity .45s var(--ease-out-quart), transform .45s var(--ease-out-quart); }
+.qbar { width: 10px; border-radius: 5px; background: var(--ink-300); transition: background .4s; }
+.qbar.low { background: var(--pathogenic); }
+.qletter { font-family: var(--font-mono); font-size: 11px; font-weight: 700; color: var(--ink-700); }
+.qcol.cut { opacity: 0; transform: translateY(18px) scale(.4); }
+.trim-info { font-family: var(--font-mono); font-size: 12px; color: var(--text-2); min-height: 1.4em; }
+.trim-info.ok { color: var(--benign); font-weight: 700; }
+
+/* --- A3 序列比对（关卡二） --- */
+.align-box { font-family: var(--font-mono); font-size: 14px; display: grid; gap: 6px; justify-items: start; }
+.aline { display: flex; gap: 3px; }
+.acell {
+  width: 22px; height: 24px; display: grid; place-items: center;
+  border-radius: 5px; background: rgb(122 120 190 / .10); color: var(--ink-700);
+  transition: all .35s var(--ease-out-quart);
+}
+.acell.match { background: rgb(127 174 148 / .18); color: var(--benign); }
+.acell.mismatch { background: rgb(201 106 114 / .18); color: var(--pathogenic); animation: pulse .9s var(--ease-in-out) infinite; }
+.acell.gap { background: var(--vus); color: #fff; animation: pop-in .4s var(--ease-out-quart); }
+@keyframes pulse { 0%,100% { transform: scale(1) } 50% { transform: scale(1.16) } }
+@keyframes pop-in { from { transform: scale(0); } }
+.match-rate { font-family: var(--font-mono); font-size: 13px; color: var(--text-2); }
+.match-rate b { color: var(--ink-500); font-size: 17px; }
+
+/* --- A4 AI 致病性预测圆环（关卡三） --- */
+.ring-wrap { display: flex; align-items: center; gap: 22px; }
+.ring { position: relative; width: 120px; height: 120px; }
+.ring svg { transform: rotate(-90deg); }
+.ring .track { fill: none; stroke: rgb(63 58 94 / .1); stroke-width: 9; }
+.ring .val {
+  fill: none; stroke: url(#ringGrad); stroke-width: 9; stroke-linecap: round;
+  stroke-dasharray: 314; stroke-dashoffset: 314;
+  transition: stroke-dashoffset 1.4s var(--ease-out-expo);
+}
+.ring .num {
+  position: absolute; inset: 0; display: grid; place-items: center;
+  font-family: var(--font-mono); font-size: 27px; font-weight: 700; color: var(--ink-700);
+}
+.ai-verdict {
+  opacity: 0; transform: translateX(14px);
+  transition: all .55s var(--ease-out-quart) .9s;
+}
+.ai-verdict.show { opacity: 1; transform: none; }
+.ai-verdict .lab {
+  display: inline-block; font-weight: 800; font-size: 17px;
+  color: var(--pathogenic); margin-bottom: 2px;
+}
+.ai-verdict small { color: var(--text-2); font-size: 12px; display: block; max-width: 210px; }
+
+/* --- A5 3D 倾斜卡片（科普卡） --- */
+.tilt {
+  width: 100%; aspect-ratio: 16/9; border-radius: var(--r-md);
+  background: linear-gradient(135deg, var(--ink-700), var(--violet-500) 60%, var(--aqua-500));
+  display: grid; place-items: center; color: #fff;
+  transform-style: preserve-3d; will-change: transform;
+  font-family: var(--font-display); font-size: 21px; letter-spacing: .1em;
+  position: relative; overflow: hidden;
+}
+.tilt .gloss {
+  position: absolute; inset: 0;
+  background: radial-gradient(420px 220px at var(--gx,50%) var(--gy,50%), rgb(255 255 255 / .28), transparent 65%);
+}
+.tilt .inner { transform: translateZ(34px); }
+
+/* --- A6 徽章解锁 + 粒子庆祝 --- */
+.badge-stage { position: relative; }
+.badge {
+  width: 92px; height: 92px; border-radius: 50%; display: grid; place-items: center;
+  font-size: 40px; cursor: pointer; user-select: none;
+  background: radial-gradient(circle at 32% 28%, #fff, var(--paper-2));
+  border: 2px solid rgb(211 160 92 / .5);
+  transition: transform var(--t-state) var(--ease-out-quart), box-shadow var(--t-state);
+  position: relative; overflow: visible;
+}
+.badge::after {
+  content: ""; position: absolute; inset: -8px; border-radius: 50%;
+  border: 2px dashed rgb(211 160 92 / .45);
+  animation: spin 14s linear infinite;
+}
+@keyframes spin { to { transform: rotate(360deg); } }
+.badge:hover { transform: scale(1.08); box-shadow: 0 10px 30px rgb(211 160 92 / .35); }
+.badge.pop { animation: badge-pop .8s var(--ease-out-expo); }
+@keyframes badge-pop {
+  0% { transform: scale(.3) rotate(-30deg); }
+  55% { transform: scale(1.25) rotate(8deg); }
+  100% { transform: scale(1) rotate(0); }
+}
+.badge-name { font-size: 13px; font-weight: 700; color: var(--violet-700); min-height: 1.4em; opacity: 0; transform: translateY(6px); transition: all .4s var(--ease-out-quart) .3s; }
+.badge-name.show { opacity: 1; transform: none; }
+.confetti {
+  position: absolute; width: 8px; height: 8px; border-radius: 2px; pointer-events: none;
+  animation: confetti-fall 1.2s var(--ease-out-quart) forwards;
+}
+@keyframes confetti-fall {
+  from { transform: translate(0,0) rotate(0); opacity: 1; }
+  to { transform: translate(var(--dx), var(--dy)) rotate(var(--rot)); opacity: 0; }
+}
+
+/* --- A7 骨架屏（加载感知优化） --- */
+.skel { width: 100%; display: grid; gap: 10px; }
+.skel .row { height: 14px; border-radius: 7px;
+  background: linear-gradient(90deg, rgb(63 58 94 / .07) 25%, rgb(63 58 94 / .14) 50%, rgb(63 58 94 / .07) 75%);
+  background-size: 200% 100%; animation: shimmer 1.3s linear infinite; }
+@keyframes shimmer { from { background-position: 200% 0 } to { background-position: -200% 0 } }
+.skel .row:nth-child(1){width:62%} .skel .row:nth-child(2){width:88%} .skel .row:nth-child(3){width:74%} .skel .row:nth-child(4){width:40%}
+
+/* ==========================================================
+   页面动效叙事（流程图谱）
+   ========================================================== */
+.flow { display: grid; grid-template-columns: repeat(5, 1fr); gap: 14px; margin-top: 40px; counter-reset: step; }
+.flow .step {
+  background: var(--card); border-radius: var(--r-md); padding: 20px 16px;
+  border: 1px solid rgb(63 58 94 / .07); box-shadow: var(--shadow-sm);
+  position: relative; counter-increment: step;
+  transition: transform var(--t-state) var(--ease-out-quart), box-shadow var(--t-state);
+}
+.flow .step:hover { transform: translateY(-8px); box-shadow: var(--shadow-md); }
+.flow .step::before {
+  content: "0" counter(step);
+  font-family: var(--font-mono); font-size: 12px; color: var(--aqua-500); font-weight: 700;
+}
+.flow .step h4 { font-size: 15px; margin: 6px 0 4px; }
+.flow .step p { font-size: 12px; color: var(--text-2); }
+.flow .step .anim-note {
+  margin-top: 10px; font-size: 11px; font-family: var(--font-mono);
+  color: var(--violet-500); background: rgb(154 127 192 / .1);
+  padding: 4px 8px; border-radius: 6px; display: inline-block;
+}
+
+/* ==========================================================
+   动效规格表
+   ========================================================== */
+.spec-table { width: 100%; border-collapse: collapse; margin-top: 34px; font-size: 13.5px; }
+.spec-table th, .spec-table td { text-align: left; padding: 13px 14px; border-bottom: 1px solid rgb(63 58 94 / .08); }
+.spec-table th { font-size: 12px; letter-spacing: .1em; color: var(--text-3); font-weight: 600; }
+.spec-table tbody tr { transition: background var(--t-fast); }
+.spec-table tbody tr:hover { background: rgb(122 120 190 / .05); }
+.spec-table code { font-family: var(--font-mono); font-size: 12px; color: var(--violet-700); background: rgb(154 127 192 / .09); padding: 2px 7px; border-radius: 5px; }
+
+/* ==========================================================
+   页脚
+   ========================================================== */
+footer {
+  background: var(--ink-900); color: rgb(255 255 255 / .78);
+  padding: 60px 0 44px; margin-top: 60px;
+}
+footer .wrap { display: grid; gap: 8px; font-size: 13px; }
+footer b { color: #fff; font-family: var(--font-display); font-size: 17px; }
+
+/* ---------- 无障碍：动效敏感用户 ---------- */
+@media (prefers-reduced-motion: reduce) {
+  *, *::before, *::after {
+    animation-duration: .01ms !important;
+    animation-iteration-count: 1 !important;
+    transition-duration: .01ms !important;
+  }
+  html { scroll-behavior: auto; }
+  .rv { opacity: 1; transform: none; }
+}
+@media (max-width: 860px) {
+  .hero-grid { grid-template-columns: 1fr; padding-top: 90px; padding-bottom: 70px; }
+  .flow { grid-template-columns: repeat(2, 1fr); }
+  #dots { display: none; }
+}
+</style>
+</head>
+<body>
+<div id="wc" aria-hidden="true"><span class="wc-veil"></span></div>
+
+<div id="progress"></div>
+<nav id="dots" aria-label="页面导航">
+  <a href="#hero" title="首页"></a>
+  <a href="#color" title="色彩"></a>
+  <a href="#type" title="字体"></a>
+  <a href="#motion" title="动效演示"></a>
+  <a href="#narrative" title="页面叙事"></a>
+  <a href="#spec" title="动效规格"></a>
+</nav>
+<div id="lens" aria-hidden="true"></div>
+
+<!-- ============ HERO ============ -->
+<section id="hero">
+  <canvas id="helix" aria-hidden="true"></canvas>
+  <div class="hero-grid">
+    <div>
+      <span class="hero-badge">🧬 医学人工智能导论 · 期末大作业</span>
+      <h1>基因侦探</h1>
+      <p class="hero-sub"><span id="typed"></span><span class="caret"></span></p>
+      <p class="hero-desc">一场从 DNA 序列到临床诊断的解谜之旅。测序 → 质控 → 比对 → 变异识别 → 致病性解读，五步生信工作流，在 5–8 分钟内亲手走完。</p>
+      <div class="hero-cta">
+        <button class="btn btn-primary" onclick="document.getElementById('motion').scrollIntoView()">开始解谜 <span aria-hidden="true">🔍</span></button>
+        <button class="btn btn-ghost" onclick="document.getElementById('color').scrollIntoView()">查看视觉规范</button>
+      </div>
+    </div>
+    <div class="hero-ip rv" style="--i:2">
+      <div class="ip-frame">
+        <img src="基因侦探形象.jpg" alt="IP 形象：基因侦探（蓝紫 DNA 发型的小侦探，手持放大镜）">
+        <span class="ip-tag">IP · 基因侦探</span>
+      </div>
+    </div>
+  </div>
+  <span class="hero-hint">SCROLL ↓</span>
+</section>
+
+<!-- ============ 设计定位 ============ -->
+<section id="concept">
+  <div class="wrap">
+    <span class="kicker rv">Design Concept</span>
+    <h2 class="rv" style="--i:1">设计定位：水彩侦探 × 生物信息</h2>
+    <p class="lead rv" style="--i:2">视觉语言全部从 IP 形象中提取：墨蓝与水彩紫的双色主调（DNA 发型 / 风衣，降饱和湿画法）、画纸米白底色 + 全局纸纹颗粒、不规则圆角与颜料沉淀式阴影模拟手绘水彩、衬线展示字（侦探小说的叙事感）+ 等宽字（碱基序列的实验室感）。风格关键词：<b>手绘水彩 · 解谜感 · 温柔科普</b>。</p>
+    <div class="swatches">
+      <div class="sw rv" style="--i:0"><div class="chip" style="background:linear-gradient(135deg,#55519c,#7b86c9)"></div><b>墨蓝 · 主色</b><span>IP 发色水彩化 / CTA / 标题</span></div>
+      <div class="sw rv" style="--i:1"><div class="chip" style="background:linear-gradient(135deg,#6d539b,#cfc4e4)"></div><b>水彩紫 · 辅色</b><span>风衣紫 / 强调与徽章</span></div>
+      <div class="sw rv" style="--i:2"><div class="chip" style="background:linear-gradient(135deg,#8fc3c9,#c2e0e0)"></div><b>淡青 · 点缀</b><span>水彩留白处 / AI 元素专属色</span></div>
+      <div class="sw rv" style="--i:3"><div class="chip" style="background:linear-gradient(135deg,#f7f2e9,#efe7d8);border:1px solid #e4dbc8"></div><b>画纸米白 · 底色</b><span>水彩纸质感背景</span></div>
+      <div class="sw rv" style="--i:4"><div class="chip" style="background:linear-gradient(135deg,#c96a72,#d9959b)"></div><b>玫瑰红 · 语义</b><span>低质量区 / 致病变异</span></div>
+      <div class="sw rv" style="--i:5"><div class="chip" style="background:linear-gradient(135deg,#7fae94,#a5cbb3)"></div><b>灰叶绿 · 语义</b><span>匹配位 / 良性变异</span></div>
+    </div>
+  </div>
+</section>
+
+<!-- ============ 色彩系统 ============ -->
+<section id="color">
+  <div class="wrap">
+    <span class="kicker rv">Color Tokens</span>
+    <h2 class="rv" style="--i:1">色彩系统与语义规则</h2>
+    <p class="lead rv" style="--i:2">所有色值可点击复制。语义色做水彩化降饱和处理，贯穿三个关卡：低质量碱基 → 玫瑰红、匹配 → 灰叶绿、gap → 赭石、AI 预测 → 淡青—紫渐变。颜色即游戏语言，用户无需文字说明也能读懂状态。</p>
+    <div class="swatches">
+      <div class="sw rv" style="--i:0" onclick="copyHex(this)"><div class="chip" style="background:#3f3a66"></div><b>ink-900 墨蓝深</b><span>#3F3A66 · 标题/页脚</span></div>
+      <div class="sw rv" style="--i:1" onclick="copyHex(this)"><div class="chip" style="background:#7b86c9"></div><b>ink-500 墨蓝</b><span>#7B86C9 · 主按钮/链接</span></div>
+      <div class="sw rv" style="--i:2" onclick="copyHex(this)"><div class="chip" style="background:#9a7fc0"></div><b>violet-500 水彩紫</b><span>#9A7FC0 · 徽章/强调</span></div>
+      <div class="sw rv" style="--i:3" onclick="copyHex(this)"><div class="chip" style="background:#8fc3c9"></div><b>aqua-500 淡青</b><span>#8FC3C9 · AI 专属色</span></div>
+      <div class="sw rv" style="--i:4" onclick="copyHex(this)"><div class="chip" style="background:#c96a72"></div><b>pathogenic 玫瑰红</b><span>#C96A72 · 致病/低质量</span></div>
+      <div class="sw rv" style="--i:5" onclick="copyHex(this)"><div class="chip" style="background:#7fae94"></div><b>benign 灰叶绿</b><span>#7FAE94 · 良性/匹配</span></div>
+      <div class="sw rv" style="--i:6" onclick="copyHex(this)"><div class="chip" style="background:#d3a05c"></div><b>vus 赭石</b><span>#D3A05C · 意义不明/gap</span></div>
+    </div>
+  </div>
+</section>
+
+<!-- ============ 全局水彩背景 ============ -->
+<section id="watercolor">
+  <div class="wrap">
+    <span class="kicker rv">Background System</span>
+    <h2 class="rv" style="--i:1">全局水彩背景：整站一张湿画纸</h2>
+    <p class="lead rv" style="--i:2">所有页面共用同一张水彩底图 <b>watercolor-bg.svg</b>（1600×1000），固定定位、cover 铺满。蓝紫比例锁死在 <b>62 : 26 : 12</b>：蓝是主体，紫只做湿气，青是水感。每一屏再用不同的位移与缩放复用同一张图，于是既有「每页都是手绘」的差异，又始终是同一张纸。</p>
+    <div class="swatches">
+      <div class="sw rv" style="--i:0" onclick="copyHex(this)"><div class="chip" style="background:#5c7ecc"></div><b>水彩蓝 · 62%</b><span>rgb(92 126 204) · 主调</span></div>
+      <div class="sw rv" style="--i:1" onclick="copyHex(this)"><div class="chip" style="background:#8372c6"></div><b>湿紫 · 26%</b><span>rgb(131 114 198) · 只做湿气</span></div>
+      <div class="sw rv" style="--i:2" onclick="copyHex(this)"><div class="chip" style="background:#8fbcc9"></div><b>浅青 · 12%</b><span>rgb(143 188 201) · 水感点缀</span></div>
+      <div class="sw rv" style="--i:3" onclick="copyHex(this)"><div class="chip" style="background:#fbf8f2;border:1px solid #e6ddcf"></div><b>画纸白</b><span>#FBF8F2 · 留白与正文底</span></div>
+    </div>
+    <div class="rv" style="--i:5;margin-top:30px;display:grid;grid-template-columns:repeat(auto-fit,minmax(240px,1fr));gap:14px">
+      <div style="background:var(--card);border:1px solid rgb(63 58 94 / .10);border-radius:var(--r-lg);padding:18px 20px">
+        <b style="font-size:14px;color:var(--text-1)">① 底图由 SVG 滤镜生成</b>
+        <p style="font-size:13px;color:var(--text-2);margin-top:6px;line-height:1.7">feTurbulence 造湍流场 + feDisplacementMap 位移，把规则椭圆撕成有机形状；再加一层低频噪声做颜料云絮，边缘一圈低透明度描边做湿边沉积。<b>CSS 渐变做不出这种毛边。</b></p>
+      </div>
+      <div style="background:var(--card);border:1px solid rgb(63 58 94 / .10);border-radius:var(--r-lg);padding:18px 20px">
+        <b style="font-size:14px;color:var(--text-1)">② 固定层 + 呼吸</b>
+        <p style="font-size:13px;color:var(--text-2);margin-top:6px;line-height:1.7"><code style="font-family:var(--font-mono);font-size:12px">position: fixed; inset: -2%</code>，150s 极慢 <code style="font-family:var(--font-mono);font-size:12px">scale(1 → 1.04)</code> 呼吸，像画还没干透。滚动时纸不动、内容移动。</p>
+      </div>
+      <div style="background:var(--card);border:1px solid rgb(63 58 94 / .10);border-radius:var(--r-lg);padding:18px 20px">
+        <b style="font-size:14px;color:var(--text-1)">③ 每屏一道局部水彩</b>
+        <p style="font-size:13px;color:var(--text-2);margin-top:6px;line-height:1.7">各 section 用 <code style="font-family:var(--font-mono);font-size:12px">::before</code> 复用同一张图，只改 <b>background-position 与 scale</b>，opacity 统一 0.52；上下边缘用 mask 渐隐 26%，避免出现生硬的横向分界。</p>
+      </div>
+      <div style="background:var(--card);border:1px solid rgb(63 58 94 / .10);border-radius:var(--r-lg);padding:18px 20px">
+        <b style="font-size:14px;color:var(--text-1)">④ 可读性护栏</b>
+        <p style="font-size:13px;color:var(--text-2);margin-top:6px;line-height:1.7">中轴加一层 56% 纸白绢压掉浓度；卡片用 <code style="font-family:var(--font-mono);font-size:12px">rgba(255,253,248,.90)</code> + 磨砂，透出底下的晕染但不牺牲文字。正文对比度目标 ≥ 4.5:1。</p>
+      </div>
+    </div>
+    <p class="lead rv" style="--i:6;margin-top:18px;font-size:14px">落地入口：<b>design/watercolor-bg.svg</b> 与 <b>design/home.html</b> 的 <code style="font-family:var(--font-mono);font-size:13px">#wc</code> / <code style="font-family:var(--font-mono);font-size:13px">section::before</code> 两段样式可直接抄到后续页面。</p>
+  </div>
+</section>
+
+<!-- ============ 字体系统 ============ -->
+<section id="type">
+  <div class="wrap">
+    <span class="kicker rv">Typography</span>
+    <h2 class="rv" style="--i:1">字体系统：叙事衬线 + 实验室等宽</h2>
+    <div class="type-spec">
+      <div class="type-row rv" style="--i:0"><span class="meta">Display / Noto Serif SC 900</span><span style="font-family:var(--font-display);font-size:34px;font-weight:900">基因侦探：解谜之旅</span></div>
+      <div class="type-row rv" style="--i:1"><span class="meta">H2 / Noto Serif SC 700</span><span style="font-family:var(--font-display);font-size:24px;font-weight:700">第一关 · 修剪低质量序列</span></div>
+      <div class="type-row rv" style="--i:2"><span class="meta">Body / Noto Sans SC 400</span><span style="font-size:15.5px">并非所有变异都致病。判断需综合人群频率、蛋白功能预测与文献证据。</span></div>
+      <div class="type-row rv" style="--i:3"><span class="meta">Mono / JetBrains Mono</span><span style="font-family:var(--font-mono);font-size:16px;letter-spacing:.12em">A T C G G T A A C G · Q30</span></div>
+      <div class="type-row rv" style="--i:4"><span class="meta">比例 1.333 · 流式 clamp()</span><span style="font-family:var(--font-mono);font-size:12px;color:var(--text-3)">12 → 16 → 21 → 28 → 38 → 50px（clamp 随视口缩放）</span></div>
+    </div>
+  </div>
+</section>
+
+<!-- ============ 动效演示 ============ -->
+<section id="motion">
+  <div class="wrap">
+    <span class="kicker rv">Motion Library · 全部可交互</span>
+    <h2 class="rv" style="--i:1">动效系统：7 组核心动效现场演示</h2>
+    <p class="lead rv" style="--i:2">以下每一组都是可直接搬进 Vue 组件的动效规格：只动 transform / opacity，统一 ease-out-quart 缓动，100/300/500ms 节奏，并完整支持 prefers-reduced-motion 降级。</p>
+
+    <div class="demo-grid">
+      <!-- A1 碱基波浪 -->
+      <div class="demo-card rv" style="--i:0">
+        <h3><span class="no">A1</span>碱基呼吸波浪</h3>
+        <p>首页与科普卡装饰元素。碱基字母按 120ms 交错延迟上下浮动，赋予页面"活着"的呼吸感。</p>
+        <div class="demo-stage">
+          <div class="bases">
+            <span class="base b-A" style="--i:0">A</span><span class="base b-T" style="--i:1">T</span><span class="base b-C" style="--i:2">C</span><span class="base b-G" style="--i:3">G</span><span class="base b-A" style="--i:4">G</span><span class="base b-T" style="--i:5">T</span><span class="base b-A" style="--i:6">A</span><span class="base b-C" style="--i:7">C</span>
+          </div>
+          <span class="demo-tag">2.4s ease-in-out · stagger 120ms · loop</span>
+        </div>
+      </div>
+
+      <!-- A2 质量修剪 -->
+      <div class="demo-card rv" style="--i:1">
+        <h3><span class="no">A2</span>修剪动效（关卡一）</h3>
+        <p>点击「执行修剪」：红色低质量区塌陷消失，剩余高质量区保留。成功后卡片闪绿光确认。</p>
+        <div class="demo-stage">
+          <div class="trim-row" id="trimRow"></div>
+          <div class="trim-info" id="trimInfo">观察柱状图：尾部质量分骤降（红）</div>
+          <button class="btn btn-primary" style="padding:9px 22px;font-size:13.5px" id="trimBtn">✂ 执行修剪</button>
+        </div>
+      </div>
+
+      <!-- A3 序列比对 -->
+      <div class="demo-card rv" style="--i:2">
+        <h3><span class="no">A3</span>比对点亮（关卡二）</h3>
+        <p>点击「对齐序列」：gap 弹入补位，错配位红色脉冲，匹配率数字滚动上升——实时反馈的核心动效。</p>
+        <div class="demo-stage">
+          <div class="align-box">
+            <div class="aline" id="refRow"></div>
+            <div class="aline" id="patRow"></div>
+          </div>
+          <div class="match-rate">匹配率 <b id="rate">--%</b></div>
+          <button class="btn btn-primary" style="padding:9px 22px;font-size:13.5px" id="alignBtn">🧩 对齐序列</button>
+        </div>
+      </div>
+
+      <!-- A4 AI 圆环 -->
+      <div class="demo-card rv" style="--i:3">
+        <h3><span class="no">A4</span>AI 预测圆环（关卡三）</h3>
+        <p>点击「AI 判读」：致病性分数沿圆环描边生长（1.4s expo-out），数字同步滚动，结论延迟浮现制造"AI 正在思考"的节奏。</p>
+        <div class="demo-stage">
+          <div class="ring-wrap">
+            <div class="ring">
+              <svg width="120" height="120"><defs><linearGradient id="ringGrad" x1="0" y1="0" x2="1" y2="1"><stop offset="0" stop-color="#8fc3c9"/><stop offset="1" stop-color="#9a7fc0"/></linearGradient></defs>
+              <circle class="track" cx="60" cy="60" r="50"/><circle class="val" id="ringVal" cx="60" cy="60" r="50"/></svg>
+              <div class="num" id="ringNum">0</div>
+            </div>
+            <div class="ai-verdict" id="aiVerdict">
+              <span class="lab">致病</span>
+              <small>人群频率极低 + 功能预测高分 + 文献三篇支持</small>
+            </div>
+          </div>
+          <button class="btn btn-ghost" style="padding:9px 22px;font-size:13.5px" id="aiBtn">🤖 AI 判读</button>
+        </div>
+      </div>
+
+      <!-- A5 3D tilt -->
+      <div class="demo-card rv" style="--i:4">
+        <h3><span class="no">A5</span>3D 视差倾斜卡（科普卡）</h3>
+        <p>鼠标在卡上移动：整卡随指针倾斜，光泽随视差偏移，内容层 translateZ 悬浮——科普四卡片的悬停质感。</p>
+        <div class="demo-stage">
+          <div class="tilt" id="tiltCard">
+            <div class="gloss"></div>
+            <span class="inner">C2 · 序列比对</span>
+          </div>
+        </div>
+      </div>
+
+      <!-- A6 徽章 -->
+      <div class="demo-card rv" style="--i:5">
+        <h3><span class="no">A6</span>徽章解锁 + 彩带庆祝</h3>
+        <p>通关总结页。点击徽章：回弹式 pop + 虚线轨道旋转 + 粒子彩带迸发 + 称号文字浮现。</p>
+        <div class="demo-stage badge-stage">
+          <div class="badge" id="badge" role="button" tabindex="0" aria-label="点击解锁徽章">🏅</div>
+          <div class="badge-name" id="badgeName">🎉 解锁称号「变异判官」</div>
+          <span class="demo-tag">点击徽章触发</span>
+        </div>
+      </div>
+
+      <!-- A7 骨架屏 -->
+      <div class="demo-card rv" style="--i:6">
+        <h3><span class="no">A7</span>骨架屏微光</h3>
+        <p>关卡数据加载期间的感知优化：微光扫过代替空白等待，配合乐观 UI 策略，等待"感觉"更短。</p>
+        <div class="demo-stage">
+          <div class="skel"><div class="row"></div><div class="row"></div><div class="row"></div><div class="row"></div></div>
+          <span class="demo-tag">shimmer 1.3s linear · loop</span>
+        </div>
+      </div>
+    </div>
+  </div>
+</section>
+
+<!-- ============ 页面动效叙事 ============ -->
+<section id="narrative">
+  <div class="wrap">
+    <span class="kicker rv">Page Narrative</span>
+    <h2 class="rv" style="--i:1">五区滚动的动效叙事线</h2>
+    <p class="lead rv" style="--i:2">单页滚动结构与需求 F1–F6 一一对应。动效强度沿"首页 → 挑战 → 报告"递进：首页沉浸、科普克制、关卡高反馈、报告高奖励。</p>
+    <div class="flow">
+      <div class="step rv" style="--i:0"><h4>F1 首页</h4><p>Canvas DNA 双螺旋粒子 + 打字机副标题 + 标题流光</p><span class="anim-note">helix / typewriter / sheen</span></div>
+      <div class="step rv" style="--i:1"><h4>F2 科普四卡</h4><p>滚动交错渐入 + 3D 倾斜悬停 + 「试试看」磁吸按钮</p><span class="anim-note">stagger-reveal / tilt</span></div>
+      <div class="step rv" style="--i:2"><h4>F3 三关挑战</h4><p>修剪塌陷 / 比对点亮 / AI 圆环，全部只动 transform+opacity 保 60fps</p><span class="anim-note">A2 / A3 / A4</span></div>
+      <div class="step rv" style="--i:3"><h4>F4 报告</h4><p>成绩数字滚动 + 徽章 pop + 彩带粒子 + 称号浮现</p><span class="anim-note">count-up / A6</span></div>
+      <div class="step rv" style="--i:4"><h4>F5/F6 导航页脚</h4><p>顶部滚动进度渐变线 + 侧边锚点圆点 + 数据来源声明</p><span class="anim-note">scroll-progress</span></div>
+    </div>
+  </div>
+</section>
+
+<!-- ============ 动效规格表 ============ -->
+<section id="spec">
+  <div class="wrap">
+    <span class="kicker rv">Motion Spec · 开发交接</span>
+    <h2 class="rv" style="--i:1">动效规格速查表</h2>
+    <table class="spec-table rv" style="--i:2">
+      <thead><tr><th>场景</th><th>时长</th><th>缓动</th><th>实现要点</th></tr></thead>
+      <tbody>
+        <tr><td>按钮按压 / 即时反馈</td><td><code>150ms</code></td><td><code>ease-out-quart</code></td><td>transform: scale(.96)，涟漪 .6s</td></tr>
+        <tr><td>悬停 / 状态切换</td><td><code>300ms</code></td><td><code>ease-out-quart</code></td><td>卡片上浮 6px + 阴影升级</td></tr>
+        <tr><td>面板 / 折叠布局</td><td><code>450ms</code></td><td><code>ease-in-out</code></td><td>grid-template-rows 0fr→1fr</td></tr>
+        <tr><td>入场 / 滚动渐入</td><td><code>650ms</code></td><td><code>ease-out-expo</code></td><td>IntersectionObserver，交错 90ms，上限 8 项</td></tr>
+        <tr><td>AI 圆环 / 成绩滚动</td><td><code>1400ms</code></td><td><code>ease-out-expo</code></td><td>stroke-dashoffset + rAF 计数</td></tr>
+        <tr><td>退出动画</td><td>入场的 75%</td><td><code>ease-in</code></td><td>模态 / 关卡切换更快消失</td></tr>
+        <tr><td>reduced-motion</td><td colspan="2"><code>0.01ms</code></td><td>动画降级为淡入，进度条/加载保留但减速</td></tr>
+      </tbody>
+    </table>
+    <p class="lead rv" style="--i:3" style="margin-top:22px"><b>性能红线</b>：只动画 transform / opacity；滚动监听一律用 IntersectionObserver 且触发后 unobserve；will-change 仅在 hover/animating 时声明。</p>
+  </div>
+</section>
+
+<footer>
+  <div class="wrap">
+    <b>基因侦探 Gene Detective · UI 视觉效果方案 v1.0</b>
+    <span>数据来源：NCBI ClinVar 公共数据库（教学用子集） · 本站数据为教学演示用静态模拟，不构成医学建议</span>
+    <span>动效规格：只动 transform/opacity · ease-out-quart 统一缓动 · 100/300/500ms 节奏 · 完整支持 prefers-reduced-motion</span>
+  </div>
+</footer>
+
+<script>
+/* ---------- 滚动进度线 ---------- */
+const progress = document.getElementById('progress');
+addEventListener('scroll', () => {
+  const h = document.documentElement;
+  progress.style.transform = `scaleX(${h.scrollTop / (h.scrollHeight - h.clientHeight)})`;
+}, { passive: true });
+
+/* ---------- 侧边圆点高亮 ---------- */
+const dots = [...document.querySelectorAll('#dots a')];
+const secObs = new IntersectionObserver(es => es.forEach(e => {
+  if (e.isIntersecting) {
+    dots.forEach(d => d.classList.toggle('on', d.getAttribute('href') === '#' + e.target.id));
+  }
+}), { rootMargin: '-45% 0px -45% 0px' });
+document.querySelectorAll('section[id]').forEach(s => secObs.observe(s));
+
+/* ---------- 滚动渐入 ---------- */
+const rvObs = new IntersectionObserver(es => es.forEach(e => {
+  if (e.isIntersecting) { e.target.classList.add('in'); rvObs.unobserve(e.target); }
+}), { threshold: .12 });
+document.querySelectorAll('.rv').forEach(el => rvObs.observe(el));
+
+/* ---------- Hero：打字机 ---------- */
+const typedEl = document.getElementById('typed');
+const msg = '> 一场从 DNA 序列到临床诊断的解谜之旅_';
+let ti = 0;
+(function type() {
+  typedEl.textContent = msg.slice(0, ti++);
+  if (ti <= msg.length) setTimeout(type, 85);
+})();
+
+/* ---------- Hero：DNA 双螺旋 Canvas ---------- */
+const cv = document.getElementById('helix'), cx = cv.getContext('2d');
+let W, H, t0 = 0;
+function sizeCanvas() { W = cv.width = cv.offsetWidth * devicePixelRatio; H = cv.height = cv.offsetHeight * devicePixelRatio; }
+sizeCanvas(); addEventListener('resize', sizeCanvas);
+const BASES = ['A','T','C','G'];
+const dyes = ['#5b5cc9','#7c5cbf','#3aa8c9','#3d3a8f'];
+function drawHelix() {
+  cx.clearRect(0, 0, W, H);
+  const cxp = W * .5, amp = Math.min(W * .13, 190), step = 46 * devicePixelRatio;
+  const N = Math.ceil(W / step) + 2;
+  for (let i = 0; i < N; i++) {
+    const x = i * step - (t0 * 30 * devicePixelRatio) % step;
+    const ph = x / (110 * devicePixelRatio) + t0 * 1.1;
+    const y1 = H * .5 + Math.sin(ph) * amp, y2 = H * .5 + Math.sin(ph + Math.PI) * amp;
+    const depth = (Math.cos(ph) + 1) / 2; // 0..1 前后景深
+    // 横档（碱基对）
+    cx.strokeStyle = `rgba(124,92,191,${.10 + depth * .16})`;
+    cx.lineWidth = 2 * devicePixelRatio;
+    cx.beginPath(); cx.moveTo(x, y1); cx.lineTo(x, y2); cx.stroke();
+    // 碱基节点
+    const r = (2.4 + depth * 2.6) * devicePixelRatio;
+    cx.fillStyle = dyes[i % 4]; cx.globalAlpha = .22 + depth * .4;
+    cx.beginPath(); cx.arc(x, y1, r, 0, 7); cx.fill();
+    cx.beginPath(); cx.arc(x, y2, r, 0, 7); cx.fill();
+    cx.globalAlpha = 1;
+  }
+  t0 += .008;
+  requestAnimationFrame(drawHelix);
+}
+if (!matchMedia('(prefers-reduced-motion: reduce)').matches) drawHelix();
+
+/* ---------- 放大镜光标跟随（仅 hero） ---------- */
+const lens = document.getElementById('lens');
+const hero = document.getElementById('hero');
+hero.addEventListener('pointermove', e => {
+  lens.style.opacity = 1; lens.style.scale = 1;
+  lens.style.left = e.clientX + 'px'; lens.style.top = e.clientY + 'px';
+});
+hero.addEventListener('pointerleave', () => { lens.style.opacity = 0; lens.style.scale = .6; });
+
+/* 按钮改为按压下沉反馈（涟漪已移除） */
+
+/* ---------- 复制色值 ---------- */
+function copyHex(el) {
+  navigator.clipboard?.writeText(el.querySelector('span').textContent.slice(0, 7)).then(() => {
+    const b = el.querySelector('b'), old = b.textContent;
+    b.textContent = '✓ 已复制'; setTimeout(() => b.textContent = old, 900);
+  });
+}
+
+/* ---------- A2 修剪演示 ---------- */
+const trimRow = document.getElementById('trimRow');
+const qual = [32,34,35,33,31,30,32,12,10,8,6,7,5];
+qual.forEach((q, i) => {
+  const c = document.createElement('div'); c.className = 'qcol';
+  const h = 14 + q * 1.35;
+  c.innerHTML = `<div class="qbar ${q < 20 ? 'low' : ''}" style="height:${h}px"></div><span class="qletter">${BASES[i % 4]}</span>`;
+  trimRow.appendChild(c);
+});
+let trimmed = false;
+document.getElementById('trimBtn').addEventListener('click', () => {
+  const info = document.getElementById('trimInfo');
+  if (trimmed) { // 重置
+    trimmed = false;
+    trimRow.querySelectorAll('.qcol').forEach(c => c.classList.remove('cut'));
+    info.className = 'trim-info'; info.textContent = '观察柱状图：尾部质量分骤降（红）';
+    return;
+  }
+  trimRow.querySelectorAll('.qcol').forEach((c, i) => {
+    if (i >= 7) setTimeout(() => c.classList.add('cut'), i * 55);
+  });
+  setTimeout(() => {
+    info.className = 'trim-info ok';
+    info.textContent = '✓ 修剪 6 bp · 剩余读段全部 Q≥30';
+  }, 750);
+  trimmed = true;
+});
+
+/* ---------- A3 比对演示 ---------- */
+const REF  = ['A','T','C','G','G','T','A','A','C','G'];
+const PAT  = ['A','T','C','-','G','T','A','G','C','G']; // 位置7 错配 G/A，位置3 gap
+const refRow = document.getElementById('refRow'), patRow = document.getElementById('patRow');
+REF.forEach(b => { const d = document.createElement('div'); d.className = 'acell'; d.textContent = b; refRow.appendChild(d); });
+PAT.forEach(b => {
+  const d = document.createElement('div'); d.className = 'acell';
+  d.textContent = b === '-' ? '–' : b; d.dataset.b = b; patRow.appendChild(d);
+});
+document.getElementById('alignBtn').addEventListener('click', () => {
+  let match = 0;
+  patRow.querySelectorAll('.acell').forEach((d, i) => {
+    d.className = 'acell';
+    setTimeout(() => {
+      if (d.dataset.b === '-') { d.classList.add('gap'); }
+      else if (d.dataset.b === REF[i]) { d.classList.add('match'); match++; }
+      else { d.classList.add('mismatch'); }
+      const rate = Math.round(match / REF.length * 100);
+      document.getElementById('rate').textContent = rate + '%';
+    }, i * 70);
+  });
+});
+
+/* ---------- A4 AI 圆环 ---------- */
+let aiOn = false;
+document.getElementById('aiBtn').addEventListener('click', () => {
+  const ring = document.getElementById('ringVal'), num = document.getElementById('ringNum');
+  const v = document.getElementById('aiVerdict');
+  if (aiOn) { // 重置
+    aiOn = false; ring.style.strokeDashoffset = 314; num.textContent = 0;
+    v.classList.remove('show'); return;
+  }
+  aiOn = true;
+  requestAnimationFrame(() => ring.style.strokeDashoffset = 314 * (1 - .87));
+  const t0 = performance.now();
+  (function cnt(now) {
+    const p = Math.min((now - t0) / 1400, 1);
+    num.textContent = Math.round(87 * (1 - Math.pow(1 - p, 4)));
+    if (p < 1) requestAnimationFrame(cnt);
+  })(t0);
+  setTimeout(() => v.classList.add('show'), 900);
+});
+
+/* ---------- A5 3D tilt ---------- */
+const tilt = document.getElementById('tiltCard');
+tilt.addEventListener('pointermove', e => {
+  const r = tilt.getBoundingClientRect();
+  const px = (e.clientX - r.left) / r.width, py = (e.clientY - r.top) / r.height;
+  tilt.style.transform = `perspective(700px) rotateY(${(px - .5) * 16}deg) rotateX(${(.5 - py) * 12}deg)`;
+  tilt.style.setProperty('--gx', px * 100 + '%');
+  tilt.style.setProperty('--gy', py * 100 + '%');
+});
+tilt.addEventListener('pointerleave', () => {
+  tilt.style.transform = 'perspective(700px) rotateY(0) rotateX(0)';
+});
+
+/* ---------- A6 徽章 + 彩带 ---------- */
+const badge = document.getElementById('badge');
+function pop() {
+  badge.classList.remove('pop'); void badge.offsetWidth; badge.classList.add('pop');
+  document.getElementById('badgeName').classList.add('show');
+  const colors = ['#5b5cc9','#7c5cbf','#3aa8c9','#e0a03c','#d64550'];
+  for (let i = 0; i < 26; i++) {
+    const p = document.createElement('div');
+    p.className = 'confetti';
+    const ang = Math.random() * Math.PI * 2, dist = 60 + Math.random() * 90;
+    p.style.cssText = `left:50%;top:50%;background:${colors[i % 5]};--dx:${Math.cos(ang)*dist}px;--dy:${Math.sin(ang)*dist + 50}px;--rot:${Math.random()*540}deg;animation-delay:${Math.random()*120}ms`;
+    badge.parentElement.appendChild(p);
+    setTimeout(() => p.remove(), 1400);
+  }
+}
+badge.addEventListener('click', pop);
+badge.addEventListener('keydown', e => { if (e.key === 'Enter' || e.key === ' ') { e.preventDefault(); pop(); } });
+</script>
+<script src="helix.js"></script>
+</body>
+</html>

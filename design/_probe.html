@@ -1,0 +1,96 @@
+<!DOCTYPE html>
+<html lang="zh-CN"><head><meta charset="UTF-8">
+<title>probe</title>
+<style>html,body{margin:0;background:#e8e4da}iframe{border:0;display:block}</style>
+</head><body>
+<iframe id="f"></iframe>
+<script>
+var params = new URLSearchParams(location.search);
+var step = params.get('s') || 'pouch';
+var n = params.get('n') || '1';
+var W = params.get('w') || 1280;
+var f0 = document.getElementById('f');
+f0.style.width = W + 'px';
+f0.style.height = (params.get('h') || 900) + 'px';
+var f = document.getElementById('f');
+
+function auth() {
+  var body = { username: 'probe9', password: 'probe123456' };
+  return fetch('/api/auth/register', {
+    method: 'POST', headers: { 'Content-Type': 'application/json', Accept: 'application/json' },
+    body: JSON.stringify(body)
+  }).then(function (r) { return r.json(); }).then(function (d) {
+    if (!d.access_token) {
+      return fetch('/api/auth/login', {
+        method: 'POST', headers: { 'Content-Type': 'application/json', Accept: 'application/json' },
+        body: JSON.stringify(body)
+      }).then(function (r) { return r.json(); });
+    }
+    return d;
+  }).then(function (d) {
+    localStorage.setItem('gd_token', d.access_token);
+    localStorage.setItem('gd_user', d.username);
+    // 造前序进度，便于直达后面的案件
+    var results = {};
+    for (var i = 1; i < 6; i++) results['level' + i] = null;
+    for (var j = 1; j < Number(n); j++) results['level' + j] = { solved: true, score: 100, ms: 60000 };
+    return fetch('/api/progress', {
+      method: 'POST',
+      headers: {
+        'Content-Type': 'application/json', Accept: 'application/json',
+        Authorization: 'Bearer ' + d.access_token
+      },
+      body: JSON.stringify({ results: results })
+    });
+  });
+}
+
+auth().then(function () {
+  f.src = 'case.html?n=' + n;
+  f.onload = function () {
+    setTimeout(function () {
+      var d = f.contentDocument;
+      var nx = d.getElementById('dk-next');
+      if (step === 'err' && nx) {
+        nx.click();
+        setTimeout(function () { nx.click(); }, 500);
+        setTimeout(function () { nx.click(); }, 1100);
+        setTimeout(function () { nx.click(); }, 2400);
+      } else if (step !== 'dossier' && step !== 'how' && nx) {
+        nx.click();
+        setTimeout(function () { nx.click(); }, 500);
+      }
+      setTimeout(function () {
+        var p = d.getElementById('dk-pouch');
+        if (p && step !== 'none' && step !== 'dossier' && step !== 'how' && step !== 'err') p.click();
+
+        setTimeout(function () {
+          var st = d.createElement('style');
+          if (step === 'glow') {
+            st.textContent = '*{transition:none!important}' +
+              '.pouch-card{animation:none!important;opacity:1!important;transform:none!important;filter:none!important}' +
+              '.pouch-body tr{animation:none!important;opacity:1!important;transform:none!important}' +
+              '.pouch::after{animation:none!important;opacity:1!important;transform:none!important;background:rgb(255 0 0 / .55)!important;width:300px!important;height:300px!important;margin:-150px!important;left:50%!important;top:50%!important;outline:3px solid red!important}' +
+              '.pouch::before{animation:none!important;opacity:0!important}';
+          } else if (step === 'burst') {
+            st.textContent = '*{transition:none!important}' +
+              '.pouch-card{animation-delay:-200ms!important;animation-play-state:paused!important}' +
+              '.pouch::before{animation-delay:-150ms!important;animation-play-state:paused!important}' +
+              '.pouch::after{animation-delay:-140ms!important;animation-play-state:paused!important}' +
+              '.pouch-body tr{animation:none!important;opacity:1!important;transform:none!important}';
+          } else {
+            st.textContent = '*{transition:none!important}' +
+              '.pouch-card,.pouch-body tr{opacity:1!important;transform:none!important;' +
+              'animation:none!important;filter:none!important}' +
+              '.pouch::before,.pouch::after{animation:none!important;opacity:0!important}';
+          }
+          d.head.appendChild(st);
+        }, 260);
+      }, 2200);
+    }, 2800);
+  };
+}).catch(function (e) {
+  document.title = 'ERR ' + e.message;
+});
+</script>
+</body></html>

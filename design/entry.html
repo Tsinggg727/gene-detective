@@ -1,0 +1,557 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <link rel="icon" type="image/svg+xml" href="favicon.svg">
+    <link rel="icon" type="image/png" sizes="64x64" href="favicon.png">
+<title>登记入社 · 基因侦探</title>
+<link rel="stylesheet" href="site.css">
+<style>
+/* ==========================================================
+   入社引导：陈探长交代 → 登记 → 领工牌
+   这一页故意没有导航：人还没入社，先别给他菜单。
+   ========================================================== */
+body { min-height: 100vh; }
+.stage { min-height: 100vh; min-height: 100svh; display: flex; flex-direction: column;
+  justify-content: center; align-items: center; padding: 48px 22px 56px; position: relative; }
+.stage::before { content: ""; position: absolute; inset: 0; pointer-events: none;
+  background: radial-gradient(58% 44% at 50% 34%, rgb(252 249 243 / .58), transparent 72%); }
+
+.stage-head { position: relative; z-index: 2; text-align: center; margin-bottom: 26px; }
+.stage-kicker { font-family: var(--font-mono); font-size: 10.5px; font-weight: 700;
+  letter-spacing: .18em; color: var(--blue-500); text-transform: uppercase; }
+.stage-head h1 { font-family: var(--font-display); font-size: clamp(26px, 3.6vw, 36px);
+  font-weight: 900; color: var(--blue-900); letter-spacing: .04em; margin: 8px 0 6px; }
+.stage-head p { font-size: 13.5px; color: var(--text-2); }
+
+/* ---------- 登记卡 ---------- */
+.join-card { position: relative; z-index: 2; width: min(430px, 100%);
+  padding: 30px 30px 26px; border-radius: 24px 20px 26px 21px;
+  background: linear-gradient(168deg, #fffdf8, #fdf8ef 62%, #faf4e9);
+  border: 1px solid rgb(var(--wc-blue-deep) / .16);
+  box-shadow: inset 0 1px 0 rgb(255 255 255 / .95),
+              0 2px 0 rgb(84 106 156 / .10),
+              0 30px 60px -30px rgb(46 58 88 / .5); }
+.join-card::after { content: ""; position: absolute; top: -12px; left: 50%;
+  width: 78px; height: 22px; transform: translateX(-50%) rotate(-2deg);
+  background: linear-gradient(180deg, rgb(214 226 240 / .92), rgb(196 212 232 / .78));
+  border-left: 1px dashed rgb(255 255 255 / .8); border-right: 1px dashed rgb(255 255 255 / .8);
+  box-shadow: 0 2px 8px -3px rgb(63 74 107 / .4); }
+
+.jc-title { font-family: var(--font-display); font-size: 20px; font-weight: 900;
+  color: var(--blue-900); margin-bottom: 4px; }
+.jc-sub { font-size: 12.5px; color: var(--text-2); margin-bottom: 20px; }
+
+.field { margin-bottom: 15px; }
+.field label { display: block; font-size: 11.5px; font-weight: 700;
+  font-family: var(--font-mono); letter-spacing: .08em; color: var(--blue-700);
+  margin-bottom: 7px; }
+.field .box { position: relative; }
+.field input { width: 100%; font-family: var(--font-body); font-size: 14.5px;
+  color: var(--blue-900); padding: 12px 14px; border-radius: 12px 15px 11px 14px;
+  background: rgb(255 253 248 / .9);
+  border: 1.5px solid rgb(var(--wc-blue-deep) / .22);
+  transition: border-color .2s, box-shadow .2s, background .2s; }
+.field input::placeholder { color: var(--text-3); }
+.field input:focus { outline: none; background: #fffdf8;
+  border-color: rgb(var(--wc-blue-deep) / .58);
+  box-shadow: 0 0 0 4px rgb(var(--wc-blue) / .16); }
+.field.bad input { border-color: #c98a90; box-shadow: 0 0 0 4px rgb(201 106 114 / .12); }
+.field .f-hint { display: none; margin-top: 6px; font-size: 11.5px; color: #b35f68; }
+.field.bad .f-hint { display: block; }
+.field input:-webkit-autofill,
+.field input:-webkit-autofill:hover,
+.field input:-webkit-autofill:focus {
+  -webkit-box-shadow: 0 0 0 1000px #fffdf8 inset !important;
+  -webkit-text-fill-color: var(--blue-900);
+  caret-color: var(--blue-900); }
+
+.jc-actions { margin-top: 22px; }
+.jc-actions .btn { width: 100%; justify-content: center; }
+.jc-msg { display: none; margin-top: 12px; font-size: 12.5px; color: #b35f68;
+  padding: 9px 12px; border-radius: 10px; background: rgb(201 106 114 / .10);
+  border: 1px solid rgb(201 106 114 / .26); }
+.jc-msg.show { display: block; }
+.jc-alt { margin-top: 16px; text-align: center; font-size: 12.5px; color: var(--text-2); }
+.jc-alt a { color: var(--blue-700); font-weight: 700; text-decoration: none;
+  border-bottom: 1px dashed rgb(var(--wc-blue-deep) / .4); }
+
+/* ---------- 侦探工牌 ---------- */
+.idcard { position: relative; z-index: 2; width: min(468px, 100%);
+  border-radius: 20px 16px 22px 17px; overflow: hidden;
+  background: #fffdf8;
+  border: 1px solid rgb(var(--wc-blue-deep) / .2);
+  box-shadow: inset 0 1px 0 #fff,
+              0 2px 0 rgb(84 106 156 / .12),
+              0 34px 64px -30px rgb(46 58 88 / .55);
+  transform: rotate(-.6deg); }
+/* 挂绳孔 */
+.idc-hole { position: absolute; top: 12px; left: 50%; z-index: 3;
+  width: 54px; height: 12px; margin-left: -27px; border-radius: 8px;
+  background: rgb(63 74 107 / .10); box-shadow: inset 0 1px 2px rgb(63 74 107 / .28); }
+
+.idc-band { position: relative; padding: 26px 22px 14px;
+  background:
+    radial-gradient(120% 120% at 12% 0%, rgb(var(--wc-blue) / .62), transparent 68%),
+    radial-gradient(100% 130% at 96% 10%, rgb(var(--wc-violet) / .42), transparent 72%),
+    linear-gradient(150deg, #d8e2f2, #cdd6ec 60%, #d6cfe8);
+  display: flex; align-items: baseline; gap: 10px; flex-wrap: wrap; }
+.idc-org { font-family: var(--font-display); font-size: 16px; font-weight: 900;
+  color: #2f3a57; letter-spacing: .06em; }
+.idc-en { font-family: var(--font-mono); font-size: 8.5px; font-weight: 700;
+  letter-spacing: .16em; color: rgb(47 58 87 / .58); text-transform: uppercase; }
+
+.idc-body { position: relative; display: grid; grid-template-columns: 108px 1fr;
+  gap: 16px; padding: 18px 22px 4px; }
+.idc-photo { position: relative; width: 108px; height: 128px; border-radius: 12px 10px 13px 9px;
+  display: grid; place-items: center; overflow: hidden;
+  background:
+    repeating-linear-gradient(0deg, rgb(122 98 64 / .05) 0 1px, transparent 1px 4px),
+    linear-gradient(160deg, #f3ece0, #eae1d2);
+  border: 1px solid rgb(126 104 72 / .26);
+  box-shadow: inset 0 1px 0 rgb(255 255 255 / .7); }
+.idc-photo img { position: absolute; inset: 0; width: 100%; height: 100%;
+  object-fit: cover; border-radius: inherit; }
+.idc-photo { cursor: pointer; transition: box-shadow .2s, transform .2s; }
+.idc-photo:hover { transform: translateY(-2px);
+  box-shadow: 0 8px 18px -10px rgb(58 76 112 / .6); }
+.idc-photo:hover .idc-photo-note { color: var(--blue-700); }
+.idc-initial { font-family: var(--font-display); font-size: 52px; font-weight: 900;
+  color: rgb(63 74 107 / .26); line-height: 1; }
+.idc-photo-note { position: absolute; left: 0; right: 0; bottom: 10px; text-align: center;
+  font-family: var(--font-mono); font-size: 8.5px; letter-spacing: .14em;
+  color: rgb(126 104 72 / .6); }
+
+.idc-info { min-width: 0; padding-top: 2px; }
+.idc-code { font-family: var(--font-mono); font-size: 9.5px; font-weight: 700;
+  letter-spacing: .14em; color: var(--text-3); }
+.idc-name { font-family: var(--font-display); font-size: 27px; font-weight: 900;
+  color: var(--blue-900); line-height: 1.2; margin: 4px 0 2px;
+  overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.idc-title { display: flex; align-items: baseline; gap: 8px; }
+.idc-title b { font-size: 15px; font-weight: 900; color: var(--violet-500);
+  letter-spacing: .04em; }
+.idc-title em { font-family: var(--font-mono); font-style: normal; font-size: 9.5px;
+  letter-spacing: .1em; color: var(--text-3); text-transform: uppercase; }
+.idc-meta { display: flex; gap: 14px; margin-top: 12px; padding-top: 10px;
+  padding-right: 84px;
+  border-top: 1px dashed rgb(var(--wc-blue-deep) / .22);
+  font-family: var(--font-mono); font-size: 10px; color: var(--text-2); flex-wrap: wrap; }
+.idc-meta b { color: var(--blue-900); font-size: 11.5px; }
+
+/* 钢印 */
+.idc-seal { position: absolute; right: 18px; bottom: 10px; width: 72px; height: 72px;
+  border-radius: 50%; display: grid; place-items: center; text-align: center;
+  font-family: var(--font-display); font-size: 11px; font-weight: 900; line-height: 1.5;
+  letter-spacing: .06em; color: rgb(var(--wc-violet-deep) / .62);
+  border: 2px solid rgb(var(--wc-violet-deep) / .40);
+  box-shadow: inset 0 0 0 3px rgb(var(--wc-violet-deep) / .1);
+  transform: rotate(-11deg); }
+
+/* 六枚徽章槽：与报告页「六案结果汇总」用的是同一套 .medal 圆章 */
+.idc-slots { display: flex; gap: 8px; padding: 14px 22px 0; justify-content: space-between; }
+.idc-slots .medal { --m-size: 46px; }
+
+.idc-foot { display: flex; align-items: center; gap: 12px; padding: 14px 22px 16px; }
+.idc-sign { font-family: var(--font-display); font-size: 11.5px; color: var(--text-2);
+  letter-spacing: .06em; }
+.idc-sign b { color: var(--blue-900); }
+.idc-hint { margin-left: auto; font-family: var(--font-mono); font-size: 9.5px;
+  letter-spacing: .1em; color: var(--text-3); }
+
+/* 头衔阶梯（每级配对应头像，破案逐级点亮） */
+.ladder { position: relative; z-index: 2; display: flex; align-items: center;
+  gap: 6px; margin-top: 22px; flex-wrap: wrap; justify-content: center; }
+.ladder span { display: inline-flex; align-items: center; gap: 6px; font-size: 11px;
+  font-family: var(--font-mono); color: var(--text-3);
+  padding: 4px 10px 4px 5px; border-radius: 999px; background: rgb(255 253 248 / .5);
+  border: 1px solid transparent; }
+.ladder span img { width: 22px; height: 22px; border-radius: 50%; object-fit: cover;
+  filter: grayscale(1) brightness(1.05) contrast(.8); opacity: .45;
+  transition: filter .4s, opacity .4s; }
+.ladder span.now { color: var(--blue-900); font-weight: 700;
+  background: rgb(var(--wc-blue) / .18);
+  border-color: rgb(var(--wc-blue-deep) / .26); }
+.ladder span.now img { filter: none; opacity: 1; }
+.ladder span.past { color: var(--text-2); }
+.ladder span.past img { filter: none; opacity: .85; }
+.ladder i { color: var(--text-3); font-size: 10px; font-style: normal; }
+
+.stage-note { position: relative; z-index: 2; margin-top: 16px; font-size: 11.5px;
+  color: var(--text-3); font-family: var(--font-mono); letter-spacing: .06em; }
+
+@media (max-width: 560px) {
+  .join-card { padding: 26px 20px 22px; }
+  .idc-body { grid-template-columns: 84px 1fr; gap: 13px; padding: 16px 16px 4px; }
+  .idc-photo { width: 84px; height: 104px; }
+  .idc-initial { font-size: 40px; }
+  .idc-name { font-size: 22px; }
+  .idc-seal { width: 62px; height: 62px; font-size: 9px; right: 12px; bottom: 8px; }
+  .idc-band, .idc-foot { padding-left: 16px; padding-right: 16px; }
+  .idc-slots { padding-left: 16px; padding-right: 16px; }
+}
+</style>
+</head>
+<body>
+
+<svg width="0" height="0" style="position:absolute" aria-hidden="true"><defs>
+  <symbol id="i-dna" viewBox="0 0 24 24"><path d="M8.5 2.5c0 4.6 7 6.6 7 9.5s-7 4.9-7 9.5"/><path d="M15.5 2.5c0 4.6-7 6.6-7 9.5s7 4.9 7 9.5"/><path d="M9.6 6.2h4.8M9 12h6M9.6 17.8h4.8"/></symbol>
+  <symbol id="i-arrow" viewBox="0 0 24 24"><path d="M4 12h15"/><path d="M13.4 6l6 6-6 6"/></symbol>
+  <symbol id="i-scissors" viewBox="0 0 24 24"><circle cx="6" cy="6.5" r="2.6"/><circle cx="6" cy="17.5" r="2.6"/><path d="M8.2 8.2L20.5 18M20.5 6L8.2 15.8"/></symbol>
+  <symbol id="i-align" viewBox="0 0 24 24"><path d="M3 6.5h18"/><path d="M3 17.5h6.4M13.2 17.5H21"/><path d="M10.2 14.6v5.8" stroke-dasharray="1.6 2.2"/><path d="M3 11.2h8.4M14.2 11.2H21"/></symbol>
+  <symbol id="i-search" viewBox="0 0 24 24"><circle cx="10.5" cy="10.5" r="6.8"/><path d="M15.6 15.6L21 21"/></symbol>
+  <symbol id="i-code" viewBox="0 0 24 24"><path d="M9 7.4 4 12l5 4.6"/><path d="M15 7.4 20 12l-5 4.6"/><path d="M13.4 5l-2.8 14"/></symbol>
+  <symbol id="i-family" viewBox="0 0 24 24"><circle cx="7" cy="6.4" r="2.4"/><circle cx="17" cy="6.4" r="2.4"/><circle cx="12" cy="17.6" r="2.4"/><path d="M7 8.8v3.4h10V8.8M12 12.2v3"/></symbol>
+  <symbol id="i-pill" viewBox="0 0 24 24"><rect x="2.6" y="8.6" width="18.8" height="6.8" rx="3.4"/><path d="M12 8.6v6.8" stroke-dasharray="1.8 2"/></symbol>
+</defs></svg>
+
+<div id="wc" aria-hidden="true"><span class="wc-veil"></span></div>
+<div id="grain" aria-hidden="true"></div>
+
+<!-- ============ 登记 ============ -->
+<section class="stage" id="stage-join" hidden>
+  <div class="stage-head">
+    <h1>先给你自己建一份档案</h1>
+    <p>代号与暗号只用来认你，不对外公开。</p>
+  </div>
+
+  <div class="join-card">
+    <div class="jc-title">新侦探登记表</div>
+    <div class="jc-sub">登记后立即发工牌，进度跟着档案走，换设备、换浏览器，登录即接上。</div>
+
+    <form id="join-form" novalidate>
+      <div class="field" id="f-user">
+        <label for="username">侦探代号</label>
+        <div class="box"><input id="username" name="username" type="text" autocomplete="username"
+          placeholder="2–16 位，中文 / 字母 / 数字 / 下划线"></div>
+        <span class="f-hint">代号至少 2 位，最多 16 位</span>
+      </div>
+      <div class="field" id="f-pass">
+        <label for="password">暗号</label>
+        <div class="box"><input id="password" name="password" type="password" autocomplete="new-password"
+          placeholder="至少 6 位"></div>
+        <span class="f-hint">暗号至少 6 位</span>
+      </div>
+      <div class="field" id="f-confirm">
+        <label for="confirm">再写一遍暗号</label>
+        <div class="box"><input id="confirm" name="confirm" type="password" autocomplete="new-password"
+          placeholder="两次要一致"></div>
+        <span class="f-hint">两次输入的暗号不一致</span>
+      </div>
+
+      <div class="jc-actions">
+        <button class="btn btn-primary" id="join-submit" type="submit">
+          登记入社 <svg class="ic arrow"><use href="#i-arrow"/></svg>
+        </button>
+      </div>
+      <div class="jc-msg" id="join-msg"><span id="join-msg-text"></span></div>
+      <div class="jc-alt">已经有档案？<a href="login.html?next=entry.html">直接登录</a></div>
+    </form>
+  </div>
+
+  <p class="stage-note">暗号在服务端只存加盐哈希，明文不入库。</p>
+</section>
+
+<!-- ============ 工牌 ============ -->
+<section class="stage" id="stage-card" hidden>
+  <div class="stage-head">
+    <h1>我的工牌</h1>
+  </div>
+
+  <div class="idcard" id="idcard">
+    <span class="idc-hole" aria-hidden="true"></span>
+    <div class="idc-band">
+      <span class="idc-org">精准医学侦探社</span>
+      <span class="idc-en">Gene Detective · ID Card</span>
+    </div>
+    <div class="idc-body">
+      <div class="idc-photo" id="id-photo" title="点击更换头像">
+        <img id="id-avatar" alt="" hidden>
+        <span class="idc-initial" id="id-initial" hidden>A</span>
+        <span class="idc-photo-note" id="id-photo-note">点击更换头像</span>
+      </div>
+      <div class="idc-info">
+        <span class="idc-code" id="id-code">NO. GD-000000</span>
+        <h2 class="idc-name" id="id-name">——</h2>
+        <div class="idc-title"><b id="id-title">见习侦探</b><em id="id-title-en">Rookie</em></div>
+        <div class="idc-meta">
+          <span>入社 <b id="id-date">——</b></span>
+          <span>案件 <b id="id-done">0 / 6</b></span>
+        </div>
+      </div>
+      <span class="idc-seal" id="id-seal">见习<br>侦探</span>
+    </div>
+    <div class="idc-slots" id="id-slots"></div>
+    <div class="idc-foot">
+      <span class="idc-sign">签发 · <b>陈探长</b></span>
+      <span class="idc-hint">破一案 升一级</span>
+    </div>
+  </div>
+
+  <div class="ladder" id="ladder"></div>
+
+  <p class="stage-note">点击空白处返回</p>
+
+</section>
+
+<script src="api.js"></script>
+<script src="gate.js"></script>
+<script>
+(function () {
+  'use strict';
+
+  var SLOT_ICONS = ['#i-scissors', '#i-align', '#i-search', '#i-code', '#i-family', '#i-pill'];
+  var joinStage = document.getElementById('stage-join');
+  var cardStage = document.getElementById('stage-card');
+  var form = document.getElementById('join-form');
+  var msg = document.getElementById('join-msg');
+  var msgText = document.getElementById('join-msg-text');
+  var submitBtn = document.getElementById('join-submit');
+  var busy = false;
+
+  function field(id) { return document.getElementById(id); }
+  function markBad(id, bad) { field(id).classList.toggle('bad', !!bad); }
+  function showMsg(text) {
+    msgText.textContent = text;
+    msg.classList.add('show');
+  }
+  function hideMsg() { msg.classList.remove('show'); }
+  function isName(v) { return /^[\u4e00-\u9fa5A-Za-z0-9_]{2,16}$/.test(v); }
+  function isPass(v) { return v.length >= 6 && v.length <= 64; }
+
+  function revealJoin() {
+    cardStage.hidden = true;
+    joinStage.hidden = false;
+    document.documentElement.classList.remove('gd-locked');
+    var u = document.getElementById('username');
+    try { u.focus({ preventScroll: true }); } catch (e) { /* ignore */ }
+  }
+
+  function paintCard(username) {
+    var name = username || GD.getUser() || '——';
+    document.getElementById('id-name').textContent = name;
+    document.getElementById('id-code').textContent = 'NO. GD-' +
+      String(name).replace(/[^A-Za-z0-9]/g, '').slice(0, 6).padEnd(6, '0').toUpperCase();
+    document.getElementById('id-date').textContent =
+      (new Date()).toLocaleDateString('zh-CN', { year: 'numeric', month: '2-digit', day: '2-digit' });
+
+    /* 照片区：显示当前头像（注册即见习侦探，无首字母头像） */
+    var avId = GD.getAvatar();
+    var src = null;
+    GD.AVATARS.forEach(function (a) { if (a.id === avId && a.img) src = a.img; });
+    var imgEl = document.getElementById('id-avatar');
+    var initEl = document.getElementById('id-initial');
+    var noteEl = document.getElementById('id-photo-note');
+    if (src) {
+      imgEl.src = src; imgEl.hidden = false; initEl.hidden = true;
+    } else {
+      imgEl.hidden = true; initEl.hidden = false;
+      initEl.textContent = name.slice(0, 1).toUpperCase();
+    }
+    noteEl.textContent = '点击更换头像';
+
+    /* 点击照片 → 打开更换头像弹层 */
+    var photoEl = document.getElementById('id-photo');
+    if (!photoEl.dataset.bound) {
+      photoEl.dataset.bound = '1';
+      photoEl.addEventListener('click', function () { GD.openAvatarPicker(); });
+    }
+
+    var slots = document.getElementById('id-slots');
+    slots.innerHTML = SLOT_ICONS.map(function (ic, i) {
+      return '<span class="medal" data-level="' + (i + 1) + '">' +
+        '<svg class="ic"><use href="' + ic + '"/></svg></span>';
+    }).join('');
+
+    var ladder = document.getElementById('ladder');
+    ladder.innerHTML = GD.TITLES.map(function (t, i) {
+      var img = 'assets/avatar-' + (i + 1) + '.png';
+      return (i ? '<i>→</i>' : '') +
+        '<span data-lv="' + i + '"><img src="' + img + '" alt="">' + t.zh + '</span>';
+    }).join('');
+
+    applyProgress(GD.emptyProgress());
+  }
+
+  /* 换头像后工牌照片实时跟进 */
+  document.addEventListener('gd:avatar', function () { paintCard(); });
+
+  /* 点击工牌卡以外的空白区域：返回来处
+     —— 不靠 history.back()：历史栈里可能是登录页或站外页面，一退就像被登出了 */
+  function backTarget() {
+    try {
+      var ref = document.referrer || '';
+      if (ref) {
+        var u = new URL(ref, location.href);
+        if (u.origin === location.origin) {
+          var f = decodeURIComponent(u.pathname.split('/').pop() || '');
+          /* 登录页不是"来处"，别把用户送回表单；自己也不回自己 */
+          if (f && f !== 'entry.html' && !/登录\.html$/.test(f)) return u.href;
+        }
+      }
+    } catch (err) { /* 解析不了就走兜底 */ }
+    return 'cases.html';
+  }
+
+  function leaveCard() { location.replace(backTarget()); }
+
+  document.addEventListener('click', function (e) {
+    if (!cardStage || cardStage.hidden) return;            /* 还在登记：空白不返回 */
+    if (document.querySelector('.gd-gate')) return;        /* 探长对话层在：这一下是在推进台词 */
+    if (document.querySelector('.av-modal.open')) return;  /* 头像弹层开着：这一下是关弹层 */
+    if (e.target.closest('#idcard, .ladder, a, button')) return;
+    leaveCard();
+  });
+
+  function applyProgress(p) {
+    var done = GD.countDone(p);
+    var t = GD.titleFor(done);
+    document.getElementById('id-title').textContent = t.zh;
+    document.getElementById('id-title-en').textContent = t.en;
+    document.getElementById('id-done').textContent = done + ' / 6';
+    var seal = document.getElementById('id-seal');
+    /* 四字头衔按 2+2 两行排；三字的「名侦探」单行放下，别切成「名侦/探」 */
+    if (t.zh.length === 3) seal.innerHTML = t.zh;
+    else seal.innerHTML = t.zh.slice(0, 2) + '<br>' + t.zh.slice(2);
+
+    var nodes = document.querySelectorAll('#id-slots .medal');
+    GD.LEVELS.forEach(function (k, i) {
+      if (nodes[i]) nodes[i].classList.toggle('on', !!p[k]);
+    });
+    document.querySelectorAll('#ladder span').forEach(function (el) {
+      var lv = Number(el.getAttribute('data-lv'));
+      el.classList.toggle('now', lv === Math.min(done, 6));
+      el.classList.toggle('past', lv < Math.min(done, 6));
+    });
+  }
+
+  function showCard() {
+    joinStage.hidden = true;
+    cardStage.hidden = false;
+    paintCard();
+    GD.loadProgress().then(applyProgress).catch(function () { /* 后端未启动：保持 0/6 */ });
+    document.documentElement.classList.remove('gd-locked');
+    window.scrollTo(0, 0);
+  }
+
+  /* ---------- 提交登记 ---------- */
+  form.addEventListener('submit', function (e) {
+    e.preventDefault();
+    if (busy) return;
+    hideMsg();
+    var u = document.getElementById('username').value.trim();
+    var p = document.getElementById('password').value;
+    var c = document.getElementById('confirm').value;
+
+    var bad = false;
+    if (!isName(u)) { markBad('f-user', true); bad = true; }
+    if (!isPass(p)) { markBad('f-pass', true); bad = true; }
+    if (c !== p || !c) { markBad('f-confirm', true); bad = true; }
+    if (bad) {
+      showMsg('还有几项要改一下：代号 2–16 位，暗号至少 6 位，两次暗号要一致。');
+      return;
+    }
+
+    busy = true;
+    submitBtn.disabled = true;
+    submitBtn.innerHTML = '正在建档…';
+    GD.register(u, p).then(function () {
+      submitBtn.innerHTML = '已建档 · 盖章中';
+      setTimeout(function () {
+        showCard();
+        /* 工牌亮出来后，探长出来鼓励并引导去翻手册 */
+        playCardWelcome();
+      }, 620);
+    }).catch(function (err) {
+      busy = false;
+      submitBtn.disabled = false;
+      submitBtn.innerHTML = '登记入社 <svg class="ic arrow"><use href="#i-arrow"/></svg>';
+      if (err.status === 409) {
+        markBad('f-user', true);
+        showMsg('这个代号已经有人用了，换一个吧。');
+      } else if (err.status === 422) {
+        showMsg('代号或暗号格式不符合要求，检查一下长度。');
+      } else {
+        showMsg(err.message || '登记失败，稍后再试。');
+      }
+    });
+  });
+
+  ['f-user', 'f-pass', 'f-confirm'].forEach(function (id) {
+    var input = field(id).querySelector('input');
+    input.addEventListener('input', function () {
+      markBad(id, false);
+      hideMsg();
+    });
+  });
+
+  /* ---------- 入口分流 ---------- */
+  /* 欢迎问候 → 提问分支 → 新账号走介绍台词 */
+  var WELCOME = '欢迎来到「精准医学侦探社」。我是陈探长，这家侦探社的负责人，专解一种谜：一个人的 DNA 里，究竟哪一处写错了。';
+  var ASK = '先问你一句：你是头一回来，还是之前已经在我们这儿登记过档案？';
+  var GUIDE_LINES = [
+    '侦探社专解一种谜：一个人的 DNA 里，究竟哪一处写错了。听着深奥，其实一步一步都能看懂，我会陪你走完全程。',
+    '医院每个月都送来一批「基因悬案」。验序、剪质量、比对、判读，每一步都得有人看得懂证据——别担心，到了跟前我再慢慢教你。',
+    '想入社，先登记：起一个你喜欢的代号，再配一句只有你知道的暗号就行。登记完，我亲手给你发工牌。'
+  ];
+
+  /* 已有账号：直接去登录页，登录后回来看工牌 */
+  function goLogin() {
+    location.replace('login.html?next=' + encodeURIComponent('entry.html'));
+  }
+
+  /* 新账号：放完整引导台词，最后点「登记入社」出登记表 */
+  function playFullGuide() {
+    GDGate.play({
+      lines: GUIDE_LINES,
+      kicker: '入社引导 · 陈探长',
+      endLabel: '登记入社',
+      onFinish: revealJoin
+    });
+  }
+
+  /* 获得工牌后：鼓励 + 引导翻手册（只在首次注册成功时播一次） */
+  var CARD_WELCOME = [
+    '工牌到手，欢迎正式入社！从今天起，你就是「精准医学侦探社」的一员了。',
+    '别小看这张工牌——它是你在社里的身份凭证，也是你的案件簿。往后每破一宗案，这里的头衔和徽章都会跟着你往上升。',
+    '不过在开第一宗案之前，先送你一份见面礼：我特意给你备的《侦探须知》手册。里头的门道，够你一直用到毕业。',
+    '走，这就带你去翻手册。'
+  ];
+  function playCardWelcome() {
+    GDGate.play({
+      lines: CARD_WELCOME,
+      kicker: '入社欢迎 · 陈探长',
+      choices: [
+        { label: '好，去翻手册', onClick: function () { location.href = 'science.html'; } }
+      ]
+    });
+  }
+
+  function boot() {
+    if (!GD.getToken()) {
+      GDGate.play({
+        lines: [WELCOME, ASK],
+        kicker: '入社引导 · 陈探长',
+        choices: [
+          { label: '头一回来，登记入社', onClick: playFullGuide },
+          { label: '已有编号，直接登录', onClick: goLogin }
+        ]
+      });
+      return;
+    }
+    GD.me().then(function (user) {
+      if (user && user.username) showCard();
+      else playFullGuide();
+    }).catch(function () {
+      // 后端没起来：有本地凭证就直接看工牌
+      if (GD.getUser()) showCard(); else revealJoin();
+    });
+  }
+
+  boot();
+})();
+</script>
+<script src="helix.js"></script>
+</body>
+</html>

@@ -1,0 +1,20 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 64 64">
+  <!-- 基因侦探 · 标签页图标：深蓝底 + DNA 双螺旋 -->
+  <defs>
+    <linearGradient id="bg" x1="0" y1="0" x2="1" y2="1">
+      <stop offset="0" stop-color="#5668a8"/>
+      <stop offset="1" stop-color="#3f4a6b"/>
+    </linearGradient>
+  </defs>
+  <rect x="2" y="2" width="60" height="60" rx="15" fill="url(#bg)"/>
+  <!-- 双螺旋两条主链 -->
+  <path d="M21 9 C46 20 46 44 21 55" fill="none" stroke="#f3ead6" stroke-width="4.6" stroke-linecap="round"/>
+  <path d="M43 9 C18 20 18 44 43 55" fill="none" stroke="#d9a13c" stroke-width="4.6" stroke-linecap="round"/>
+  <!-- 碱基横档 -->
+  <g stroke="#fffdf4" stroke-width="3.4" stroke-linecap="round" opacity=".92">
+    <line x1="26.5" y1="16" x2="37.5" y2="16"/>
+    <line x1="24"   y1="26" x2="40"   y2="26"/>
+    <line x1="24"   y1="38" x2="40"   y2="38"/>
+    <line x1="26.5" y1="48" x2="37.5" y2="48"/>
+  </g>
+</svg>

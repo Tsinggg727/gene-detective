@@ -1,0 +1,833 @@
+<!DOCTYPE html>
+<html lang="zh-CN" data-page-node-id="IDQiWq45yKipjK154elAv1">
+<head data-page-node-id="c0Dpeft1fEv40JHDKP70Ho">
+<meta charset="UTF-8" data-page-node-id="jZ9uqStHstw3BT7yDt1hmb">
+<meta name="viewport" content="width=device-width, initial-scale=1.0" data-page-node-id="J4WEuGcwAk7Pk8ZLvGOjb6">
+    <link rel="icon" type="image/svg+xml" href="favicon.svg">
+    <link rel="icon" type="image/png" sizes="64x64" href="favicon.png">
+<title>手册 · 基因侦探</title>
+<link rel="stylesheet" href="site.css" data-page-node-id="SAFJ8YGTsAF4pzohhfPEBI">
+<style>
+/* ==========================================================
+   科普 · 侦探须知手册（实体书）
+   · 合着 → 点「点击查看手册」/ 封面 → 封面绕书脊翻开
+   · 翻开后：左页正文，右页要点 + 图示；一页只讲一件事
+   · 翻页：一张「纸」绕书脊转 180°，正反两面分别是前后两页
+   · 目录只列题目，不写内容（想看内容就翻过去）
+   ========================================================== */
+
+/* ---------- 页头：探长的话 + 书 ---------- */
+.bk-desk { padding: calc(var(--nav-h) + 46px) 0 56px;
+  position: relative; text-align: center; }
+.bk-desk::before { background-position: 50% 12%; opacity: .5; }
+.bk-desk h2 { font-size: clamp(24px, 2.6vw, 30px); margin: 10px 0 14px; }
+/* 探长的话交给开场白去说，书台上只留一行注记 */
+.bk-note { display: inline-block; margin: 0 auto 10px;
+  font-size: 14px; line-height: 1.7; color: var(--blue-700);
+  font-style: italic; letter-spacing: .05em; }
+.bk-note::before { content: "——"; margin-right: 4px; font-style: normal;
+  letter-spacing: 0; color: var(--blue-700); opacity: .6; }
+
+/* ---------- 台面 / 书 ---------- */
+.bk-stage { position: relative; width: 100%;
+  height: clamp(620px, calc(100vh - 260px), 830px);
+  margin: 0 auto; perspective: 2800px; perspective-origin: 50% 40%; }
+.bk-stage::after { content: ""; position: absolute; left: 25%; right: 25%; bottom: -14px;
+  height: 26px; border-radius: 50%; z-index: 0;
+  background: radial-gradient(50% 50% at 50% 50%, rgb(63 74 107 / .20), transparent 72%);
+  filter: blur(7px); transition: left 900ms var(--ease-out-quart), right 900ms var(--ease-out-quart); }
+.bk-stage.is-open::after { left: 3%; right: 3%; }
+
+/* 合着时整本书居中（封面居中），翻开时向右落位，让出左边那页 */
+.book { position: absolute; inset: 0; transform-style: preserve-3d;
+  transform: translateX(-25%);
+  touch-action: pan-y;
+  transition: transform 1000ms cubic-bezier(.42, .02, .28, 1); }
+.book.is-open { transform: translateX(0); }
+/* 拖拽翻页时：不吃文字选中，光标提示可拖 */
+.book.is-drag, .book.is-drag * { user-select: none; -webkit-user-select: none; }
+.book.is-drag { cursor: grabbing; }
+
+/* 合着时的书口（一叠纸边） */
+.bk-block { position: absolute; left: 50%; top: 7px; bottom: 7px; width: calc(50% - 4px);
+  border-radius: 2px 11px 11px 2px; transform: translateX(4px);
+  background: repeating-linear-gradient(90deg, #fbf6ec 0 2px, #e7dcc8 2px 3px);
+  box-shadow: 0 20px 34px -22px rgb(37 45 72 / .55);
+  transition: opacity 300ms var(--t-state); z-index: 1; }
+.book.is-pages .bk-block { opacity: 0; }
+
+/* 书页（左右两半） */
+.bk-side { position: absolute; top: 0; height: 100%; width: 50%; z-index: 2;
+  background: linear-gradient(180deg, #fdfaf3 0%, #f9f3e8 62%, #f4ecdf 100%);
+  opacity: 0; visibility: hidden;
+  transition: opacity 280ms linear;
+  overflow: hidden; }
+.bk-left { left: 0; border-radius: 4px 2px 2px 6px;
+  box-shadow: inset -26px 0 34px -26px rgb(63 74 107 / .55),
+              -18px 26px 44px -30px rgb(37 45 72 / .5); }
+.bk-right { left: 50%; border-radius: 2px 6px 6px 2px;
+  box-shadow: inset 26px 0 34px -26px rgb(63 74 107 / .55),
+              18px 26px 44px -30px rgb(37 45 72 / .5); }
+.book.is-pages .bk-right { opacity: 1; visibility: visible; }
+/* 左页与封二内容逐字相同，瞬间切换，别让底下纸色透出来 */
+.book.is-lit .bk-left { opacity: 1; visibility: visible; transition: none; }
+/* 合书：纸页在封面转回来的同时淡出，不要等封面落定才突然消失 */
+.book.is-closing .bk-left, .book.is-closing .bk-right {
+  opacity: 0 !important; visibility: visible;
+  transition: opacity .4s ease .08s !important; }
+
+/* 书脊投影 */
+.bk-spine { position: absolute; left: 50%; top: 0; height: 100%; width: 34px; z-index: 3;
+  transform: translateX(-50%); pointer-events: none; opacity: 0;
+  transition: opacity 300ms linear;
+  background: linear-gradient(90deg, transparent, rgb(63 74 107 / .10) 34%,
+    rgb(63 74 107 / .22) 50%, rgb(63 74 107 / .10) 66%, transparent); }
+.book.is-open .bk-spine { opacity: 1; }
+
+/* ---------- 翻页纸 ---------- */
+.bk-leaf { position: absolute; left: 50%; top: 0; width: 50%; height: 100%; z-index: 8;
+  transform-origin: left center; transform-style: preserve-3d;
+  will-change: transform; pointer-events: none; }
+.bk-leaf[hidden] { display: none; }
+.lf { position: absolute; inset: 0; overflow: hidden;
+  backface-visibility: hidden; -webkit-backface-visibility: hidden;
+  background: linear-gradient(180deg, #fefbf5 0%, #faf4ea 60%, #f5eee1 100%);
+  border-radius: 2px 8px 8px 2px;
+  box-shadow: 0 12px 30px -16px rgb(46 56 84 / .45); }
+.lf-back { transform: rotateY(180deg); border-radius: 8px 2px 2px 8px; }
+.lf-front::after, .lf-back::after { content: ""; position: absolute; inset: 0;
+  pointer-events: none; }
+.lf-front::after { background: linear-gradient(90deg, rgb(63 74 107 / .18), transparent 22%); }
+.lf-back::after { background: linear-gradient(-90deg, rgb(63 74 107 / .18), transparent 22%); }
+
+/* ---------- 封面 ---------- */
+.bk-cover { position: absolute; left: 50%; top: 0; width: 50%; height: 100%; z-index: 9;
+  transform-origin: left center; transform-style: preserve-3d;
+  transform: rotateY(0deg);
+  transition: transform 1000ms cubic-bezier(.42, .02, .28, 1); }
+.book.is-open .bk-cover { transform: rotateY(-180deg); pointer-events: none; }
+.book.is-covered .bk-cover { visibility: hidden; }
+
+.cv-face { position: absolute; inset: 0; overflow: hidden;
+  backface-visibility: hidden; -webkit-backface-visibility: hidden; }
+
+/* 正面：布面精装 */
+.cv-front { border: 0; padding: 0; cursor: pointer; font-family: var(--font-body);
+  display: grid; place-content: center; text-align: center;
+  border-radius: 3px 12px 12px 3px;
+  background:
+    radial-gradient(120% 96% at 74% 6%, rgb(255 255 255 / .12), transparent 56%),
+    repeating-linear-gradient(48deg, rgb(255 255 255 / .03) 0 1px, transparent 1px 3px),
+    linear-gradient(152deg, #4c577d 0%, #3b4668 42%, #2d3550 100%);
+  box-shadow: inset 0 0 0 1px rgb(255 255 255 / .10),
+              inset -26px 0 44px -34px rgb(0 0 0 / .8),
+              0 30px 56px -26px rgb(37 45 72 / .62); }
+.cv-front::after { content: ""; position: absolute; inset: 0; pointer-events: none;
+  background: radial-gradient(120% 120% at 50% 0%, transparent 52%, rgb(0 0 0 / .26) 100%); }
+
+.cv-spine { position: absolute; left: 0; top: 0; bottom: 0; width: 28px;
+  display: grid; place-items: center;
+  writing-mode: vertical-rl; text-orientation: upright;
+  font-family: var(--font-display); font-size: 10.5px; font-weight: 700;
+  letter-spacing: .26em; color: rgb(240 228 204 / .52);
+  background: linear-gradient(90deg, rgb(0 0 0 / .38), rgb(255 255 255 / .06) 64%, rgb(0 0 0 / .18));
+  border-right: 1px solid rgb(240 228 204 / .18); }
+
+.cv-frame { position: absolute; inset: 15px 13px 15px 42px;
+  border: 1px solid rgb(232 214 178 / .26); border-radius: 2px 9px 9px 2px;
+  pointer-events: none; }
+.cv-frame::before { content: ""; position: absolute; inset: 5px;
+  border: 1px solid rgb(232 214 178 / .14); border-radius: 1px 7px 7px 1px; }
+
+.cv-in { position: relative; display: grid; justify-items: center; padding: 0 26px 0 40px; }
+.cv-kick { font-size: 10px; letter-spacing: .26em; color: rgb(236 220 190 / .58); }
+.cv-title { font-family: var(--font-display); font-size: clamp(30px, 3.1vw, 40px);
+  font-weight: 900; letter-spacing: .16em; text-indent: .16em; line-height: 1.2;
+  color: #f6eedd; margin-top: 14px;
+  text-shadow: 0 1px 0 rgb(0 0 0 / .38), 0 0 22px rgb(255 240 210 / .16); }
+.cv-line { width: 46px; height: 1px; background: rgb(232 214 178 / .42); margin: 20px 0 18px; }
+.cv-seal { width: 92px; height: 92px; padding: 4px; border-radius: 50%;
+  border: 1px solid rgb(232 214 178 / .40);
+  background: radial-gradient(120% 120% at 30% 20%, rgb(255 255 255 / .12), transparent 60%); }
+.cv-seal img { width: 100%; height: 100%; object-fit: cover; border-radius: 50%;
+  display: block; filter: saturate(.86) contrast(1.04); }
+
+.cv-cta { position: absolute; left: 50%; bottom: 22px; transform: translateX(-50%);
+  white-space: nowrap; text-align: center;
+  font-family: var(--font-display); font-size: 14px; font-weight: 700;
+  letter-spacing: .28em; text-indent: .28em;
+  color: rgb(252 244 226 / 1);
+  text-shadow: 0 1px 0 rgb(0 0 0 / .34);
+  animation: cvPulse 3.4s var(--ease-in-out) infinite; }
+@keyframes cvPulse { 0%, 100% { opacity: .7; border-color: rgb(244 231 202 / .34); }
+  50% { opacity: 1; border-color: rgb(244 231 202 / .62); } }
+
+/* 封二：扉页（与左页同内容，翻完无缝替换） */
+.cv-back { transform: rotateY(180deg); border-radius: 12px 3px 3px 12px;
+  background: linear-gradient(180deg, #fdfaf3 0%, #f9f3e8 62%, #f4ecdf 100%);
+  box-shadow: inset 26px 0 34px -26px rgb(63 74 107 / .5); }
+
+/* 合着时：探长的话在页面上方，书居中；点封面翻开（不做额外按钮） */
+
+/* ---------- 书页排版：整页排满，不出滚动条 ---------- */
+.pg { height: 100%; padding: 28px 32px 22px; display: flex; flex-direction: column;
+  overflow: hidden; text-align: left; }
+.bk-left .pg { padding-right: 38px; }
+.bk-right .pg { padding-left: 38px; }
+
+.pg-run { display: flex; align-items: center; justify-content: space-between; gap: 10px;
+  flex: none; padding-bottom: 8px;
+  border-bottom: 1px solid rgb(var(--wc-blue-deep) / .14);
+  font-family: var(--font-mono); font-size: 10px; letter-spacing: .06em; color: var(--text-3); }
+.pg-run b { font-weight: 700; color: var(--blue-500); }
+
+.pg-title { font-family: var(--font-display); font-size: 27px; font-weight: 900;
+  line-height: 1.3; color: var(--blue-900); margin: 15px 0 5px; flex: none; }
+.pg-hook { font-size: 13px; font-weight: 600; color: var(--blue-900); flex: none;
+  margin-bottom: 14px; }
+
+/* 探长原话：引文版式，左边一道竖线，不做气泡卡片 */
+.pg-say { flex: none; margin: 0 0 14px; padding: 1px 0 1px 14px;
+  border-left: 2px solid rgb(var(--wc-blue) / .5); }
+.pg-say p { font-family: var(--font-display); font-size: 14.5px; line-height: 1.9;
+  color: var(--blue-700); }
+
+.pg-text { font-size: 14.8px; line-height: 2.0; color: var(--text-2);
+  text-indent: 2em; margin: 0 0 10px; flex: none; }
+
+/* 三条要点：编号悬排 + 上方细线，像书里的一行行字 */
+.pg-points { list-style: none; flex: none; margin: 4px 0 0; padding-top: 13px;
+  border-top: 1px solid rgb(var(--wc-blue-deep) / .13); }
+.pg-points li { position: relative; padding-left: 26px; margin-bottom: 4px;
+  font-size: 13.4px; line-height: 1.9; color: var(--text-2); }
+.pg-points li:last-child { margin-bottom: 0; }
+.pg-points li b { position: absolute; left: 0; top: 1px;
+  font-family: var(--font-display); font-size: 12.5px; font-weight: 700; color: var(--blue-700); }
+.pg-points li em { font-style: normal; font-weight: 700; color: var(--blue-900);
+  margin-right: 6px; }
+.pg-points mark { color: inherit; padding: 0 2px; margin: 0 -2px;
+  background: linear-gradient(transparent 60%, rgb(255 214 102 / .5) 0); }
+
+.pg-foot { margin-top: auto; padding-top: 12px; display: flex; justify-content: space-between;
+  gap: 10px; font-family: var(--font-mono); font-size: 10px; color: var(--text-3);
+  letter-spacing: .08em; flex: none; }
+
+/* 扉页 */
+.pg-fly { justify-content: center; align-items: center; text-align: center; gap: 0; }
+.fly-title { font-family: var(--font-display); font-size: 34px; font-weight: 900;
+  letter-spacing: .16em; text-indent: .16em; color: var(--blue-900); }
+.fly-sub { margin-top: 12px; font-size: 10.5px; letter-spacing: .22em; color: var(--text-3); }
+.fly-rule { width: 40px; height: 1px; background: rgb(var(--wc-blue-deep) / .3); margin: 26px 0; }
+.fly-gift { position: relative; font-family: var(--font-display); font-size: 14.5px;
+  line-height: 2.1; color: var(--text-2); }
+.fly-sign { margin-top: 24px; display: inline-flex; align-items: center; gap: 7px;
+  font-size: 11.5px; color: var(--blue-700); font-weight: 700; }
+.fly-sign img { width: 22px; height: 22px; border-radius: 50%; object-fit: cover; }
+.fly-sign span { font-weight: 400; color: var(--text-3); }
+/* 目录 */
+.toc-h { font-family: var(--font-display); font-size: 24px; font-weight: 900;
+  color: var(--blue-900); margin: 18px 0 4px; letter-spacing: .12em; }
+.toc-note { font-size: 11.5px; color: var(--text-3); margin-bottom: 18px; }
+.toc-list { list-style: none; display: grid; gap: 2px; }
+.toc-item { display: flex; align-items: center; gap: 12px; width: 100%;
+  padding: 11px 4px; border: 0; background: none; cursor: pointer; text-align: left;
+  border-bottom: 1px dashed rgb(var(--wc-blue-deep) / .16);
+  font-family: inherit; transition: background 180ms, padding-left 180ms; }
+.toc-item:hover { background: rgb(var(--wc-blue) / .10); padding-left: 8px; }
+.toc-item i { flex: none; width: 22px; font-family: var(--font-mono); font-size: 11px;
+  font-style: normal; font-weight: 700; color: var(--blue-500); }
+.toc-item b { flex: 1; min-width: 0; font-size: 14.5px; font-weight: 700; color: var(--blue-900);
+  font-family: var(--font-body); }
+.toc-item .tt { flex: none; font-size: 10px; font-family: var(--font-mono);
+  color: var(--text-3); padding: 1px 6px; border-radius: 5px;
+  border: 1px solid rgb(84 106 156 / .2); }
+.toc-item .tt.must { color: var(--violet-500); border-color: rgb(var(--wc-violet-deep) / .34); }
+.toc-item .ck { flex: none; width: 14px; text-align: center; font-size: 11px;
+  color: var(--benign); opacity: 0; font-weight: 700; }
+.toc-item.done .ck { opacity: 1; }
+.toc-item.done b { color: var(--blue-700); }
+
+/* 右页：图示 + 动作 */
+.pg-fig { flex: 1 1 auto; min-height: 0; display: flex; flex-direction: column;
+  align-items: center; justify-content: center; overflow: hidden; }
+.pg-fig > div { width: 100%; }
+.pg-fig .k-fig { width: 100%; padding: 15px 13px 11px;
+  border-radius: 16px 13px 18px 14px; }
+.pg-fig .fig-cap { margin-top: 8px; font-size: 11.5px; letter-spacing: .02em;
+  font-weight: 700; opacity: .85; }
+
+.pg-acts { flex: none; margin-top: 10px; padding-top: 10px; display: flex; align-items: center;
+  gap: 16px; flex-wrap: wrap; border-top: 1px solid rgb(var(--wc-blue-deep) / .14); }
+.pg-tail { flex: none; font-family: var(--font-mono); font-size: 11px; color: var(--text-3);
+  margin-bottom: 4px; letter-spacing: .02em; }
+
+/* 动作：文字链，不做按钮块 */
+.act { font-family: var(--font-body); font-size: 12.5px; font-weight: 700;
+  color: var(--blue-700); background: none; border: 0; padding: 2px 0 3px; cursor: pointer;
+  text-decoration: none; display: inline-flex; align-items: center; gap: 4px;
+  border-bottom: 1px dashed rgb(var(--wc-blue-deep) / .35);
+  transition: color var(--t-state), border-color var(--t-state); }
+.act:hover { color: var(--blue-900); border-bottom-color: rgb(var(--wc-blue-deep) / .7); }
+.act .ic { width: 12px; height: 12px; transition: transform var(--t-state); }
+.act-try:hover .ic { transform: translateX(3px); }
+.act-arch { margin-left: auto; color: var(--violet-500); cursor: default;
+  border-bottom-color: rgb(var(--wc-violet-deep) / .4); }
+.act-arch.done { color: var(--benign); border-bottom-color: transparent; cursor: default; }
+.act-try.is-off { color: var(--text-3); border-bottom-color: rgb(84 106 156 / .2); }
+
+/* ---------- 书页内：左下「返回目录」/ 右上「×」 ---------- */
+.pg-back { font-family: var(--font-body); font-size: 10.5px; font-weight: 700;
+  color: var(--blue-700); cursor: pointer; background: none; border: none;
+  padding: 2px 0; border-bottom: 1px dashed rgb(var(--wc-blue-deep) / .35);
+  letter-spacing: .08em;
+  transition: color var(--t-state), border-color var(--t-state); }
+.pg-back:hover { color: var(--blue-900); border-color: rgb(var(--wc-blue-deep) / .6); }
+.pg-x { width: 24px; height: 24px; display: grid; place-items: center; cursor: pointer;
+  font-size: 14px; line-height: 1; color: var(--blue-700);
+  border: 1px solid rgb(var(--wc-blue-deep) / .22); border-radius: 50%;
+  background: rgb(255 253 248 / .6); transition: all var(--t-state); }
+.pg-x:hover { color: var(--blue-900); background: #fffdf8;
+  border-color: rgb(var(--wc-blue-deep) / .5); }
+
+/* ---------- 提示条 ---------- */
+.toast { position: fixed; left: 50%; bottom: 34px; z-index: 200; max-width: calc(100% - 36px);
+  padding: 12px 20px; text-align: center; font-size: 13px; line-height: 1.6;
+  color: var(--blue-900); border-radius: 14px 18px 13px 17px;
+  background: linear-gradient(180deg, #fffdf8, #fbf6ee);
+  border: 1px solid rgb(var(--wc-blue-deep) / .22);
+  box-shadow: inset 0 1px 0 rgb(255 255 255 / .9), 0 18px 40px -18px rgb(63 74 107 / .5);
+  opacity: 0; transform: translate(-50%, 16px); pointer-events: none;
+  transition: opacity 280ms, transform 340ms var(--ease-out-quart); }
+.toast.show { opacity: 1; transform: translate(-50%, 0); }
+
+/* ---------- 图示（缩到半页宽） ---------- */
+.k-fig { position: relative;
+  background:
+    radial-gradient(120% 130% at 82% 12%, rgb(var(--wc-violet) / .10), transparent 62%),
+    rgb(var(--wc-blue) / .09);
+  border: 1px solid rgb(var(--wc-blue-deep) / .10); }
+.fig-cap { font-family: var(--font-mono); color: var(--blue-900); text-align: center; }
+
+/* 第 1 页 · 套娃 */
+.nest { position: relative; border: 1.4px solid rgb(var(--wc-blue-deep) / .42);
+  border-radius: 12px 16px 11px 14px; padding: 25px 13px 13px; }
+.nest .nt { position: absolute; top: 8px; left: 13px; font-size: 11px; font-weight: 700;
+  color: var(--blue-700); letter-spacing: .1em; }
+.n1 { background: rgb(255 253 248 / .7); }
+.n2 { border-radius: 11px 14px 10px 13px; background: rgb(var(--wc-blue) / .13); }
+.n3 { border-radius: 10px 12px 9px 11px; background: rgb(var(--wc-blue) / .19); }
+.n4 { display: grid; place-items: center; gap: 2px; padding: 15px 0 12px;
+  border-radius: 9px 11px 8px 10px; background: rgb(var(--wc-blue) / .25); }
+.n4 .ic { width: 32px; height: 32px; stroke: var(--blue-700); stroke-width: 1.3;
+  animation: nn 5s var(--ease-in-out) infinite; }
+.n4 span { font-family: var(--font-mono); font-size: 10.5px; letter-spacing: .18em;
+  color: var(--blue-700); }
+@keyframes nn { 0%, 100% { transform: rotateY(0) } 50% { transform: rotateY(180deg) } }
+.nest-note { display: flex; justify-content: space-between; margin-top: 9px;
+  font-family: var(--font-mono); font-size: 11px; color: var(--text-3); }
+
+/* 第 2 页 · 打分柱 */
+.q-wrap { display: flex; align-items: flex-end; gap: 2px; height: 104px;
+  padding: 0 3px; position: relative; }
+.q-col { flex: 1; display: flex; flex-direction: column; justify-content: flex-end;
+  align-items: center; gap: 3px; height: 100%; }
+.q-bar { width: 100%; border-radius: 2px 2px 1px 1px; min-height: 4px; }
+.q-col b { font-family: var(--font-mono); font-size: 10px; color: var(--text-2); font-weight: 700; }
+.q-cut { position: absolute; top: -2px; bottom: 14px; width: 0;
+  border-left: 1.4px dashed var(--pathogenic); }
+.q-cut::after { content: "从这里剪"; position: absolute; top: -14px; left: 4px;
+  font-size: 10.5px; color: var(--pathogenic); font-weight: 700; white-space: nowrap; }
+.q-legend { display: flex; gap: 10px; margin-top: 10px; font-size: 11px;
+  color: var(--text-3); font-family: var(--font-mono); flex-wrap: wrap; }
+.q-legend i { display: inline-block; width: 7px; height: 7px; border-radius: 2px;
+  margin-right: 4px; vertical-align: 0; }
+
+/* 第 3 页 · 比对 */
+.aln { display: flex; flex-direction: column; gap: 5px; }
+.aln-row { display: flex; align-items: center; gap: 5px; }
+.aln-row .tag { width: 32px; flex: none; font-size: 11px; font-weight: 700;
+  color: var(--text-3); font-family: var(--font-mono); text-align: right; }
+.aln-cells { display: grid; grid-template-columns: repeat(14, 1fr); gap: 2px; flex: 1; }
+.aln-cells i { display: grid; place-items: center; height: 21px; border-radius: 3px;
+  font-family: var(--font-mono); font-size: 11px; font-style: normal; font-weight: 700;
+  color: var(--text-2); background: rgb(255 253 248 / .8); }
+.aln-cells i.gap { background: transparent; border: 1px dashed var(--vus); color: var(--vus); }
+.aln-cells i.mm { background: rgb(201 106 114 / .2); color: var(--pathogenic);
+  box-shadow: inset 0 0 0 1px rgb(201 106 114 / .5); }
+.aln-tip { display: flex; justify-content: space-between; margin-top: 10px;
+  font-family: var(--font-mono); font-size: 11px; color: var(--text-3); }
+.aln-tip b { color: var(--benign); }
+
+/* 第 4 页 · 证据 → AI */
+.ev-chips { display: grid; gap: 6px; }
+.ev-chips span { display: flex; justify-content: space-between; gap: 8px;
+  font-size: 12px; color: var(--text-2); padding: 6px 10px;
+  border-radius: 9px 12px 8px 11px; background: rgb(255 253 248 / .78);
+  border: 1px solid rgb(var(--wc-blue-deep) / .12); }
+.ev-chips span b { font-family: var(--font-mono); color: var(--pathogenic); font-size: 11px; }
+.ev-flow { display: grid; place-items: center; margin: 7px 0; color: var(--blue-500); }
+.ev-flow .ic { width: 16px; height: 16px; }
+.ev-score { display: flex; align-items: center; gap: 12px; padding: 10px 12px;
+  border-radius: 14px 11px 15px 12px; background: rgb(255 253 248 / .82);
+  border: 1px solid rgb(var(--wc-blue-deep) / .12); }
+.ring { position: relative; width: 50px; height: 50px; flex: none; border-radius: 50%;
+  display: grid; place-items: center;
+  background: conic-gradient(var(--pathogenic) 0 92%, rgb(201 106 114 / .16) 92% 100%); }
+.ring::after { content: ""; position: absolute; width: 38px; height: 38px; border-radius: 50%;
+  background: #faf6ee; }
+.ring b { position: relative; z-index: 1; font-family: var(--font-mono); font-size: 14px;
+  color: var(--pathogenic); }
+.ev-score div span { display: block; font-size: 11px; color: var(--text-3); }
+.ev-score div b { font-size: 12.5px; color: var(--pathogenic); }
+
+/* 第 5 / 6 页 · 场景行 */
+.scenes { display: grid; gap: 6px; }
+.scene { display: flex; align-items: center; gap: 9px; padding: 9px 11px;
+  border-radius: 10px 12px 9px 11px; background: rgb(255 253 248 / .76);
+  border: 1px solid rgb(var(--wc-blue-deep) / .11); }
+.scene .ic { width: 17px; height: 17px; stroke: var(--blue-700); flex: none; }
+.scene b { font-size: 12.5px; color: var(--blue-900); display: block; line-height: 1.5; }
+.scene span { font-size: 11px; color: var(--text-3); }
+.scene em { margin-left: auto; font-style: normal; font-size: 10px; font-family: var(--font-mono);
+  color: var(--blue-700); padding: 2px 6px; border-radius: 5px; background: rgb(var(--wc-blue) / .16); }
+.coop { margin-top: 8px; display: flex; align-items: center; justify-content: center; gap: 7px;
+  font-size: 11.5px; font-weight: 700; color: var(--blue-700);
+  padding: 7px; border-radius: 9px; background: rgb(var(--wc-blue) / .14); }
+.coop .ic { width: 13px; height: 13px; }
+
+/* 第 7 页 · 五步流程 */
+.steps5 { display: flex; align-items: stretch; gap: 3px; }
+.step5 { flex: 1; display: flex; flex-direction: column; align-items: center; gap: 5px;
+  padding: 9px 3px; border-radius: 9px 11px 8px 10px;
+  background: rgb(255 253 248 / .7); border: 1px solid rgb(var(--wc-blue-deep) / .1);
+  position: relative; }
+.step5.you { background: rgb(var(--wc-blue) / .24); border-color: rgb(var(--wc-blue-deep) / .3); }
+.step5 .ic { width: 16px; height: 16px; stroke: var(--blue-700); }
+.step5 b { font-size: 10.5px; color: var(--blue-900); text-align: center; line-height: 1.35; }
+.step5 em { position: absolute; top: -6px; right: -2px; font-style: normal; font-size: 8.5px;
+  font-weight: 700; color: #fffdf8; background: var(--violet-500);
+  padding: 1px 4px; border-radius: 4px 6px 3px 5px; }
+.steps5 .ar { align-self: center; color: var(--blue-300); flex: none; }
+.steps5 .ar .ic { width: 10px; height: 10px; }
+
+/* 第 5 页 · 密码子翻译 */
+.cd-wrap { display: grid; gap: 7px; }
+.cd-row { display: flex; align-items: center; gap: 10px; }
+.cd-codon { display: grid; grid-template-columns: repeat(3, 1fr); gap: 2px; flex: none; width: 108px; }
+.cd-codon i { display: grid; place-items: center; height: 24px; border-radius: 4px;
+  font-family: var(--font-mono); font-style: normal; font-weight: 700; font-size: 12px;
+  color: var(--text-2); background: rgb(255 253 248 / .85);
+  border: 1px solid rgb(var(--wc-blue-deep) / .14); }
+.cd-ar { width: 14px; height: 14px; flex: none; color: var(--blue-500); }
+.cd-aa { font-size: 12px; font-weight: 700; color: var(--blue-900); }
+.cd-aa.start { color: var(--benign); }
+.cd-aa.stop { color: var(--pathogenic); }
+
+/* 第 6 页 · 三代系谱 */
+.ped-svg { width: 100%; max-width: 400px; margin: 0 auto; display: block; }
+/* 系谱页整体上移一点：图与图注一起，不挤上方标题 */
+.pg-fig:has(.ped-svg) .k-fig, .pg-fig:has(.ped-svg) .fig-cap { transform: translateY(-10px); }
+.ped-svg line { stroke: rgb(var(--wc-blue-deep) / .5); stroke-width: 1.5; stroke-linecap: round; }
+.ped-svg line.mar { stroke-width: 2; }
+.ped-svg rect, .ped-svg circle { fill: #fffdf8;
+  stroke: rgb(var(--wc-blue-deep) / .68); stroke-width: 1.6; }
+.ped-svg .dis { fill: rgb(206 112 122 / .78); stroke: #a0535d; }
+/* SVG 文字按 viewBox 260 → 400 渲染（×1.54），7.5px 落地约 11.5px，与图注一致 */
+.ped-svg text { font-family: var(--font-body); font-size: 7.5px; font-weight: 600;
+  fill: var(--text-2); text-anchor: middle; }
+.ped-svg text.gen { font-family: var(--font-mono); font-size: 7.5px; font-weight: 700;
+  fill: rgb(var(--wc-blue-deep) / .55); text-anchor: start; }
+.ped-legend { display: flex; gap: 16px; margin-top: 9px; justify-content: center;
+  font-family: var(--font-mono); font-size: 11.5px; font-weight: 700; color: var(--text-2); }
+.ped-legend i { display: inline-block; width: 10px; height: 10px; margin-right: 5px;
+  border: 1.5px solid rgb(var(--wc-blue-deep) / .68); background: #fffdf8; vertical-align: -1px; }
+.ped-legend i.sq { border-radius: 2px; }
+.ped-legend i.ci { border-radius: 50%; }
+.ped-legend i.dis { background: rgb(206 112 122 / .78); border-color: #a0535d; }
+
+/* ---------- 窄屏：单页模式 ---------- */
+@media (max-width: 900px) {
+  .bk-desk { padding-top: calc(var(--nav-h) + 20px); }
+  .bk-note { font-size: 12.5px; }
+  .bk-stage { height: auto; perspective: 1600px; }
+  .bk-stage::after { display: none; }
+  .book { position: relative; inset: auto; height: clamp(500px, 76vh, 660px);
+    margin-top: 12px; transform: none; }
+  .bk-block { display: none; }
+  .bk-spine { display: none; }
+  .bk-left { display: none; }
+  .bk-right { left: 0; width: 100%; border-radius: 3px 10px 10px 3px;
+    box-shadow: 0 22px 40px -30px rgb(37 45 72 / .6),
+                inset 14px 0 22px -20px rgb(63 74 107 / .45); }
+  .bk-cover, .bk-leaf { left: 0; width: 100%; }
+  .cv-front { border-radius: 3px 10px 10px 3px; }
+  .cv-frame { inset: 13px 12px 13px 38px; }
+  .cv-in { padding: 0 18px 0 34px; }
+  .cv-title { font-size: 30px; }
+  .cv-line { margin: 17px 0 15px; }
+  .cv-seal { width: 74px; height: 74px; }
+  .cv-cta { bottom: 18px; font-size: 13px; letter-spacing: .24em; }
+  .pg { padding: 20px 20px 16px; }
+  .bk-left .pg, .bk-right .pg { padding: 20px 20px 16px; }
+  .pg-title { font-size: 22px; margin-top: 13px; }
+  .pg-text { font-size: 14.2px; line-height: 1.95; }
+  .q-wrap { height: 88px; }
+}
+@media (max-height: 780px) {
+  .pg { padding-top: 22px; padding-bottom: 18px; }
+  .pg-title { font-size: 24px; margin-top: 12px; }
+  .pg-hook { margin-bottom: 10px; }
+  .pg-say { margin-bottom: 10px; }
+  .pg-say p { font-size: 13.5px; line-height: 1.8; }
+  .pg-text { font-size: 14px; line-height: 1.9; margin-bottom: 8px; }
+  .pg-points { padding-top: 10px; }
+  .pg-points li { font-size: 12.8px; line-height: 1.8; }
+  .pg-foot { padding-top: 8px; }
+  /* 窄屏 SVG 更小（约 310px，×1.19），字号提到 9.5px 才能维持图注同级大小 */
+  .ped-svg text { font-size: 9.5px; }
+}
+@media (prefers-reduced-motion: reduce) {
+  .bk-cover, .bk-leaf, .cv-cta { transition: none !important; animation: none !important; }
+}
+</style>
+</head>
+<body data-page-node-id="AJMAkjUVqqG7r9OK1lv76L">
+
+<svg width="0" height="0" style="position:absolute" aria-hidden="true" data-page-node-id="7iQqdBO23GBnCtlF637EYF"><defs data-page-node-id="xPN4nj2gNeESar3dC2cTQC">
+  <symbol id="i-dna" viewBox="0 0 24 24" data-page-node-id="PAcInP8gte8Qt3SDGw9jUB"><path d="M8.5 2.5c0 4.6 7 6.6 7 9.5s-7 4.9-7 9.5" data-page-node-id="p1UKyH36iwCCAXYLNKEbqJ"/><path d="M15.5 2.5c0 4.6-7 6.6-7 9.5s7 4.9 7 9.5" data-page-node-id="oZbHJd7qwzosMF1NFZSnrc"/><path d="M9.6 6.2h4.8M9 12h6M9.6 17.8h4.8" data-page-node-id="jc56EDATgmwRTzh8cMd1Fr"/></symbol>
+  <symbol id="i-home" viewBox="0 0 24 24" data-page-node-id="jek7Fq4Sq20AgkCG5ggUSH"><path d="M3.6 10.4 12 3.4l8.4 7" data-page-node-id="1GqAFC8nWKYfCK6s4FKgnz"/><path d="M5.6 11.6V20h12.8v-8.4" data-page-node-id="7UwlnhHEbUVva4bvGijEPB"/><path d="M9.8 20v-5.2h4.4V20" data-page-node-id="0hOkvVdkL8fLSRkWpUsiQ4"/></symbol>
+  <symbol id="i-book" viewBox="0 0 24 24" data-page-node-id="AyxEjIzQbF897B5ClZAuHU"><path d="M12 6.4C10.4 5 8 4.4 4.4 4.6v13.2c3.6-.2 6 .4 7.6 1.8 1.6-1.4 4-2 7.6-1.8V4.6C16 4.4 13.6 5 12 6.4Z" data-page-node-id="8kzRuqanEMkqAyA0evaith"/><path d="M12 6.4v13.2" data-page-node-id="Kyyt2Vqm88g3JJY9khL7Cb"/></symbol>
+  <symbol id="i-case" viewBox="0 0 24 24" data-page-node-id="KHfo2X4WZRDCDLyFCIFvZb"><path d="M3.4 8.2h17.2v10.4a1.6 1.6 0 0 1-1.6 1.6H5a1.6 1.6 0 0 1-1.6-1.6Z" data-page-node-id="KCZi07w98vr5msnTGNWyq2"/><path d="M8.4 8.2V5.6A1.6 1.6 0 0 1 10 4h4a1.6 1.6 0 0 1 1.6 1.6v2.6" data-page-node-id="jwCzZswcyva3pEogpJ1hik"/><path d="M3.4 12.6h17.2M10 12.6h4" data-page-node-id="9kQEkTL8E77plsoeIwhjvN"/></symbol>
+  <symbol id="i-medal" viewBox="0 0 24 24" data-page-node-id="bE12uXK1sBKiu9uMSZIJRU"><circle cx="12" cy="14.6" r="5.4" data-page-node-id="FpONFteuCYYJecMEJzH3PP"/><path d="M9.2 9.6 6.6 3.4h10.8l-2.6 6.2" data-page-node-id="cywDmVuLHBYrn19tagLFyo"/><path d="M12 12.2l.9 1.9 2 .3-1.45 1.4.35 2-1.8-1-1.8 1 .35-2L9.1 14.4l2-.3Z" data-page-node-id="p0QCZNE5EXMuxBNOBKhm2f"/></symbol>
+  <symbol id="i-arrow" viewBox="0 0 24 24" data-page-node-id="1g6imZrB1oNXgvY5C5FaTb"><path d="M4 12h15" data-page-node-id="unIsAeiZKZLjUX4byrSwWk"/><path d="M13.4 6l6 6-6 6" data-page-node-id="V7JQtxeSX6BsXZ0cFUWFbH"/></symbol>
+  <symbol id="i-down" viewBox="0 0 24 24" data-page-node-id="aQXFmP3qEVVQrZQqJFmTFY"><path d="M6 9.5l6 6 6-6" data-page-node-id="H8p4vmDlbnqEDtpKtQ3A7F"/></symbol>
+  <symbol id="i-pen" viewBox="0 0 24 24" data-page-node-id="E2AwCTeqnrz7kShvRQWPR7"><path d="M4 20l4.2-1 9.4-9.4a2.6 2.6 0 0 0-3.6-3.6L4.6 15.4 4 20Z" data-page-node-id="lAiM2ZxihRsSQ7EYlMBoG8"/><path d="M13.6 5.8l4.6 4.6" data-page-node-id="P7EqdyixGYl5gACTTXcLRB"/></symbol>
+  <symbol id="i-scissors" viewBox="0 0 24 24" data-page-node-id="xoxweOcgjKK9rRjSspfHqQ"><circle cx="6" cy="6.5" r="2.6" data-page-node-id="uQjSnEmcCeecDbyMGDcOG5"/><circle cx="6" cy="17.5" r="2.6" data-page-node-id="Tfsr9tB23ouH5kz7mFhGQw"/><path d="M8.2 8.2L20.5 18M20.5 6L8.2 15.8" data-page-node-id="AzEYgRcR8FjVGzPyGYl7Od"/></symbol>
+  <symbol id="i-align" viewBox="0 0 24 24" data-page-node-id="343RLMnsqLiGPZz2A4t4gg"><path d="M3 6.5h18" data-page-node-id="J1ZNejAhtmBveTGtZ0MjJy"/><path d="M3 17.5h6.4M13.2 17.5H21" data-page-node-id="lHkF8XU86AG68eVLqCURpk"/><path d="M10.2 14.6v5.8" stroke-dasharray="1.6 2.2" data-page-node-id="g6VNr6rtEVZSTR3vE2oGNw"/><path d="M3 11.2h8.4M14.2 11.2H21" data-page-node-id="p3kGnApwjvqJFE10HTBSjJ"/></symbol>
+  <symbol id="i-search" viewBox="0 0 24 24" data-page-node-id="hof8IAtxoMUJSBQ2IRt4Uh"><circle cx="10.5" cy="10.5" r="6.8" data-page-node-id="GiGI9XDA4JmA8kSNRPrhA2"/><path d="M15.6 15.6L21 21" data-page-node-id="IgoeHsP0jhp75hFjBPgbXu"/></symbol>
+  <symbol id="i-ai" viewBox="0 0 24 24" data-page-node-id="IRH6D7Dr06mWYti7s4GPi2"><rect x="5.5" y="5.5" width="13" height="13" rx="3.4" data-page-node-id="JMtP653OupFp4u2eXWDDcc"/><rect x="9.6" y="9.6" width="4.8" height="4.8" rx="1.2" data-page-node-id="KspLDamQZAtS0Ib0YgHIqK"/><path d="M9 2.5v3M15 2.5v3M9 18.5v3M15 18.5v3M2.5 9h3M2.5 15h3M18.5 9h3M18.5 15h3" data-page-node-id="OFdBNLzb5A0CH6W1aPw3Wq"/></symbol>
+  <symbol id="i-scan" viewBox="0 0 24 24" data-page-node-id="jaZ43DMMT74zBZo1x2GXwa"><rect x="3.4" y="4.4" width="17.2" height="15.2" rx="2.6" data-page-node-id="MkqscU3UOIz2HGCASAr5H1"/><path d="M3.4 12h17.2M9 4.4v15.2" data-page-node-id="PuEDDqOvOSlVORKywCBpoA"/></symbol>
+  <symbol id="i-cube" viewBox="0 0 24 24" data-page-node-id="WGhKKW82GOTcnkHaEuGdpA"><path d="M12 2.8l8 4.6v9.2l-8 4.6-8-4.6V7.4Z" data-page-node-id="g8VKa0C5FRH16cRTk1h4Nx"/><path d="M4 7.4l8 4.6 8-4.6M12 12v9.2" data-page-node-id="6X3S4jXsoLdrztsrEvBwih"/></symbol>
+  <symbol id="i-flask" viewBox="0 0 24 24" data-page-node-id="ZzUvpmQR65C2LtiFZ11CTy"><path d="M9.4 3.4h5.2M10.4 3.4v6L4.8 19a1.4 1.4 0 0 0 1.2 2h12a1.4 1.4 0 0 0 1.2-2l-5.6-9.6v-6" data-page-node-id="v3MzVwjXpz44IJ6qB4zalo"/><path d="M7.4 15h9.2" data-page-node-id="zK1SyFsiSes4eEGxr8LBrT"/></symbol>
+  <symbol id="i-family" viewBox="0 0 24 24" data-page-node-id="As3mTLgYxEFfYZUj2brNkD"><circle cx="7" cy="6.4" r="2.4" data-page-node-id="HpKpVgaWwRrbj7Rwk9tvxA"/><circle cx="17" cy="6.4" r="2.4" data-page-node-id="LcL6OYj62ZOZqpVGirUnLQ"/><circle cx="12" cy="17.6" r="2.4" data-page-node-id="B8awgcKBqW78iBmpVFeSMQ"/><path d="M7 8.8v3.4h10V8.8M12 12.2v3" data-page-node-id="qMhIzDFcMsXNgW0TejvF4c"/></symbol>
+  <symbol id="i-pill" viewBox="0 0 24 24" data-page-node-id="wIQ5wJrg1bv0ZVGZZbXWCx"><rect x="2.6" y="8.6" width="18.8" height="6.8" rx="3.4" data-page-node-id="jpdwjiPTncNd1Cas9ju3Zp"/><path d="M12 8.6v6.8" stroke-dasharray="1.8 2" data-page-node-id="Bza9pBYxdCKmefaLJHXnJI"/></symbol>
+  <symbol id="i-baby" viewBox="0 0 24 24" data-page-node-id="rlf7LukYzFyAsm9sqTqpvo"><circle cx="12" cy="13" r="7.4" data-page-node-id="rPaH4U9qF027vqB0pFn7DE"/><path d="M9.4 11.4h.02M14.6 11.4h.02" data-page-node-id="noc98oQnCYC2873qdgG83E"/><path d="M9.6 15.4c1.6 1.5 3.2 1.5 4.8 0" data-page-node-id="TrHqP9xR4gev0NJr1yCzyx"/><path d="M12 5.6V3.2" data-page-node-id="1mFRpDmXXmLGo6V2mz9hzJ"/></symbol>
+  <symbol id="i-chart" viewBox="0 0 24 24" data-page-node-id="6AYe6aaGXc7J7MB4EBhv9R"><path d="M3.4 20.4h17.2" data-page-node-id="6N1Uj3IumaZ2sUlGHBnf0e"/><rect x="5.4" y="12" width="3.4" height="8.4" rx=".8" data-page-node-id="Qp4DuVYbKwFfST4XUWMm9G"/><rect x="10.6" y="6.4" width="3.4" height="14" rx=".8" data-page-node-id="G4KWaInGEXMcdO5QVEhvhM"/><rect x="15.8" y="9.2" width="3.4" height="11.2" rx=".8" data-page-node-id="maWTov2CqLrdvawHa1Z6Ep"/></symbol>
+  <symbol id="i-scale" viewBox="0 0 24 24" data-page-node-id="EwvoMFP4xbcQc98y1u3WhA"><path d="M12 3.6v16.2" data-page-node-id="2EzLh7zwdXNT8derlycQaJ"/><path d="M7.2 19.8h9.6" data-page-node-id="AgZrknYqcEJsEzplJqy4TQ"/><path d="M3.6 7.8h16.8" data-page-node-id="WDndzekXVdYGaWGvjmT9wj"/><path d="M12 3.6v4.2" data-page-node-id="aXymvoNt8y7gscxjoCE0s1"/><path d="M1.6 14.4a2.8 2.8 0 0 0 4.2 0L3.7 7.8Z" data-page-node-id="jg1mVkgoHPBjlTSDa3wnwj"/><path d="M18.2 14.4a2.8 2.8 0 0 0 4.2 0L20.3 7.8Z" data-page-node-id="lagLUHGZc6Ayl5tBVNFrTj"/></symbol>
+  <symbol id="i-heart" viewBox="0 0 24 24" data-page-node-id="TuqPegPENagDHoTsjcBvoT"><path d="M12 20.2S3.8 15.4 3.8 9.3a4.3 4.3 0 0 1 8.2-1.9 4.3 4.3 0 0 1 8.2 1.9c0 6.1-8.2 10.9-8.2 10.9Z" data-page-node-id="kuez2n7xb95JDUhokGacPc"/><path d="M6.6 11.4h2.6l1.2-2 1.6 4 1.3-2h2.1" data-page-node-id="qFEyrIhjegLEZejESmKM5z"/></symbol>
+  <symbol id="i-flow" viewBox="0 0 24 24" data-page-node-id="FVrt40LtB4TJ2cF8SP74Fm"><rect x="2.6" y="3.4" width="6" height="5" rx="1.2" data-page-node-id="i2T8VKZpQhBQMwhLNfslfW"/><rect x="2.6" y="15.6" width="6" height="5" rx="1.2" data-page-node-id="JLu50mQVDQ70j3gSvJZxhg"/><rect x="15.4" y="9.4" width="6" height="5.2" rx="1.2" data-page-node-id="x6nPswGMnXITJViL0EJXsO"/><path d="M8.6 5.9h3.2a1.8 1.8 0 0 1 1.8 1.8v2.1M8.6 18.1h3.2a1.8 1.8 0 0 0 1.8-1.8v-2.1" data-page-node-id="w3UdLqGPVJDICcqtAq4Md6"/></symbol>
+</defs></svg>
+
+<div id="wc" aria-hidden="true" data-page-node-id="dhFxvE1PEsayy2tZbTZxgS"><span class="wc-veil" data-page-node-id="cH8Art0yjbdlJ8lqp4LgqM"></span></div>
+<div id="grain" aria-hidden="true" data-page-node-id="zmb4tBb95GJ7bvGDkOBoYN"></div>
+<div id="progress" data-page-node-id="MZLhY6QYk677tdcKBgBoG0"></div>
+
+<div class="nav-shell" data-page-node-id="7VKCN0aY1UEMTSYsENfy9u">
+  <nav class="top" data-page-node-id="EYRmxrCePv4XfcKeXQzVYy">
+    <a class="logo" href="home.html" data-page-node-id="0BmvM2b74kCgdjBIrlQlca"><svg class="mark ic" data-page-node-id="oVRbd5pmJO9xJzbJCfNcvN"><use href="#i-dna" data-page-node-id="psxNISGIBllejA3wk2K8Ax"/></svg><span class="word" data-page-node-id="Z0NEFBPJ7dnxlrBjNAh9Za">基因侦探</span></a>
+    <span class="nav-div" aria-hidden="true"></span>
+    <div class="nav-links">
+      <a href="home.html"><span class="hl"></span><svg class="ic"><use href="#i-home"/></svg><span class="lbl">首页</span></a>
+      <a href="science.html" class="on"><span class="hl"></span><svg class="ic"><use href="#i-book"/></svg><span class="lbl">手册</span></a>
+      <a href="cases.html"><span class="hl"></span><svg class="ic" viewBox="0 0 24 24"><path d="M6.4 3.6h8l3.2 3.2v9.2a1.4 1.4 0 0 1-1.4 1.4H6.4a1.4 1.4 0 0 1-1.4-1.4V5a1.4 1.4 0 0 1 1.4-1.4Z"/><path d="M14 3.6V7h3.4"/><path d="M8.4 11.4h5.2M8.4 14.6h5.2"/></svg><span class="lbl">案件簿</span></a>
+      <a href="ranking.html"><span class="hl"></span><svg class="ic" viewBox="0 0 24 24"><path d="M3.6 20h16.8"/><path d="M6.8 16.4V10h4.2V20"/><path d="M13.8 20V4.8h4.2V20"/></svg><span class="lbl">排行榜</span></a>
+      <a href="report.html"><span class="hl"></span><svg class="ic"><use href="#i-medal"/></svg><span class="lbl">我的报告</span></a>
+    </div>
+  </nav>
+</div>
+
+<!-- ============ 手册 ============ -->
+<section class="bk-desk" data-page-node-id="KZ5MDmypCP0MbRel0KEw5b">
+  <div class="wrap" data-page-node-id="wBcxAM4TTiYRgSEvJwTayv">
+    <span class="kicker rv" style="--i:0">Handbook · 科普手册</span>
+    <h2 class="rv" style="--i:1" data-page-node-id="JIPxtMW6a31avdoiolapAK">侦探须知手册</h2>
+    <p class="bk-note rv" style="--i:2" data-page-node-id="EmDqE6lMmUHCkinRUSCnTF">陈探长的赠礼</p>
+
+    <div class="bk-stage" id="bk-stage" data-page-node-id="m9hyfY7uPXai7DQUPMMicA">
+
+      <div class="book" id="book" data-page-node-id="hofZEdFKHsdFbEXNl2DQd9">
+        <div class="bk-block" aria-hidden="true" data-page-node-id="9hQKEv4SlxiEIEPVhm8wjc"></div>
+        <div class="bk-side bk-left" id="bk-left" aria-hidden="true" data-page-node-id="XCBBBn1nSPN9KCdOWeaGaU"></div>
+        <div class="bk-side bk-right" id="bk-right" data-page-node-id="TQVrEsCxX80OV2gSZq7zpF"></div>
+        <div class="bk-spine" aria-hidden="true" data-page-node-id="Fbd47RJcgQ0rJPATbMvIpc"></div>
+
+        <div class="bk-leaf" id="bk-leaf" hidden aria-hidden="true" data-page-node-id="j4Wt6sMSY0s61cgJEJIDIk">
+          <div class="lf lf-front" id="lf-front" data-page-node-id="YKXuD3wlSfUHZrkwwAhQcM"></div>
+          <div class="lf lf-back" id="lf-back" data-page-node-id="DGVG6LG0ygFi728MsQNtZx"></div>
+        </div>
+
+        <div class="bk-cover" id="bk-cover" data-page-node-id="RV2QenQtyH94KzGHVhajHp">
+          <button class="cv-face cv-front" id="cv-front" type="button" aria-label="翻开侦探须知手册" data-page-node-id="meMrSvRACpMIdWmZ9XBS5r">
+            <span class="cv-spine" aria-hidden="true" data-page-node-id="is55fsxcDhkE9TTBAXGfWc">侦探须知</span>
+            <span class="cv-frame" aria-hidden="true" data-page-node-id="27Xl3xdw0gfqUIAbAHXjuC"></span>
+            <span class="cv-in" data-page-node-id="1Zt0ajntVPqOj9jHeN691J">
+              <span class="cv-kick" data-page-node-id="QwwtFupcxGGcU8LpReJwdN">精准医学侦探社 · 内部手册</span>
+              <span class="cv-title" data-page-node-id="PDeOl8plPtyafHaD2XiHDw">侦探须知</span>
+              <span class="cv-line" aria-hidden="true" data-page-node-id="rDn4VTy8xAq88pFXnqOMi5"></span>
+              <span class="cv-seal" data-page-node-id="NI3EBTDXgQPtGymSyimt3r"><img src="assets/ip-chen-avatar.jpg" alt="陈探长" data-page-node-id="6LKjiBaDMnLGkBfiLn47WE"></span>
+            </span>
+            <span class="cv-cta" aria-hidden="true" data-page-node-id="CQ2sADvgWhtOMB3TO8ZBca">点击翻开</span>
+          </button>
+          <div class="cv-face cv-back" id="cv-back" aria-hidden="true" data-page-node-id="3Q1TQQTj1hezLwJi9OpScL"></div>
+        </div>
+      </div>
+    </div>
+
+    </div>
+  </div>
+</section>
+
+<footer data-page-node-id="lAPUmKlQIX9SrlCNg0xHB2">
+  <div class="wrap" data-page-node-id="T7Q8WODYQZ6BZn5KE0Xfjt">
+    <div class="f-top" data-page-node-id="oLMJQNHvPEGFcFhCwC8Yvc">
+      <b data-page-node-id="ubZnYJEDUCalDN6c96FaYy">基因侦探 Gene Detective</b>
+
+    </div>
+    <span data-page-node-id="z6X4BkHSmUzU7tfiS9zIac">选题背景：用游戏化方式讲清「测序 → 质控 → 比对 → 变异识别 → 致病性解读」这条生物信息学主线</span>
+    <span data-page-node-id="6zqaf4HQWN0aCq1jlzBI7e">数据来源：NCBI ClinVar 公共数据库（教学用子集）</span>
+    <span data-page-node-id="SGSMBx2QlrEUDHHocXckWj">本站为课程作业，数据与流程均做了教学简化，不构成任何医学建议</span>
+  </div>
+</footer>
+
+<!-- ============ 九页图示（模板，由 manual.js 装进书页） ============ -->
+<template id="fig-c0" data-page-node-id="m5THi3eDlx6sGN4NJeUTy3">
+  <div class="k-fig" data-page-node-id="0GfsXAvnkALrP7GsMlyG3l">
+    <div class="nest n1" data-page-node-id="AVdPJBVHGbOtzpya5sB2MD"><span class="nt" data-page-node-id="u2rB1ILJXxQ3bx5BpaY5Ll">细胞</span>
+      <div class="nest n2" data-page-node-id="VMsDpioa6MzUhD5sXp4aEa"><span class="nt" data-page-node-id="SEDaR5JjOmfQQ0Hr8BfUfA">细胞核</span>
+        <div class="nest n3" data-page-node-id="qLrcbzexp8ktsmheIG8PD1"><span class="nt" data-page-node-id="4FDqkb0BtJ5EeUHHa7GbSW">染色体</span>
+          <div class="nest n4" data-page-node-id="NWnJG7XyfRbM3JN5pYFeI8"><svg class="ic" data-page-node-id="xEFKQQOwq4LvCMuFFcFVoD"><use href="#i-dna" data-page-node-id="hqAuWfdrIv3LAOgCAyDXB6"/></svg><span data-page-node-id="hn4TxKNActYqBEudFAJYFG">DNA</span></div>
+        </div>
+      </div>
+    </div>
+    <div class="nest-note" data-page-node-id="6Ib3CQn5WERZ4bbITdqCLU"><span data-page-node-id="iVqdCKM7t7TVhYFhBVaamw">一层层放大 ↓</span><span data-page-node-id="jih0EPR0DORRVPudneGBIP">30 亿字母 / 约 2 万基因</span></div>
+    <div class="fig-cap" data-page-node-id="vHywAXgPqkNcbChBaM1N4N">图示 · 细胞 → 核 → 染色体 → DNA → 基因</div>
+  </div>
+</template>
+
+<template id="fig-c1" data-page-node-id="8u4EsiDzyIhteexycjWokt">
+  <div class="k-fig" data-page-node-id="IbKYqLFKHQ2z71z752d8qi">
+    <div class="q-wrap" data-page-node-id="ccLEDhTtS1GwYe06qKcgro">
+      <span class="q-cut" style="left:70%" data-page-node-id="BNA6i0o42x4jGtL3JHFr4H"></span>
+      <div class="q-col" data-page-node-id="L7woOj6UX7bGF3UhdqBh0F"><span class="q-bar" style="height:96%;background:var(--benign)" data-page-node-id="D4ltL4TDs1C2U6H3kAfMFW"></span><b data-page-node-id="3DmjkBrPm5BtbFZbqjvAdv">A</b></div>
+      <div class="q-col" data-page-node-id="2L3JnOmqLL3d0TfEDiKAm3"><span class="q-bar" style="height:94%;background:var(--benign)" data-page-node-id="kUmbnPYXo7GTjzaXHcoiyE"></span><b data-page-node-id="oTudvyxWsYfai5ebHDSjXw">C</b></div>
+      <div class="q-col" data-page-node-id="IIrzFwDUOtZpOnBZcYUsp9"><span class="q-bar" style="height:97%;background:var(--benign)" data-page-node-id="pPjwgRq4FU7vcxeKR3KxKB"></span><b data-page-node-id="cqPWJU4H6ClbBLJJcxZ3GB">G</b></div>
+      <div class="q-col" data-page-node-id="sKXu6k2YZOk6QhPioicxbA"><span class="q-bar" style="height:92%;background:var(--benign)" data-page-node-id="FJgQAoEfdzR5zHQFDPSc9F"></span><b data-page-node-id="8NTP1fc4IUCXlrmegmgqtC">T</b></div>
+      <div class="q-col" data-page-node-id="T0HaqX6LJkRaxkpxsSrmNd"><span class="q-bar" style="height:95%;background:var(--benign)" data-page-node-id="0AMOSn2EKQrh2s0kHcApaU"></span><b data-page-node-id="kZgqKvDggJyaeKevyx1Grp">A</b></div>
+      <div class="q-col" data-page-node-id="wp52je8qEemwYi0gSkDqBl"><span class="q-bar" style="height:90%;background:var(--benign)" data-page-node-id="AuOwvjkKLE4cnLyl98PK1j"></span><b data-page-node-id="6p8Rml4mDJVgBPkDeDtZuy">C</b></div>
+      <div class="q-col" data-page-node-id="kUfBmzFd6lFKqMXweOWPxE"><span class="q-bar" style="height:93%;background:var(--benign)" data-page-node-id="59REjzJ2qGWsERvyOpAGmx"></span><b data-page-node-id="3YSj2PyXuDdsdDPyAaM1HJ">G</b></div>
+      <div class="q-col" data-page-node-id="POQENt9JNaXNMaLQ4Ujkr7"><span class="q-bar" style="height:88%;background:var(--benign)" data-page-node-id="FE4dYz9dIe2tL58lC1HOof"></span><b data-page-node-id="bGGQra0ffGFKIYcyCltoOE">T</b></div>
+      <div class="q-col" data-page-node-id="B4jKFQoJeg9LleHqrYGgMk"><span class="q-bar" style="height:90%;background:var(--benign)" data-page-node-id="fewltd7uwc3m8LZoCULQjW"></span><b data-page-node-id="2HaEXqXbdfVJSLdcpDfVDc">A</b></div>
+      <div class="q-col" data-page-node-id="gkO1SozBksCMw4SwHcLVfI"><span class="q-bar" style="height:86%;background:var(--benign)" data-page-node-id="Kfref5Kq4OwpTLwoqQY78x"></span><b data-page-node-id="E1H5PVwlJkH7cedTEpQtpt">C</b></div>
+      <div class="q-col" data-page-node-id="XHS7UOjFifaMOG1RrOBMBN"><span class="q-bar" style="height:84%;background:var(--benign)" data-page-node-id="zd1YJJt9FsqyAqo9QRyUHS"></span><b data-page-node-id="bK2cc5iUAphH7DevODHAOc">G</b></div>
+      <div class="q-col" data-page-node-id="8UEpFDD5pFvSECbhlHvtwg"><span class="q-bar" style="height:88%;background:var(--benign)" data-page-node-id="b1yTjFgeLsZ0cosVmLobSG"></span><b data-page-node-id="Fv56XT1xlzJWz42BeKNHOW">T</b></div>
+      <div class="q-col" data-page-node-id="HnvNDU4mSUdLoRPqokBMCY"><span class="q-bar" style="height:78%;background:var(--vus)" data-page-node-id="FXVqCyNs39tqYBIWzskXia"></span><b data-page-node-id="CerbpMBRU1HYLE1X6sU5Ug">A</b></div>
+      <div class="q-col" data-page-node-id="MITSlSG7BXnkbsQ8bR6dEf"><span class="q-bar" style="height:66%;background:var(--vus)" data-page-node-id="UlUGXBJJ87vtAwVCJ08J7D"></span><b data-page-node-id="u4geFVrNQPxbopCrD3SFLB">C</b></div>
+      <div class="q-col" data-page-node-id="gYktx84x3oh5m9hGOAKbXq"><span class="q-bar" style="height:38%;background:var(--pathogenic)" data-page-node-id="Km3FWoK5rFarHsXZbxTxjw"></span><b data-page-node-id="KFfl7IFArmqXaQJsNhTWul">G</b></div>
+      <div class="q-col" data-page-node-id="UEkNnwN2KMFOzq4kVVJDve"><span class="q-bar" style="height:24%;background:var(--pathogenic)" data-page-node-id="giKDj2jqFMy5eRuPadYhdi"></span><b data-page-node-id="moEFfkScyqYswOwINIoB86">T</b></div>
+      <div class="q-col" data-page-node-id="FAljTvDoBQk8Qfo24m2NNd"><span class="q-bar" style="height:16%;background:var(--pathogenic)" data-page-node-id="SUjiCvwGUrSxUgZu5bPspQ"></span><b data-page-node-id="Ha7QD9DEdKN6XukNhEXoTx">A</b></div>
+      <div class="q-col" data-page-node-id="vSE2EELpf7AHC5hIWf1ToZ"><span class="q-bar" style="height:22%;background:var(--pathogenic)" data-page-node-id="9DRWNsAOhcjCYOvaAelxNC"></span><b data-page-node-id="uogJAbkLh7U8xetN2aSd1M">C</b></div>
+      <div class="q-col" data-page-node-id="B5uWcjVgzP9FgWfnC7KaNC"><span class="q-bar" style="height:12%;background:var(--pathogenic)" data-page-node-id="84C8xT6U1HEPj9SARjrB71"></span><b data-page-node-id="TDG2MqR9bMpl3gT0jkp1FU">G</b></div>
+      <div class="q-col" data-page-node-id="TTaNKEVotp0tfWh1FygC99"><span class="q-bar" style="height:18%;background:var(--pathogenic)" data-page-node-id="c1h9bJUBmqmJDuea01JgxI"></span><b data-page-node-id="9VFyLbgh5K7A4wOxtUzcEC">T</b></div>
+    </div>
+    <div class="q-legend" data-page-node-id="QOtE7Ug05lSSFFcQMQou6E">
+      <span data-page-node-id="7WqZUDOewexL0L1fve8cB1"><i style="background:var(--benign)" data-page-node-id="64CTfbZ4V5kEmDSQTZoYbs"></i>28 分以上 放心</span>
+      <span data-page-node-id="m344xmHiFHRzUyPXLiMD2N"><i style="background:var(--vus)" data-page-node-id="H96E54QK5NbjGNzNXd2g2y"></i>20–28 注意</span>
+      <span data-page-node-id="OpA1xOcEsgCvk0iceJIfIx"><i style="background:var(--pathogenic)" data-page-node-id="diCjQpv2gUn4GqCqtruWcP"></i>20 以下 该剪</span>
+    </div>
+    <div class="fig-cap" data-page-node-id="Le7L36ho5ZMRFFipbhVudi">图示 · 一条读段的打分柱在尾部集体「跳水」</div>
+  </div>
+</template>
+
+<template id="fig-c2" data-page-node-id="g4UTH0ugU6kErz9Sz2yzZM">
+  <div class="k-fig" data-page-node-id="2q0jsVg3fOAxNM8a1Pq0kj">
+    <div class="aln" data-page-node-id="4F9iap7XK3kuzZKLD7OxHz">
+      <div class="aln-row" data-page-node-id="EfWcy266oiIsBnKSFBePU4">
+        <span class="tag" data-page-node-id="8Z0oL4WehU7aEtylxBFnrZ">参考</span>
+        <div class="aln-cells" data-page-node-id="G6z3nBec1MkCxBZMQFIS22">
+          <i data-page-node-id="t4A58zlymJVUS8bzFjHiuK">A</i><i data-page-node-id="2vNKUrfRoptpv6mLi127YY">T</i><i data-page-node-id="zwxKrQbHofvjCB5V7v6JCo">C</i><i data-page-node-id="rZwjnBpDHjtGvUnonXFEyF">G</i><i data-page-node-id="bTldblqv0Xwg2zoJNkVlZg">G</i><i data-page-node-id="gEAvf1gH8TH0tZ89lsFA65">T</i><i data-page-node-id="OefHWxCAhFnm4mv3Rev4kM">A</i><i data-page-node-id="EOQGAMgmjULjgu2h5CpGHF">A</i><i data-page-node-id="21efOc5g2MaUEIMHwgfDA4">C</i><i data-page-node-id="aqCEwdHysn8pjX2sut2IZp">G</i><i data-page-node-id="BEfKgcpLXGvN5LqePNbjl4">T</i><i data-page-node-id="FH0kMbxO1tKWgyujQAKfQS">A</i><i data-page-node-id="EdqZofpPa8vLcZeEfTwcsI">G</i><i data-page-node-id="wCkux5dgK7GLUazQH3JO8a">C</i>
+        </div>
+      </div>
+      <div class="aln-row" data-page-node-id="8B68EgT7VmEpapZGZZ8cP9">
+        <span class="tag" data-page-node-id="vx4YHSB2JNwuJ6bqDG5tCG">患者</span>
+        <div class="aln-cells" data-page-node-id="jJz7zyu6o7zsJgOau1Z1Vs">
+          <i data-page-node-id="IHtxIP7Yr7S5TatkWxinbT">A</i><i data-page-node-id="7qHsGQmO9D2vN1kbWC3nkI">T</i><i data-page-node-id="eTC0iLvPcTufIqUp089idS">C</i><i data-page-node-id="YoXFOOyOulX93sC2FqDAHm">G</i><i class="gap" data-page-node-id="h9DssWE6ZyTk6LVuayGo6C">—</i><i data-page-node-id="9kL2y921yuYuC2fvFOpiqm">T</i><i data-page-node-id="knpnPUOHNcNVEFuKLZr7DP">A</i><i data-page-node-id="oLlxyQv2OaO93Zt68bVJpt">A</i><i data-page-node-id="s98M68CO3QAdLRpWa6J6DS">C</i><i data-page-node-id="vZdR3fJOVtOGMJ8RG7QXpG">G</i><i data-page-node-id="ngGr2YmHfID07eY6C2KLWo">T</i><i data-page-node-id="rpqPvAhtVVEi49k1G79DNk">A</i><i data-page-node-id="ODob02nqRGGywAwLaWl2B4">G</i><i data-page-node-id="rQICDCFR2Kufczxxo5DhUB">C</i>
+        </div>
+      </div>
+    </div>
+    <div class="aln-tip" data-page-node-id="A5lMlFJUTTgyMK0XsbeZK2"><span data-page-node-id="rSNp8mtetEedZSIEnG1KUB">缺口垫一条占位横线后重新归位</span><span data-page-node-id="fFHBqLcEAU2v2Cel0UPCto">匹配率 <b data-page-node-id="bDvqrEhFcIWg7Y7fNySXhA">100%</b></span></div>
+    <div class="fig-cap" data-page-node-id="2Ag39N9pntpUhx2mS2GmAw">图示 · 少一个 G，用占位横线把后面的字母顶回原位</div>
+  </div>
+</template>
+
+<template id="fig-c3" data-page-node-id="5Oagbx1sCbVzLSLa3FBBC1">
+  <div class="k-fig" data-page-node-id="K5eB6AoCOgpQKZGCH9Qcd2">
+    <div class="ev-chips" data-page-node-id="YbD0GGWsumNs9nrWVDT5AJ">
+      <span data-page-node-id="cwOPFUc7RsBNkPkFIiEEAp">人群频率 <b data-page-node-id="gIbx9xxBPNdyCPlg1UPpac">0.02% 罕见</b></span>
+      <span data-page-node-id="tWQYkeVLYyrA8vMIDmDJH8">蛋白功能预测 <b data-page-node-id="ernW3dWHSMWU6N27DKckb5">0.94 有害</b></span>
+      <span data-page-node-id="BXbuG7W72CBLokyDv9AkK2">文献报道 <b data-page-node-id="VaSmeps1GmKbRkkjoMhf0S">多例致病</b></span>
+    </div>
+    <div class="ev-flow" data-page-node-id="cUKZPIgLVlgDRtxWtqn4VB"><svg class="ic" data-page-node-id="vcUMczkb8HrBYF6CkFeAq7"><use href="#i-down" data-page-node-id="WU3V3EAeOO35o15q5BwMIF"/></svg></div>
+    <div class="ev-score" data-page-node-id="NdSx47QZitCCxqfoyGwZHH">
+      <div class="ring" data-page-node-id="ea45YWbA5Nhv1RRpLvPkHR"><b data-page-node-id="CDapNXW0K4NXHBD44CHYsI">92</b></div>
+      <div data-page-node-id="qyuzAJVNw6zlrnH3YyP2eZ"><b data-page-node-id="9rftXnoAPHMlGZ0WL8Qzw4">AI 致病性评分</b><span data-page-node-id="mgsEksEqf52aKbDR8IAg8o">三条证据同向 → 致病</span></div>
+    </div>
+    <div class="fig-cap" data-page-node-id="TV34mU3M7sUXS972dcwacE">图示 · 三类证据汇入 AI，输出 0–100 的评分</div>
+  </div>
+</template>
+
+<template id="fig-c6" data-page-node-id="TItmEVhSWfi019KeslLbek">
+  <div class="k-fig" data-page-node-id="eTBCmZdweboHK5ada6hy8S">
+    <div class="scenes" data-page-node-id="cUtXMLV2BYdsQOHYUHO8wt">
+      <div class="scene" data-page-node-id="f1rUAfkSBYfq6Z5Lmk2PNd"><svg class="ic" data-page-node-id="a9vTYMojjTwGDFsJdsa5yV"><use href="#i-scan" data-page-node-id="xNVfbhWafIcEox23KZcYyY"/></svg><div data-page-node-id="MZvipmcCfe1cr9frKddzK3"><b data-page-node-id="3k8Ui8FvlZa7YBGIL7jUSc">影像读片</b><span data-page-node-id="GdkkndTHMBOShSI1OHB9j8">眼底照片 / 肺结节 CT</span></div><em data-page-node-id="nSkrlDdfdquD0DK6GdQGw3">快</em></div>
+      <div class="scene" data-page-node-id="zNO6jlJfI8Iw08P38e5jDP"><svg class="ic" data-page-node-id="1AX2TgxXdgQaajGXi8K3Xq"><use href="#i-cube" data-page-node-id="XYbk73XHGE4Iol3e8GUHSc"/></svg><div data-page-node-id="Ie9hl1hebTlvVDzrGMVxjT"><b data-page-node-id="KBps0iXpVQte12PoyQwPL4">蛋白结构预测</b><span data-page-node-id="H6Az76L5Jck8rUd7AeyZBf">AlphaFold · 2 亿+ 结构</span></div><em data-page-node-id="23f5gUYwc9uGcjB3cmgq2a">准</em></div>
+      <div class="scene" data-page-node-id="b7THh2jx8Pk3xFrh1VeVdl"><svg class="ic" data-page-node-id="iPad9zkT87wvKbgrtXhJjQ"><use href="#i-flask" data-page-node-id="lKu1D0y7KXkPF2jQqO9oit"/></svg><div data-page-node-id="K1vMY2vJoEuK20AR4SSNVw"><b data-page-node-id="wwQZshs4eEm0WbJH1NAOpW">药物初筛</b><span data-page-node-id="Jc8ydEaGI26JQCkCAHaFTs">上亿分子里挑候选</span></div><em data-page-node-id="XkAVtdPFJbPvvdHUIAxqDk">省</em></div>
+    </div>
+    <div class="coop" data-page-node-id="QBvj3ysVlxaNZ6pIKMBdcL"><svg class="ic" data-page-node-id="XtR0cuEwcut4uFBbU8mOhY"><use href="#i-ai" data-page-node-id="55IICxOSvqaxIDjdaCYyX4"/></svg>AI 初筛 + 医生拍板 = 人机协作</div>
+    <div class="fig-cap" data-page-node-id="28fkAHHl6GytduyEdUl8tv">图示 · 三个场景汇成「人机协作」</div>
+  </div>
+</template>
+
+<template id="fig-c7" data-page-node-id="dEUKErodQfvVJlFAatgXb4">
+  <div class="k-fig" data-page-node-id="fdatMA6l29GrmrUvKzfolA">
+    <div class="scenes" data-page-node-id="kmM94cFGitUVt9GkpNKlKn">
+      <div class="scene" data-page-node-id="5I0YfXQ3rMrko1ZrEFuTMK"><svg class="ic" data-page-node-id="MFXyQWaXFfsuZyXMGj7Jj5"><use href="#i-baby" data-page-node-id="3SqKn8gaxNV7AfXvuEaIse"/></svg><div data-page-node-id="tGorDyfiXUDdDZTXzE5thm"><b data-page-node-id="M2FlorT2jJiZM21ZWMAvxi">无创产前筛查</b><span data-page-node-id="oGPu0wed0nEMYByi1WGnUk">一管血查胎儿染色体</span></div></div>
+      <div class="scene" data-page-node-id="Ii8B4OrwqywWpZ3U7VJwvL"><svg class="ic" data-page-node-id="eksGmW5J6iHYemZr4GlnHx"><use href="#i-pill" data-page-node-id="LyIiBkO9kAAjEZ00iUlnIC"/></svg><div data-page-node-id="6DqjSqBWI2jIbJdvOkUcBJ"><b data-page-node-id="hGWqKGcn8HZ7Ze4sy1IBu8">肿瘤靶向用药</b><span data-page-node-id="uQfFPD0AzjgQDCJ7nb29YN">先测基因，再选药</span></div></div>
+      <div class="scene" data-page-node-id="VneQb2jlUwhQOlvI6hRHD2"><svg class="ic" data-page-node-id="mS0TsKkTTFALrXj55D45ba"><use href="#i-family" data-page-node-id="YAC2eowPr1wZlzrfB3gi9w"/></svg><div data-page-node-id="RQDrrDSN7FpzkPcxvcLpQJ"><b data-page-node-id="92Bq2Aajk22gFJO8KoUt1c">罕见病诊断</b><span data-page-node-id="jZMNXef8uVwRHWn7VWLU3L">找家庭的致病突变</span></div></div>
+    </div>
+    <div class="fig-cap" data-page-node-id="ziTgz4VQbDiCvFKc2giZ8Y">图示 · 三个已经落地的真实场景</div>
+  </div>
+</template>
+
+<template id="fig-c5">
+  <div class="k-fig">
+    <div class="cd-wrap">
+      <div class="cd-row">
+        <span class="cd-codon"><i>A</i><i>T</i><i>G</i></span>
+        <svg class="ic cd-ar"><use href="#i-arrow"/></svg>
+        <b class="cd-aa start">起始 · Met</b>
+      </div>
+      <div class="cd-row">
+        <span class="cd-codon"><i>C</i><i>G</i><i>T</i></span>
+        <svg class="ic cd-ar"><use href="#i-arrow"/></svg>
+        <b class="cd-aa">精氨酸 · Arg</b>
+      </div>
+      <div class="cd-row">
+        <span class="cd-codon"><i>T</i><i>G</i><i>C</i></span>
+        <svg class="ic cd-ar"><use href="#i-arrow"/></svg>
+        <b class="cd-aa">半胱氨酸 · Cys</b>
+      </div>
+      <div class="cd-row">
+        <span class="cd-codon"><i>T</i><i>A</i><i>A</i></span>
+        <svg class="ic cd-ar"><use href="#i-arrow"/></svg>
+        <b class="cd-aa stop">终止 · 到此为止</b>
+      </div>
+    </div>
+    <div class="nest-note"><span>3 个碱基 = 1 个密码子</span><span>查表得到 1 个氨基酸</span></div>
+    <div class="fig-cap">图示 · 三联码一组一组查表，从 ATG 开始、到终止码收尾</div>
+  </div>
+</template>
+
+<template id="fig-c8">
+  <div class="k-fig">
+    <svg class="ped-svg" viewBox="0 0 260 192">
+      <!-- 世代标号 -->
+      <text x="7" y="30" class="gen">Ⅰ</text>
+      <text x="7" y="100" class="gen">Ⅱ</text>
+      <text x="7" y="164" class="gen">Ⅲ</text>
+      <!-- 第一代：形状在上，名字空开，同胞线再往下一格，互不相压 -->
+      <line x1="92" y1="26" x2="164" y2="26" class="mar"/>
+      <circle cx="80" cy="26" r="12" class="dis"/>
+      <rect x="164" y="14" width="24" height="24" rx="3"/>
+      <text x="80" y="50">祖母</text><text x="176" y="50">祖父</text>
+      <line x1="128" y1="26" x2="128" y2="76"/>
+      <line x1="56" y1="76" x2="204" y2="76"/>
+      <line x1="56" y1="76" x2="56" y2="84"/>
+      <line x1="128" y1="76" x2="128" y2="84"/>
+      <line x1="204" y1="76" x2="204" y2="84"/>
+      <!-- 第二代：父亲名字让开下降线，挂在竖线右侧 -->
+      <rect x="44" y="84" width="24" height="24" rx="3" class="dis"/>
+      <circle cx="128" cy="96" r="12" class="dis"/>
+      <rect x="192" y="84" width="24" height="24" rx="3"/>
+      <text x="72" y="126">父亲</text><text x="128" y="126">姑姑</text><text x="204" y="126">叔叔</text>
+      <!-- 父亲一支往下 -->
+      <line x1="56" y1="108" x2="56" y2="140"/>
+      <line x1="34" y1="140" x2="78" y2="140"/>
+      <line x1="34" y1="140" x2="34" y2="148"/>
+      <line x1="78" y1="140" x2="78" y2="148"/>
+      <circle cx="34" cy="160" r="11"/>
+      <rect x="67" y="149" width="22" height="22" rx="3"/>
+      <text x="34" y="186">姐</text><text x="78" y="186">弟</text>
+    </svg>
+    <div class="ped-legend">
+      <span><i class="ci"></i>女</span>
+      <span><i class="sq"></i>男</span>
+      <span><i class="ci dis"></i>患病</span>
+    </div>
+    <div class="fig-cap">图示 · 三代系谱：涂满的是患者，顺着连线看怎么传</div>
+  </div>
+</template>
+
+<template id="fig-c4" data-page-node-id="Ws7940mMuET0k8ulIdR6eQ">
+  <div class="k-fig" data-page-node-id="uoMgCopBDljUkCPr4kQCbv">
+    <div class="steps5" data-page-node-id="fAiMBKHfmWa1SASwDuB6mw">
+      <div class="step5" data-page-node-id="FuHpEHRtwFeLZvNiVn0I3m"><svg class="ic" data-page-node-id="qYAsXeC7HhZBJ9QX57J0Yy"><use href="#i-pen" data-page-node-id="YkbVFMjDxaXhT28V818NMH"/></svg><b data-page-node-id="fdUsHKkPn3Gi7Ikedo3Oia">测序</b></div>
+      <span class="ar" data-page-node-id="eL3CHLWFpinABvd7obJkBE"><svg class="ic" data-page-node-id="WGnIDMyXYv3DoVt1rYLNMd"><use href="#i-arrow" data-page-node-id="hUiCgNOOD1zekFnEN5CoBB"/></svg></span>
+      <div class="step5 you" data-page-node-id="0l3Z0mp98eX9VhHI4HBkiD"><em data-page-node-id="3tRoe1qSRh9uVYqTUhPvJV">你</em><svg class="ic" data-page-node-id="D63q3ZFlzw82zHl8EAPqQN"><use href="#i-scissors" data-page-node-id="l3iA6JIij2sYz1HSoC9myt"/></svg><b data-page-node-id="WshgtBLe8g9GzF9gpMWxwD">质控</b></div>
+      <span class="ar" data-page-node-id="YHI15rgKMNfxQahoVzTcJ0"><svg class="ic" data-page-node-id="DYvhPhMM2BQLCUKqYAV0Vr"><use href="#i-arrow" data-page-node-id="JafZ5VRXFCHDuEcivRjupU"/></svg></span>
+      <div class="step5 you" data-page-node-id="gTazkti0tHa5c2KGwHLe4u"><em data-page-node-id="8Rg1vFkZKo5gYVcGKE8NTe">你</em><svg class="ic" data-page-node-id="PdpNLT9s6YY3BOxUgurh0S"><use href="#i-align" data-page-node-id="KvFP3aqh0yle7TCxpUIKk2"/></svg><b data-page-node-id="4vtfZECPqfSc86Zr6xcC76">比对</b></div>
+      <span class="ar" data-page-node-id="pTyN0TNPnxriK5ZP4E4eUt"><svg class="ic" data-page-node-id="eMKJejnO5jJaGGXNpp4HxM"><use href="#i-arrow" data-page-node-id="59GvOCFXX14Qx958OCkR36"/></svg></span>
+      <div class="step5" data-page-node-id="a6u28GnWSyjtJeySdYttDs"><svg class="ic" data-page-node-id="VtcLli7ubLO7HTGHJ7mHxf"><use href="#i-search" data-page-node-id="KkvgHtlrbJ8UmSblluLtCD"/></svg><b data-page-node-id="MZcIAVBf19OuO6aI1yjZl0">变异识别</b></div>
+      <span class="ar" data-page-node-id="e6NDbn4ani3sCVbP0fzmpA"><svg class="ic" data-page-node-id="kc2amUavuUSPm1QuHGIl3g"><use href="#i-arrow" data-page-node-id="KBAAt0nDTvUE65ZRonaozK"/></svg></span>
+      <div class="step5 you" data-page-node-id="LrHCMwAFuqUaADPHhfmri7"><em data-page-node-id="4cnARn6RV7CoCjcK6jbqV8">你+AI</em><svg class="ic" data-page-node-id="4KMjHz03sSFGrwFshhUTF7"><use href="#i-ai" data-page-node-id="j3xhj0zOMkhcrlyen4W7HA"/></svg><b data-page-node-id="tAEKs0tTLzs4yxDDdfGnQT">解读</b></div>
+    </div>
+    <div class="fig-cap" data-page-node-id="Omefav9wDYLkWPT2ydMIBa">图示 · 五步流程，紫色标记是你在本站扮演的三步</div>
+  </div>
+</template>
+
+<script src="site.js"></script>
+<script src="api.js"></script>
+<script src="gate.js"></script>
+<script src="terms.js"></script>
+<script src="manual.js"></script>
+<script>
+function gdUserKey(base){var u='';try{u=(window.GD&&GD.getUser())||'';}catch(e){u='';}if(u&&typeof u==='object')u=u.username||'';return base+(u||'guest');}
+
+/* ==========================================================
+   科普页 · 开场交代（探长把手册递过来）
+   只在第一次进页面时播；之后要点「让探长再说一遍」才播
+   ========================================================== */
+(function () {
+  'use strict';
+
+  var LINES = [
+    '这本《侦探须知》是我特意给你备的，收好。往后办案拿不准的时候，它顶得上半个师父。',
+    '一共九页：四页打地基，两页教破案新招，两页开眼界，最后一页把全程串起来。目录上只写了题目，想看得细一点，随时翻开就好。',
+    '哪页要紧、哪页可以先跳过，我在页边都替你标好了。慢慢看，读完一页点一下「已读」，对应的案子自然就开了。',
+    '那就这样，我替你翻开第一页——讲基因的。看完这一页，后面几页你就能看明白了。'
+  ];
+
+  function play() {
+    GDGate.play({
+      lines: LINES,
+      /* 换新键名：老键名会被上一次「看过」的记录挡住，开场白就再也不出现了 */
+      key: gdUserKey('gd_manual_intro_v2_'),
+      endLabel: '收下这本手册',
+      onFinish: function (skipped) {
+        /* 跳过的人自己动手翻，不替他做主 */
+        if (!skipped && window.GDManual) GDManual.open();
+      }
+    });
+  }
+
+  var btn = document.getElementById('brief-replay');
+  if (btn) btn.addEventListener('click', play);
+
+  /* 第一次自动播，之后安静等着 */
+  var seen = false;
+  try { seen = localStorage.getItem(gdUserKey('gd_manual_intro_v2_')) === '1'; } catch (e) { seen = false; }
+  if (!seen) setTimeout(play, 480);
+})();
+</script>
+<script src="helix.js"></script>
+</body>
+</html>

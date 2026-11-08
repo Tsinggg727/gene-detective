@@ -1,0 +1,1001 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <link rel="icon" type="image/svg+xml" href="favicon.svg">
+    <link rel="icon" type="image/png" sizes="64x64" href="favicon.png">
+<title>我的报告 · 基因侦探</title>
+<link rel="stylesheet" href="site.css">
+<style>
+/* ==========================================================
+   F4 结案报告 · 锁定态（0/6）
+   形态 = 一张压在档案袋里的手写报告纸
+   ========================================================== */
+.page-head { padding-top: calc(var(--nav-h) + 52px); padding-bottom: 0; }
+.page-head::before { background-position: 76% 24%; opacity: .52; }
+
+.report-wrap { padding: 32px 0 92px; position: relative; }
+.report-wrap::before { content: ""; position: absolute; inset: -10% 0; z-index: 0;
+  background: url("watercolor-bg.svg") center / cover no-repeat; opacity: .44; pointer-events: none;
+  -webkit-mask-image: linear-gradient(180deg, transparent 0, #000 22%, #000 82%, transparent 100%);
+  mask-image: linear-gradient(180deg, transparent 0, #000 22%, #000 82%, transparent 100%); }
+
+/* 报告纸 */
+.sheet { position: relative; z-index: 1; max-width: 880px; margin: 0 auto;
+  background:
+    radial-gradient(130% 90% at 12% 0%, rgb(138 120 196 / .1), transparent 50%),
+    radial-gradient(120% 100% at 100% 12%, rgb(118 146 206 / .12), transparent 52%),
+    radial-gradient(120% 110% at 50% 110%, rgb(196 140 96 / .08), transparent 55%),
+    linear-gradient(180deg, #fffefa 0%, #fdf8ef 100%);
+  border-radius: 6px 22px 20px 8px;
+  border: 1px solid rgb(84 106 156 / .28);
+  box-shadow: inset 0 1px 0 rgb(255 255 255 / .9),
+              0 3px 0 rgb(84 106 156 / .10),
+              0 22px 52px -24px rgb(58 76 112 / .42),
+              0 4px 14px -8px rgb(58 76 112 / .18);
+  padding: 52px 56px 48px 70px; overflow: visible; }
+/* 左侧装订线 */
+.sheet::before { content: ""; position: absolute; left: 26px; top: 0; bottom: 0; width: 1px;
+  background: repeating-linear-gradient(180deg,
+    rgb(198 96 106 / .5) 0 7px, transparent 7px 14px); }
+/* 左上纸胶带 */
+.sheet::after { content: ""; position: absolute; top: -13px; left: 46px; width: 96px; height: 26px;
+  transform: rotate(-1.8deg);
+  background: linear-gradient(180deg, rgb(214 226 240 / .9), rgb(198 213 233 / .72));
+  border-left: 1px dashed rgb(255 255 255 / .8); border-right: 1px dashed rgb(255 255 255 / .8);
+  box-shadow: 0 2px 8px -4px rgb(63 74 107 / .45); }
+
+.sheet-head { display: flex; align-items: center; gap: 20px; flex-wrap: wrap;
+  padding-bottom: 22px; border-bottom: 1.5px solid rgb(84 106 156 / .2); }
+
+/* 证件照 */
+.id-photo { position: relative; flex: none; width: 100px; height: 100px;
+  display: grid; place-items: center; overflow: hidden; border-radius: 5px;
+  background: linear-gradient(158deg, #f3efe2, #e5dfd0);
+  border: 1.5px solid rgb(84 106 156 / .34);
+  box-shadow: 0 3px 0 rgb(84 106 156 / .1), 0 13px 20px -15px rgb(58 76 112 / .65);
+  transform: rotate(-1.4deg); }
+.id-photo img { width: 100%; height: 100%; object-fit: cover; display: block; }
+.id-photo [hidden] { display: none !important; }
+.id-photo .id-fb { font-family: var(--font-display); font-size: 42px; font-weight: 900;
+  color: rgb(84 106 156 / .42); }
+.id-photo::after { content: ""; position: absolute; inset: 0; pointer-events: none;
+  border-radius: 3px; box-shadow: inset 0 0 0 3px rgb(255 255 255 / .48); }
+
+.id-meta { flex: 1; min-width: 172px; }
+.id-kick { display: block; font-family: var(--font-mono); font-size: 9.5px; font-weight: 700;
+  letter-spacing: .2em; color: var(--blue-500); }
+.id-name { display: flex; align-items: baseline; gap: 11px; flex-wrap: wrap;
+  margin: 6px 0 5px; }
+.id-name b { font-family: var(--font-display); font-size: 36px; font-weight: 900;
+  color: var(--blue-900); letter-spacing: .01em; line-height: 1.1;
+  overflow-wrap: anywhere; }
+.id-rank { font-family: var(--font-mono); font-size: 10.5px; font-weight: 700; letter-spacing: .1em;
+  color: rgb(var(--wc-blue-deep) / .92); }
+
+.sheet-head .stamp { margin-left: auto; transform: rotate(-6deg);
+  font-family: var(--font-display); font-size: 15px; font-weight: 900; letter-spacing: .16em;
+  color: rgb(198 96 106 / .95); padding: 7px 14px;
+  border: 2.5px solid rgb(198 96 106 / .78); border-radius: 8px 12px 7px 11px;
+  box-shadow: inset 0 0 0 1px rgb(198 96 106 / .22); }
+
+/* 锁定提示条 */
+.lockbar { display: flex; align-items: center; gap: 12px; margin: 22px 0 6px;
+  padding: 14px 18px; border-radius: 12px 16px 11px 15px;
+  background: rgb(var(--wc-blue) / .18);
+  border: 1px dashed rgb(var(--wc-blue-deep) / .38); }
+.lockbar[hidden] { display: none; }
+.lockbar .ic { width: 20px; height: 20px; stroke: var(--blue-700); flex: none; }
+.lockbar b { font-size: 13.5px; color: var(--blue-900); display: block; }
+.lockbar span { font-size: 12px; color: var(--text-3); }
+
+/* 六案汇总 */
+.sum-title { margin: 38px 0 18px; font-size: 11.5px; font-weight: 700; letter-spacing: .14em;
+  color: var(--blue-700); font-family: var(--font-mono); }
+/* 六宫格：3 列 × 2 行，一屏看完，无需滚动 */
+.sum-list { display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); gap: 22px; }
+
+/* 总评荣誉横幅：结案后醒目呈现头衔 + 星级 + 总用时 */
+.honor-bar { position: relative; display: flex; align-items: center; gap: 20px; flex-wrap: wrap;
+  margin: 22px 0 2px; padding: 22px 26px; border-radius: 8px;
+  background:
+    radial-gradient(120% 180% at 0% 0%, rgb(138 120 196 / .08), transparent 52%),
+    linear-gradient(120deg, rgb(var(--wc-blue) / .09), rgb(var(--wc-violet) / .06));
+  border: 1px solid rgb(var(--wc-blue-deep) / .16); border-left: 5px solid rgb(var(--wc-violet-deep) / .32);
+  box-shadow: inset 0 1px 0 rgb(255 255 255 / .7), 0 14px 30px -18px rgb(58 72 140 / .3);
+  overflow: hidden; }
+.honor-bar::after { content: ""; position: absolute; right: -30px; top: -30px; width: 150px; height: 150px;
+  border-radius: 50%; background: radial-gradient(circle, rgb(138 120 196 / .1), transparent 68%);
+  pointer-events: none; }
+.honor-bar::before { content: "\201C"; align-self: flex-start; margin-top: -8px;
+  font-family: var(--font-display); font-weight: 900; font-size: 52px; line-height: 1;
+  color: rgb(var(--wc-violet) / .26); }
+.honor-main { flex: 1; min-width: 180px; }
+.honor-kick { display: block; font-family: var(--font-mono); font-size: 10px; font-weight: 700;
+  letter-spacing: .18em; color: var(--blue-500); }
+.honor-title { font-family: var(--font-display); font-size: 30px; font-weight: 900;
+  color: var(--blue-900); margin-top: 4px; letter-spacing: .02em; line-height: 1.1; }
+.honor-sub { font-size: 13px; color: var(--text-2); margin-top: 6px; }
+.honor-stars { display: inline-flex; align-items: center; gap: 5px; }
+.honor-stars i { font-style: normal; font-size: 26px; color: #c9cddc;
+  text-shadow: 0 1px 0 rgb(255 255 255 / .6); }
+.honor-stars i.on { color: #6676bd;
+  text-shadow: 0 1px 2px rgb(78 96 158 / .4), 0 0 10px rgb(122 138 209 / .5); }
+.honor-time { margin-left: auto; text-align: right; font-family: var(--font-mono);
+  font-size: 11.5px; color: var(--text-3); letter-spacing: .04em; }
+.honor-time b { display: block; font-size: 24px; font-weight: 700; color: var(--blue-700); }
+.honor-bar[hidden] { display: none; }
+.sum-row { display: flex; flex-direction: column; align-items: center; text-align: center;
+  gap: 12px; padding: 26px 16px 24px; border-radius: 12px;
+  /* 无边框，纯渐变晕染底 + 极淡内高光，避免「框」的硬边感 */
+  background:
+    radial-gradient(130% 90% at 50% 0%, rgb(138 120 196 / .09), transparent 60%),
+    linear-gradient(180deg, rgb(255 253 248 / .8), rgb(246 243 236 / .5));
+  box-shadow: inset 0 1px 0 rgb(255 255 255 / .8);
+  transition: transform .3s, box-shadow .3s, background .3s; }
+.sum-row:hover { box-shadow: inset 0 1px 0 rgb(255 255 255 / .8), 0 10px 22px -14px rgb(58 72 140 / .4);
+  transform: translateY(-2px); }
+/* 已结案的宫格：淡蓝紫渐变晕染，未结案更淡，形成层次 */
+.sum-row.done {
+  background:
+    radial-gradient(130% 90% at 50% 0%, rgb(138 120 196 / .16), transparent 62%),
+    radial-gradient(120% 100% at 50% 108%, rgb(118 146 206 / .12), transparent 58%),
+    linear-gradient(180deg, rgb(247 245 252 / .9), rgb(239 239 248 / .6)); }
+.sum-row .n { font-family: var(--font-mono); font-size: 11px;
+  font-weight: 700; color: var(--text-3); letter-spacing: .08em; }
+.sum-row.done .n { color: #7180bd; }
+/* 案件名放大强调 */
+.sum-row .k { font-family: var(--font-display); font-size: 19px;
+  font-weight: 800; letter-spacing: .02em; color: var(--text-1); line-height: 1.18; }
+.sum-row .k em { display: block; font-style: normal; font-size: 11px; color: var(--text-3); opacity: .92;
+  font-family: var(--font-mono); font-weight: 400; margin-top: 4px; }
+/* 结果描述列：不再展示（只保留徽章 + 星级 + 徽章名） */
+.sum-row .v { display: none; }
+
+/* 徽章位：一枚圆章 + 章下方的徽章名 + 星级。
+   未结案 = 虚线空槽（位置先留好），结案就地点亮，不再写「已结案」字样 */
+.sum-row .medal-cell { display: flex; flex-direction: column;
+  align-items: center; gap: 9px; margin-top: 4px; }
+/* 徽章放大强调：报告页核心视觉 */
+.sum-row .medal-cell .medal { --m-size: 72px; }
+.medal-name { font-size: 11.5px; line-height: 1.25; letter-spacing: .02em;
+  color: rgb(84 106 156 / .62); text-align: center; white-space: nowrap;
+  transition: color var(--t-state), font-weight var(--t-state); }
+.sum-row.done .medal-name { color: #4f5f9e; font-weight: 700; }
+
+/* 徽章星级：与案件页一致的蓝紫珐琅色系（亮星蓝紫、暗星浅灰蓝） */
+.medal-cell .stars { display: inline-flex; align-items: center; gap: 4px; line-height: 1; }
+.medal-cell .stars i { font-style: normal; font-size: 16px; color: #c9cddc;
+  text-shadow: 0 1px 0 rgb(255 255 255 / .6); transition: color .3s; }
+.medal-cell .stars i.on { color: #6676bd;
+  text-shadow: 0 1px 2px rgb(78 96 158 / .4), 0 0 6px rgb(122 138 209 / .35); }
+
+/* 已结案的行 */
+.sum-row.done .v { color: var(--text-2); font-weight: 600; }
+.sum-row.done .n { color: #7180bd; }/* 总评：传奇侦探线，六案平均 ≥95 才会出现 */
+.sum-total { margin-top: 18px; padding: 13px 2px 2px;
+  border-top: 1px dashed rgb(84 106 156 / .32);
+  font-size: 12.5px; color: var(--text-2); display: flex; flex-wrap: wrap;
+  gap: 6px 8px; align-items: baseline; }
+.sum-total b { font-family: var(--font-mono); color: rgb(150 108 34); white-space: nowrap; }
+.sum-total[hidden] { display: none; }
+.sheet.closed .stamp { color: rgb(78 130 102 / .95);
+  border-color: rgb(78 130 102 / .78); box-shadow: inset 0 0 0 1px rgb(78 130 102 / .22); }
+.sheet.closed { border-color: rgb(127 174 148 / .4); }
+
+/* 重新挑战的二次确认态 */
+.btn.confirming { color: #a8545d; border-color: rgb(201 106 114 / .6);
+  background: rgb(201 106 114 / .1); }
+
+/* 档案号 */
+.sheet .file-no { font-family: var(--font-mono); font-size: 11px; color: var(--text-3);
+  letter-spacing: .08em; margin-top: 2px; }
+
+/* 底部操作 */
+.sheet-foot { display: flex; align-items: center; gap: 14px; flex-wrap: wrap;
+  margin-top: 30px; padding-top: 22px; border-top: 1.5px solid rgb(84 106 156 / .2); }
+.sheet-foot .note { font-size: 11.5px; color: var(--text-3); font-family: var(--font-mono); }
+.sheet-foot .acts { margin-left: auto; display: flex; gap: 10px; flex-wrap: wrap; }
+.btn-sm { font-size: 13px; padding: 9px 18px; }
+.btn[disabled] { cursor: not-allowed; opacity: .45; filter: grayscale(.4); transform: none !important; }
+
+/* 提示条（分享复制反馈） */
+.toast { position: fixed; left: 50%; bottom: 34px; z-index: 300; max-width: calc(100% - 36px);
+  padding: 12px 20px; text-align: center; font-size: 13px; line-height: 1.6;
+  color: var(--blue-900); border-radius: 14px 18px 13px 17px;
+  background: linear-gradient(180deg, #fffdf8, #fbf6ee);
+  border: 1px solid rgb(var(--wc-blue-deep) / .22);
+  box-shadow: inset 0 1px 0 rgb(255 255 255 / .9), 0 18px 40px -18px rgb(63 74 107 / .5);
+  opacity: 0; transform: translate(-50%, 16px); pointer-events: none;
+  transition: opacity 280ms, transform 340ms var(--ease-out-quart); }
+.toast.show { opacity: 1; transform: translate(-50%, 0); }
+
+/* 状态横幅右侧的行动按钮（无外框，直接嵌在横幅里） */
+.lock-acts { margin-left: auto; display: flex; align-items: center; gap: 10px; flex-wrap: wrap; }
+
+/* ==========================================================
+   档案袋 · 拆封动效（拆开之后才是结案报告）
+   ========================================================== */
+html.report-sealed { overflow: hidden; }
+/* 封着的时候报告纸只是「落在下面」，不做透明隐藏：
+   即便动效不执行，拆封后内容也一定看得见 */
+html.report-sealed .sheet { transform: translateY(76px) scale(.986); }
+.sheet { transition: transform 1.12s var(--ease-out-expo); }
+
+.dossier-gate { position: fixed; inset: 0; z-index: 140;
+  display: grid; place-items: center; padding: 24px;
+  background: radial-gradient(74% 64% at 50% 44%, rgb(62 70 100 / .86), rgb(30 36 56 / .96));
+  -webkit-backdrop-filter: blur(9px) saturate(118%);
+  backdrop-filter: blur(9px) saturate(118%);
+  transition: opacity .62s var(--ease-out-quart); }
+.dossier-gate::before { content: ""; position: absolute; inset: 0; pointer-events: none;
+  background: url("watercolor-bg.svg") center / cover no-repeat;
+  opacity: .18; mix-blend-mode: soft-light; }
+.dossier-gate.opened { opacity: 0; pointer-events: none; }
+
+.dossier { position: relative; display: block; width: min(410px, 84vw);
+  padding: 0; border: none; background: none; cursor: pointer; text-align: left;
+  font-family: var(--font-body); transform: rotate(-1.4deg);
+  transition: transform .5s var(--ease-out-quart); }
+.dossier:hover { transform: translateY(-4px) rotate(-.3deg); }
+.dossier:focus-visible { outline: 2px dashed rgb(253 250 244 / .8);
+  outline-offset: 10px; border-radius: 14px; }
+
+/* 牛皮纸袋身 */
+.ds-body { position: relative; display: block; min-height: 302px;
+  padding: 142px 28px 26px;
+  border-radius: 10px 14px 12px 8px;
+  background:
+    repeating-linear-gradient(0deg, rgb(122 98 64 / .05) 0 1px, transparent 1px 4px),
+    linear-gradient(158deg, #ecdfc6 0%, #e3d4b8 44%, #e9dcbf 100%);
+  border: 1px solid rgb(126 104 72 / .34);
+  box-shadow: inset 0 1px 0 rgb(255 255 255 / .6),
+              inset 0 -20px 26px -22px rgb(96 76 48 / .55),
+              0 3px 0 rgb(126 104 72 / .22),
+              0 30px 52px -26px rgb(70 58 40 / .6); }
+
+/* 封舌：绕顶边翻起 */
+.ds-flap { position: absolute; left: -1px; right: -1px; top: -1px; height: 104px; z-index: 3;
+  transform-origin: 50% 0;
+  background: linear-gradient(180deg, #ddc9a6, #c9b189 76%, #bfa67c);
+  clip-path: polygon(0 0, 100% 0, 50% 100%);
+  border-top: 1px solid rgb(126 104 72 / .3);
+  filter: drop-shadow(0 8px 9px rgb(96 76 48 / .28));
+  transition: transform .84s cubic-bezier(.5, 0, .25, 1); }
+.ds-tape { position: absolute; left: 50%; top: 12px; width: 128px; height: 22px;
+  margin-left: -64px; transform: rotate(-1.6deg);
+  background: linear-gradient(180deg, rgb(214 226 240 / .92), rgb(197 213 235 / .8));
+  border-left: 1px dashed rgb(255 255 255 / .85);
+  border-right: 1px dashed rgb(255 255 255 / .85);
+  box-shadow: 0 2px 6px -3px rgb(70 58 40 / .45); }
+
+/* 火漆封印 */
+.ds-wax { position: absolute; left: 50%; top: 75px; z-index: 5;
+  width: 58px; height: 58px; margin-left: -29px; display: grid; place-items: center;
+  border-radius: 50%;
+  background: radial-gradient(circle at 34% 26%, #ab9bd0, #8070b0 46%, #6c5c9c 100%);
+  box-shadow: inset 0 2px 3px rgb(255 255 255 / .28),
+              inset 0 -4px 9px rgb(52 42 84 / .5),
+              0 8px 16px -7px rgb(58 46 90 / .75);
+  transition: transform .48s var(--ease-out-quart), opacity .42s; }
+.ds-wax .ic { width: 30px; height: 30px; color: rgb(250 246 238 / .82); stroke-width: 1.5; }
+
+/* 袋面标签 */
+.ds-head { display: flex; align-items: center; gap: 10px; margin-bottom: 16px; }
+.ds-no { font-family: var(--font-mono); font-size: 9.5px; font-weight: 700;
+  letter-spacing: .16em; color: rgb(104 84 56 / .85); }
+.ds-flag { margin-left: auto; font-family: var(--font-mono); font-size: 9px; font-weight: 700;
+  letter-spacing: .1em; color: #96604f; padding: 2px 7px; border-radius: 4px;
+  border: 1px solid rgb(160 96 82 / .48); transform: rotate(-2.5deg); }
+.ds-title { display: block; font-family: var(--font-display); font-size: 36px; font-weight: 900;
+  letter-spacing: .12em; color: #56452e; line-height: 1.2; }
+.ds-sub { display: block; margin-top: 7px; font-family: var(--font-mono); font-size: 10.5px;
+  letter-spacing: .05em; color: #826d51; }
+.ds-meta { display: flex; gap: 18px; flex-wrap: wrap; margin-top: 26px; padding-top: 14px;
+  padding-right: 96px; border-top: 1px dashed rgb(126 104 72 / .42);
+  font-family: var(--font-mono); font-size: 11px; color: #826d51; }
+.ds-meta b { color: #4e3f2a; font-weight: 700; }
+.ds-mark { position: absolute; right: 22px; bottom: 18px; z-index: 2;
+  width: 84px; height: 84px; border-radius: 50%; display: grid; place-items: center;
+  text-align: center; font-family: var(--font-display); font-size: 10.5px; font-weight: 900;
+  letter-spacing: .08em; line-height: 1.55; color: rgb(78 96 140 / .72);
+  border: 2px solid rgb(78 96 140 / .55);
+  box-shadow: inset 0 0 0 3px rgb(78 96 140 / .12);
+  transform: rotate(-12deg); }
+
+.ds-hint { display: flex; align-items: center; justify-content: center; gap: 7px;
+  margin-top: 20px; font-family: var(--font-mono); font-size: 12px; font-weight: 700;
+  letter-spacing: .1em; color: rgb(247 243 234 / .88);
+  animation: hint-pulse 2.6s var(--ease-in-out) infinite; }
+.ds-hint .ic { width: 14px; height: 14px; }
+@keyframes hint-pulse { 0%, 100% { opacity: .82 } 50% { opacity: 1 } }
+
+/* 拆封两拍：蜡封碎裂 → 封舌向上翻折
+   用 scaleY 翻折而不是 rotateX：不依赖 3D 渲染，任何浏览器都稳 */
+.dossier.cracking .ds-wax { transform: scale(.55) rotate(22deg); opacity: 0; }
+.dossier.cracking .ds-flap { transform: scaleY(.94); }
+.dossier.cracking .ds-body { animation: ds-nudge .46s var(--ease-in-out); }
+@keyframes ds-nudge {
+  0%, 100% { transform: none; }
+  22% { transform: translate(-3px, 1px) rotate(-.45deg); }
+  58% { transform: translate(3px, -1px) rotate(.4deg); }
+}
+.dossier.opening .ds-flap { transform: scaleY(-.92);
+  filter: drop-shadow(0 12px 14px rgb(96 76 48 / .3)); }
+.dossier.opening .ds-hint { opacity: .3; }
+
+@media (max-width: 600px) {
+  .dossier { width: min(360px, 88vw); }
+  .ds-body { padding: 128px 22px 22px; min-height: 286px; }
+  .ds-title { font-size: 29px; }
+  .ds-flap { height: 88px; }
+  .ds-wax { top: 63px; width: 50px; height: 50px; margin-left: -25px; }
+  .ds-wax .ic { width: 26px; height: 26px; }
+  .ds-mark { width: 68px; height: 68px; font-size: 9px; right: 16px; bottom: 14px; }
+  .ds-meta { gap: 14px; padding-right: 76px; margin-top: 20px; }
+}
+
+@media (max-width: 900px) {
+  .sheet { padding: 38px 26px 34px 34px; }
+  .sheet::before { left: 14px; }
+  .lockbar { flex-wrap: wrap; }
+  .lock-acts { margin-left: 46px; }
+  .sheet-head { display: grid; grid-template-columns: auto minmax(0, 1fr);
+    gap: 12px 14px; align-items: center; }
+  .id-photo { grid-column: 1; grid-row: 1; width: 76px; height: 76px; }
+  .id-photo .id-fb { font-size: 32px; }
+  .id-meta { grid-column: 2; grid-row: 1; min-width: 0; }
+  .id-name { gap: 8px; margin: 4px 0 4px; }
+  .id-name b { font-size: 24px; }
+  .id-rank { font-size: 9.5px; }
+  .sheet-head .stamp { grid-column: 1 / -1; grid-row: 2; justify-self: end;
+    margin-left: 0; font-size: 13px; padding: 5px 12px; }
+
+  /* 窄屏宫格：改 2 列 */
+  .sum-list { grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 16px; }
+  .sum-row { padding: 22px 12px 20px; }
+  .sum-row .k { font-size: 17px; }
+  .sum-row .medal-cell .medal { --m-size: 62px; }
+  .honor-bar { padding: 18px 18px; }
+  .honor-title { font-size: 24px; }
+}
+
+@media (max-width: 460px) {
+  /* 极窄屏：宫格改单列 */
+  .sum-list { grid-template-columns: 1fr; }
+}
+</style>
+</head>
+<body>
+
+<svg width="0" height="0" style="position:absolute" aria-hidden="true"><defs>
+  <symbol id="i-dna" viewBox="0 0 24 24"><path d="M8.5 2.5c0 4.6 7 6.6 7 9.5s-7 4.9-7 9.5"/><path d="M15.5 2.5c0 4.6-7 6.6-7 9.5s7 4.9 7 9.5"/><path d="M9.6 6.2h4.8M9 12h6M9.6 17.8h4.8"/></symbol>
+  <symbol id="i-home" viewBox="0 0 24 24"><path d="M3.6 10.4 12 3.4l8.4 7"/><path d="M5.6 11.6V20h12.8v-8.4"/><path d="M9.8 20v-5.2h4.4V20"/></symbol>
+  <symbol id="i-book" viewBox="0 0 24 24"><path d="M12 6.4C10.4 5 8 4.4 4.4 4.6v13.2c3.6-.2 6 .4 7.6 1.8 1.6-1.4 4-2 7.6-1.8V4.6C16 4.4 13.6 5 12 6.4Z"/><path d="M12 6.4v13.2"/></symbol>
+  <symbol id="i-case" viewBox="0 0 24 24"><path d="M3.4 8.2h17.2v10.4a1.6 1.6 0 0 1-1.6 1.6H5a1.6 1.6 0 0 1-1.6-1.6Z"/><path d="M8.4 8.2V5.6A1.6 1.6 0 0 1 10 4h4a1.6 1.6 0 0 1 1.6 1.6v2.6"/><path d="M3.4 12.6h17.2M10 12.6h4"/></symbol>
+  <symbol id="i-medal" viewBox="0 0 24 24"><circle cx="12" cy="14.6" r="5.4"/><path d="M9.2 9.6 6.6 3.4h10.8l-2.6 6.2"/><path d="M12 12.2l.9 1.9 2 .3-1.45 1.4.35 2-1.8-1-1.8 1 .35-2L9.1 14.4l2-.3Z"/></symbol>
+  <symbol id="i-arrow" viewBox="0 0 24 24"><path d="M4 12h15"/><path d="M13.4 6l6 6-6 6"/></symbol>
+  <symbol id="i-lock" viewBox="0 0 24 24"><rect x="4.6" y="10.6" width="14.8" height="10" rx="2.6"/><path d="M8.4 10.6V7.8a3.6 3.6 0 0 1 7.2 0v2.8"/><path d="M12 14.6v2.4"/></symbol>
+  <symbol id="i-scissors" viewBox="0 0 24 24"><circle cx="6" cy="6.5" r="2.6"/><circle cx="6" cy="17.5" r="2.6"/><path d="M8.2 8.2L20.5 18M20.5 6L8.2 15.8"/></symbol>
+  <symbol id="i-align" viewBox="0 0 24 24"><path d="M3 6.5h18"/><path d="M3 17.5h6.4M13.2 17.5H21"/><path d="M10.2 14.6v5.8" stroke-dasharray="1.6 2.2"/><path d="M3 11.2h8.4M14.2 11.2H21"/></symbol>
+  <symbol id="i-search" viewBox="0 0 24 24"><circle cx="10.5" cy="10.5" r="6.8"/><path d="M15.6 15.6L21 21"/></symbol>
+  <symbol id="i-code" viewBox="0 0 24 24"><path d="M9 7.4 4 12l5 4.6"/><path d="M15 7.4 20 12l-5 4.6"/><path d="M13.4 5l-2.8 14"/></symbol>
+  <symbol id="i-family" viewBox="0 0 24 24"><circle cx="7" cy="6.4" r="2.4"/><circle cx="17" cy="6.4" r="2.4"/><circle cx="12" cy="17.6" r="2.4"/><path d="M7 8.8v3.4h10V8.8M12 12.2v3"/></symbol>
+  <symbol id="i-pill" viewBox="0 0 24 24"><rect x="2.6" y="8.6" width="18.8" height="6.8" rx="3.4"/><path d="M12 8.6v6.8" stroke-dasharray="1.8 2"/></symbol>
+  <symbol id="i-reset" viewBox="0 0 24 24"><path d="M20 12a8 8 0 1 1-2.6-5.9"/><path d="M20.4 4v4.6h-4.6"/></symbol>
+  <symbol id="i-share" viewBox="0 0 24 24"><path d="M12 15.6V4.4"/><path d="M8 8.2 12 4.2l4 4"/><path d="M5 14.4v4.2a1.6 1.6 0 0 0 1.6 1.6h10.8a1.6 1.6 0 0 0 1.6-1.6v-4.2"/></symbol>
+</defs></svg>
+
+<div id="wc" aria-hidden="true"><span class="wc-veil"></span></div>
+<div id="grain" aria-hidden="true"></div>
+<div id="progress"></div>
+
+<div class="nav-shell">
+  <nav class="top">
+    <a class="logo" href="home.html"><svg class="mark ic"><use href="#i-dna"/></svg><span class="word">基因侦探</span></a>
+    <span class="nav-div" aria-hidden="true"></span>
+    <div class="nav-links">
+      <a href="home.html"><span class="hl"></span><svg class="ic"><use href="#i-home"/></svg><span class="lbl">首页</span></a>
+      <a href="science.html"><span class="hl"></span><svg class="ic"><use href="#i-book"/></svg><span class="lbl">手册</span></a>
+      <a href="cases.html"><span class="hl"></span><svg class="ic" viewBox="0 0 24 24"><path d="M6.4 3.6h8l3.2 3.2v9.2a1.4 1.4 0 0 1-1.4 1.4H6.4a1.4 1.4 0 0 1-1.4-1.4V5a1.4 1.4 0 0 1 1.4-1.4Z"/><path d="M14 3.6V7h3.4"/><path d="M8.4 11.4h5.2M8.4 14.6h5.2"/></svg><span class="lbl">案件簿</span></a>
+      <a href="ranking.html"><span class="hl"></span><svg class="ic" viewBox="0 0 24 24"><path d="M3.6 20h16.8"/><path d="M6.8 16.4V10h4.2V20"/><path d="M13.8 20V4.8h4.2V20"/></svg><span class="lbl">排行榜</span></a>
+      <a href="report.html" class="on"><span class="hl"></span><svg class="ic"><use href="#i-medal"/></svg><span class="lbl">我的报告</span></a>
+    </div>
+  </nav>
+</div>
+
+<section class="page-head">
+  <div class="wrap">
+    <span class="kicker rv">Final Report · 结案报告</span>
+    <h2 class="rv" style="--i:1">你的结案报告</h2>
+    <p class="lead rv" style="--i:2">六宗案件全部告破后，这里会自动汇总你的判定结果，并在每宗已结案的位置盖上对应的徽章。</p>
+  </div>
+</section>
+
+<!-- ============ 档案袋：拆开之后才是结案报告 ============ -->
+<div class="dossier-gate" id="dossier-gate">
+  <button class="dossier" id="dossier" type="button" aria-label="拆开档案袋，取出结案报告">
+    <span class="ds-flap"><span class="ds-tape"></span></span>
+    <span class="ds-body">
+      <span class="ds-head">
+        <span class="ds-no" id="ds-no">GD FILE · NO ENTRY</span>
+        <span class="ds-flag">CONFIDENTIAL</span>
+      </span>
+      <span class="ds-title">结案报告</span>
+      <span class="ds-sub">精准医学侦探社 · 六宗基因悬案</span>
+      <span class="ds-meta">
+        <span>侦探 <b id="ds-name">未登记</b></span>
+        <span>进度 <b id="ds-prog">0 / 6</b></span>
+      </span>
+      <span class="ds-mark">未拆封<br>机密档案</span>
+      <span class="ds-wax" aria-hidden="true"><svg class="ic"><use href="#i-dna"/></svg></span>
+    </span>
+    <span class="ds-hint">点击拆封 <svg class="ic"><use href="#i-arrow"/></svg></span>
+  </button>
+</div>
+<script>
+/* 每次进入报告页都要拆封：不再用 sessionStorage 跳过 */
+(function () {
+  var gate = document.getElementById('dossier-gate');
+  document.documentElement.classList.add('report-sealed');
+  if (gate) gate.hidden = false;
+})();
+</script>
+
+<div class="report-wrap">
+  <div class="sheet rv">
+    <div class="sheet-head">
+      <div class="id-photo" id="id-photo">
+        <img id="id-photo-img" alt="" hidden>
+        <span class="id-fb" id="id-photo-fb">侦</span>
+      </div>
+      <div class="id-meta">
+        <span class="id-kick">FINAL REPORT · 结案报告</span>
+        <div class="id-name">
+          <b id="id-name">未登记</b>
+          <span class="id-rank" id="rank">见习侦探</span>
+        </div>
+        <div class="file-no" id="file-no">档案号 —— · 未登记</div>
+      </div>
+      <span class="stamp" id="stamp">未结案</span>
+    </div>
+
+    <div class="lockbar" id="lockbar">
+      <svg class="ic"><use href="#i-lock"/></svg>
+      <div>
+        <b id="lock-title">侦破全部六案后，解锁你的结案报告</b>
+        <span id="lock-desc">当前进度 0 / 6 ｜ 报告内容在破案后自动生成，无需手填</span>
+      </div>
+      <div class="lock-acts">
+        <a class="btn btn-primary btn-sm" id="lock-main" href="cases.html">继续侦办</a>
+        <a class="btn btn-ghost btn-sm" id="lock-sub" href="science.html">回看手册</a>
+      </div>
+    </div>
+
+    <div class="honor-bar" id="honor-bar" hidden>
+      <div class="honor-main">
+        <span class="honor-kick" id="honor-kick">六案全破 · 最终评定</span>
+        <div class="honor-title" id="honor-title">传奇侦探</div>
+        <div class="honor-sub" id="honor-sub">六枚徽章到齐 · 全员满星</div>
+      </div>
+      <span class="honor-stars" id="honor-stars"></span>
+      <span class="honor-time"><b id="honor-time">——</b><span>总用时</span></span>
+    </div>
+
+    <div class="sum-title">六案结果汇总</div>
+    <div class="sum-list">
+      <div class="sum-row" data-level="1">
+        <span class="n">01</span>
+        <span class="k">潦草的抄本<em>修剪量 · 低质量区段起点</em></span>
+        <span class="v blank">—</span>
+        <span class="medal-cell">
+          <span class="medal" data-level="1"><svg class="ic"><use href="#i-scissors"/></svg></span>
+          <span class="medal-name">质控新手</span>
+        </span>
+      </div>
+      <div class="sum-row" data-level="2">
+        <span class="n">02</span>
+        <span class="k">失踪的字母<em>匹配率 · 缺口位置</em></span>
+        <span class="v blank">—</span>
+        <span class="medal-cell">
+          <span class="medal" data-level="2"><svg class="ic"><use href="#i-align"/></svg></span>
+          <span class="medal-name">比对达人</span>
+        </span>
+      </div>
+      <div class="sum-row" data-level="3">
+        <span class="n">03</span>
+        <span class="k">三个嫌疑人<em>三嫌疑人判定 · 与 AI 评分对比</em></span>
+        <span class="v blank">—</span>
+        <span class="medal-cell">
+          <span class="medal" data-level="3"><svg class="ic"><use href="#i-search"/></svg></span>
+          <span class="medal-name">变异判官</span>
+        </span>
+      </div>
+      <div class="sum-row" data-level="4">
+        <span class="n">04</span>
+        <span class="k">无声的暗号<em>破译的氨基酸明文</em></span>
+        <span class="v blank">—</span>
+        <span class="medal-cell">
+          <span class="medal" data-level="4"><svg class="ic"><use href="#i-code"/></svg></span>
+          <span class="medal-name">密码破译者</span>
+        </span>
+      </div>
+      <div class="sum-row" data-level="5">
+        <span class="n">05</span>
+        <span class="k">家族的秘密<em>遗传方式</em></span>
+        <span class="v blank">—</span>
+        <span class="medal-cell">
+          <span class="medal" data-level="5"><svg class="ic"><use href="#i-family"/></svg></span>
+          <span class="medal-name">系谱分析师</span>
+        </span>
+      </div>
+      <div class="sum-row" data-level="6">
+        <span class="n">06</span>
+        <span class="k">最后的处方<em>一线治疗选择</em></span>
+        <span class="v blank">—</span>
+        <span class="medal-cell">
+          <span class="medal" data-level="6"><svg class="ic"><use href="#i-pill"/></svg></span>
+          <span class="medal-name">精准用药师</span>
+        </span>
+      </div>
+    </div>
+
+    <div class="sheet-foot">
+      <span class="note" id="note">报告生成于：—— （尚未结案）</span>
+      <div class="acts">
+        <button class="btn btn-ghost btn-sm" id="btn-share" disabled><svg class="ic"><use href="#i-share"/></svg>分享</button>
+        <button class="btn btn-ghost btn-sm" id="btn-reset" disabled><svg class="ic"><use href="#i-reset"/></svg>重新挑战</button>
+      </div>
+    </div>
+  </div>
+
+</div>
+
+<footer>
+  <div class="wrap">
+    <div class="f-top">
+      <b>基因侦探 Gene Detective</b>
+
+    </div>
+    <span>选题背景：用游戏化方式讲清「测序 → 质控 → 比对 → 变异识别 → 致病性解读」这条生物信息学主线</span>
+    <span>数据来源：NCBI ClinVar 公共数据库（教学用子集）</span>
+    <span>本站为课程作业，数据与流程均做了教学简化，不构成任何医学建议</span>
+  </div>
+</footer>
+
+<script src="site.js"></script>
+<script src="terms.js"></script>
+<script src="api.js"></script>
+<script>
+/* ==========================================================
+   报告页 · 由登录用户的进度存档实时汇总
+   results.levelN = { ...judge 返回的 result, badge? }
+   ========================================================== */
+(function () {
+  'use strict';
+
+  var sheet = document.querySelector('.sheet');
+  var stamp = document.getElementById('stamp');
+  var fileNo = document.getElementById('file-no');
+  var lockTitle = document.getElementById('lock-title');
+  var lockDesc = document.getElementById('lock-desc');
+  var lockMain = document.getElementById('lock-main');
+  var lockSub = document.getElementById('lock-sub');
+  var note = document.getElementById('note');
+  var idImg = document.getElementById('id-photo-img');
+  var idFb = document.getElementById('id-photo-fb');
+  var idName = document.getElementById('id-name');
+  var btnReset = document.getElementById('btn-reset');
+  var btnShare = document.getElementById('btn-share');
+  var dsNo = document.getElementById('ds-no');
+  var dsName = document.getElementById('ds-name');
+  var dsProg = document.getElementById('ds-prog');
+
+  var confirming = false, confirmTimer = null;
+  var logged = !!GD.getToken();
+
+  /* ---------- 侦探证件：头像 + 名字 ---------- */
+  function paintId(name) {
+    idName.textContent = name || '未登记';
+    var src = GD.avatarImg(GD.getAvatar());
+    if (src) {
+      idImg.src = src;
+      idImg.alt = (name || '侦探') + ' 的头像';
+      idImg.hidden = false;
+      idFb.hidden = true;
+    } else {
+      idImg.hidden = true;
+      idImg.removeAttribute('src');
+      idFb.hidden = false;
+      idFb.textContent = (name || '侦').slice(0, 1).toUpperCase();
+    }
+  }
+
+  function cut(s, n) {
+    s = String(s);
+    return s.length > n ? s.slice(0, n) + '…' : s;
+  }
+
+  function summary(i, r) {
+    if (!r) return '';
+    var t = (typeof r.elapsedSec === 'number') ? ' · 用时 ' + GD.fmtSec(r.elapsedSec) : '';
+    if (i === 1 && typeof r.trimBp === 'number') {
+      return '修剪 ' + r.trimBp + ' bp · 保留 ' + (typeof r.remaining === 'number' ? r.remaining : '—') + ' bp' + t;
+    }
+    if (i === 2 && typeof r.matchRate === 'number') return '匹配率 ' + r.matchRate + '%' + t;
+    if (i === 3) {
+      var keys = Object.keys(r).filter(function (k) {
+        return r[k] && typeof r[k] === 'object' && 'passed' in r[k];
+      });
+      if (!keys.length) return '判定已记录';
+      var ok = keys.filter(function (k) { return r[k].passed; }).length;
+      return ok + ' / ' + keys.length + ' 名嫌疑人判定正确' + t;
+    }
+    if (i === 4 && r.protein) return '蛋白序列 ' + cut(r.protein, 26) + t;
+    if (i === 5 && r.choice) return '遗传方式：' + cut(r.choice, 22) + t;
+    if (i === 6 && r.choice) return '一线方案：' + cut(r.choice, 22) + t;
+    return t.replace(/^ · /, '');
+  }
+
+  function paint(p) {
+    var done = GD.countDone(p);
+    var name = GD.getUser();
+    var lastLevel = 0;
+    for (var i = 1; i <= 6; i++) if (!p['level' + i]) { lastLevel = i; break; }
+    var left = lastLevel ? 7 - lastLevel : 0;
+    var closed = done === 6;                     /* 提前算好：汇总行的传奇判定要用 */
+
+    /* 头衔随破案数升级；未登记就写「未认证」 */
+    var rankEl = document.getElementById('rank');
+    if (rankEl) rankEl.textContent = name ? GD.titleFor(done).zh : '未认证';
+
+    /* 证件区：头像 + 名字 */
+    paintId(name);
+
+    /* 档案号 + 进度 */
+    fileNo.textContent = name
+      ? '档案号 GD-' + name + ' · 已登记 ｜ 进度 ' + done + ' / 6'
+      : '档案号 —— · 未登记 ｜ 进度 ' + done + ' / 6';
+
+    /* 档案袋上的标签也跟着走 */
+    if (dsName) dsName.textContent = name || '未登记';
+    if (dsProg) dsProg.textContent = done + ' / 6';
+    if (dsNo) dsNo.textContent = name ? 'GD FILE · GD-' + name : 'GD FILE · NO ENTRY';
+
+    /* 六案汇总 + 徽章 */
+    for (var i = 1; i <= 6; i++) {
+      var row = document.querySelector('.sum-row[data-level="' + i + '"]');
+      var medal = document.querySelector('.medal[data-level="' + i + '"]');
+      var r = p['level' + i];
+      if (row) {
+        var v = row.querySelector('.v');
+        row.classList.toggle('done', !!r);
+        v.classList.toggle('blank', !r);
+        var vt = r ? (summary(i, r) || '—') : '—';
+        if (r) {
+          /* 星级跟锦囊走（0 个 ★★★ / 1 个 ★★ / ≥2 个 ★），重演取历史最好。
+             图形星画在徽章下方：亮星金、暗星描边 */
+          paintStars(row, GD.caseStars(r.hints));
+          /* 分数只在最终报告解锁后出现，且未到传奇侦探（≥95）不亮分 */
+          if (closed) {
+            var sc = GD.caseScore(i, r.elapsedSec);
+            if (sc != null && sc >= 95) vt += ' · 传奇侦探';
+          }
+        }
+        v.textContent = vt;
+      }
+      if (medal) medal.classList.toggle('on', !!r);
+    }
+
+    /* 总评：六案平均 ≥95 才给「传奇侦探」，未到就不显示任何分数 */
+    paintTotal(closed ? p : null);
+
+    /* 荣誉横幅：结案后显示头衔 + 星级 + 总用时 */
+    paintHonor(closed ? p : null, done);
+
+    /* 状态条 */
+    sheet.classList.toggle('closed', closed);
+    stamp.textContent = closed ? '已结案' : '未结案';
+
+    if (!logged) {
+      document.getElementById('lockbar').hidden = false;
+      lockTitle.textContent = '登录后，侦破记录才会归档在这里';
+      lockDesc.textContent = '用你的侦探编号登录，六案的判定结果与徽章会跟账号走';
+      lockMain.innerHTML = '登录 / 注册 <svg class="ic arrow"><use href="#i-arrow"/></svg>';
+      lockMain.href = 'login.html?next=' + encodeURIComponent('report.html');
+      lockSub.textContent = '先看手册';
+      lockSub.href = 'science.html';
+      note.textContent = '报告生成于：—— （登录后自动汇总）';
+      btnReset.disabled = true;
+      btnShare.disabled = true;
+      return;
+    }
+
+    if (closed) {
+      /* 六案全破：报告已解锁，锁定横幅不再显示 */
+      document.getElementById('lockbar').hidden = true;
+      note.textContent = '报告生成于：' + today() + ' · 服务端存档实时汇总';
+    } else if (done > 0) {
+      document.getElementById('lockbar').hidden = false;
+      lockTitle.textContent = '还差 ' + left + ' 宗案件，就能拿下结案报告';
+      lockDesc.textContent = '当前进度 ' + done + ' / 6 ｜ 已结案的结果与徽章已经归档在下方';
+      lockMain.innerHTML = '继续侦办 <svg class="ic arrow"><use href="#i-arrow"/></svg>';
+      lockMain.href = 'case.html?n=' + lastLevel;
+      lockSub.textContent = '回看手册';
+      lockSub.href = 'science.html';
+      note.textContent = '报告生成于：' + today() + ' · 服务端存档实时汇总（未结案）';
+    } else {
+      document.getElementById('lockbar').hidden = false;
+      lockTitle.textContent = '侦破全部六案后，解锁你的结案报告';
+      lockDesc.textContent = '当前进度 0 / 6 ｜ 报告内容在破案后自动生成，无需手填';
+      lockMain.textContent = '去接案';
+      lockMain.href = 'cases.html';
+      lockSub.textContent = '先看手册';
+      lockSub.href = 'science.html';
+      note.textContent = '报告生成于：—— （尚未结案）';
+    }
+
+    btnReset.disabled = done === 0;
+    btnShare.disabled = false;
+    resetConfirmState();
+  }
+
+  /* 图形星：三颗，亮 st 颗；没结案的画三颗暗星 */
+  function paintStars(row, st) {
+    var cell = row.querySelector('.medal-cell');
+    if (!cell) return;
+    var el = cell.querySelector('.stars');
+    if (!el) {
+      el = document.createElement('span');
+      el.className = 'stars';
+      var name = cell.querySelector('.medal-name');
+      if (name && name.nextSibling) cell.insertBefore(el, name.nextSibling);
+      else cell.appendChild(el);
+    }
+    var html = '';
+    for (var k = 0; k < 3; k++) html += '<i class="' + (k < st ? 'on' : 'off') + '">★</i>';
+    el.innerHTML = html;
+  }
+
+  /* 总评 + 结局彩蛋：传奇 → 总评行 + 全员满星标注；
+     彩蛋统一由拆封动效结束后触发（见 openDossier），这里只负责排版 */
+  function paintTotal(p) {
+    var tot = document.querySelector('.sum-total');
+    if (!p) { if (tot) tot.hidden = true; return; }
+    if (GD.isLegend(p)) {
+      var sum = 0;
+      for (var i = 1; i <= 6; i++) {
+        var sc = GD.caseScore(i, p['level' + i].elapsedSec);
+        sum += (sc == null ? 100 : sc);   /* 旧存档无用时按满分计 */
+      }
+      var avg = Math.round(sum / 6);
+      if (!tot) {
+        tot = document.createElement('div');
+        tot.className = 'sum-total';
+        var last = document.querySelector('.sum-row:last-of-type');
+        if (last && last.parentNode) last.parentNode.insertBefore(tot, last.nextSibling);
+      }
+      tot.innerHTML = '六案平均 <b>' + avg + '</b> 分 · 全员满星 · <b>传奇侦探</b>';
+      tot.hidden = false;
+    } else {
+      if (tot) tot.hidden = true;
+    }
+  }
+
+  /* 荣誉横幅：结案后显示头衔 + 星级（按六案锦囊总数）+ 总用时 */
+  function paintHonor(p, done) {
+    var bar = document.getElementById('honor-bar');
+    if (!bar) return;
+    if (!p) { bar.hidden = true; return; }
+
+    var isLegend = GD.isLegend(p);
+    /* 六案全破即挂「传奇侦探」；满星+95 的真传奇另有总评行与三件套彩蛋 */
+    var title = done >= 6 ? '传奇侦探' : (GD.titleFor(done).zh || '结案侦探');
+
+    /* 六案锦囊总数 → 星级：0 ★★★ / 1-2 ★★ / ≥3 ★ */
+    var hints = 0;
+    for (var i = 1; i <= 6; i++) {
+      var r = p['level' + i];
+      if (r) hints += (typeof r.hints === 'number' ? r.hints : 0);
+    }
+    var star = hints === 0 ? 3 : (hints <= 2 ? 2 : 1);
+
+    var totalSec = 0;
+    for (var j = 1; j <= 6; j++) {
+      var rr = p['level' + j];
+      if (rr && typeof rr.elapsedSec === 'number') totalSec += rr.elapsedSec;
+    }
+
+    var kick = document.getElementById('honor-kick');
+    var titleEl = document.getElementById('honor-title');
+    var sub = document.getElementById('honor-sub');
+    var starsEl = document.getElementById('honor-stars');
+    var timeEl = document.getElementById('honor-time');
+
+    kick.textContent = isLegend ? '六案全破 · 传奇评定' : '六案全破 · 最终评定';
+    titleEl.textContent = title;
+    sub.textContent = isLegend
+      ? '六案平均 95+ · 全员满星'
+      : '六枚徽章到齐 · 用时越短越好';
+
+    var sh = '';
+    for (var k = 0; k < 3; k++) sh += '<i class="' + (k < star ? 'on' : 'off') + '">★</i>';
+    starsEl.innerHTML = sh;
+
+    timeEl.textContent = GD.fmtSec(totalSec);
+
+    bar.hidden = false;
+  }
+
+  function today() {
+    var d = new Date();
+    return d.getFullYear() + '-' + String(d.getMonth() + 1).padStart(2, '0') + '-' +
+      String(d.getDate()).padStart(2, '0');
+  }
+
+  /* ---------- 重新挑战：两次点击确认 ---------- */
+  function resetConfirmState() {
+    confirming = false;
+    clearTimeout(confirmTimer);
+    btnReset.classList.remove('confirming');
+    btnReset.innerHTML = '<svg class="ic"><use href="#i-reset"/></svg>重新挑战';
+  }
+
+  btnReset.addEventListener('click', function () {
+    if (btnReset.disabled) return;
+    if (!confirming) {
+      confirming = true;
+      btnReset.classList.add('confirming');
+      btnReset.innerHTML = '<svg class="ic"><use href="#i-reset"/></svg>再点一次确认清空';
+      confirmTimer = setTimeout(resetConfirmState, 4000);
+      return;
+    }
+    clearTimeout(confirmTimer);
+    btnReset.disabled = true;
+    btnReset.innerHTML = '正在清空…';
+    GD.resetProgress().then(function () {
+      location.reload();
+    }).catch(function (e) {
+      btnReset.disabled = false;
+      resetConfirmState();
+      alert(e.message || '清空失败，请稍后重试。');
+    });
+  });
+
+  /* ---------- 分享：把本页链接复制到剪贴板 ---------- */
+  /* 反馈统一走陈探长气泡（GD.bubble），与全站对话框风格一致 */
+  function toast(msg) {
+    if (window.GD && GD.bubble) { GD.bubble(msg); return; }
+    var el = document.createElement('div');
+    el.className = 'toast';
+    el.textContent = msg;
+    document.body.appendChild(el);
+    requestAnimationFrame(function () { el.classList.add('show'); });
+    setTimeout(function () { el.classList.remove('show'); }, 2800);
+  }
+
+  function shareUrl() {
+    if (location.protocol === 'file:') return location.href;
+    return location.origin + location.pathname;
+  }
+
+  function copyText(text) {
+    function fallback() {
+      return new Promise(function (resolve, reject) {
+        var ta = document.createElement('textarea');
+        ta.value = text;
+        ta.setAttribute('readonly', '');
+        ta.style.cssText = 'position:fixed;top:0;left:-9999px;opacity:0';
+        document.body.appendChild(ta);
+        ta.select();
+        ta.setSelectionRange(0, text.length);
+        var ok = false;
+        try { ok = document.execCommand('copy'); } catch (e) { ok = false; }
+        document.body.removeChild(ta);
+        ok ? resolve() : reject(new Error('copy failed'));
+      });
+    }
+    if (navigator.clipboard && window.isSecureContext) {
+      return navigator.clipboard.writeText(text).catch(fallback);
+    }
+    return fallback();
+  }
+
+  btnShare.addEventListener('click', function () {
+    if (btnShare.disabled) return;
+    copyText(shareUrl()).then(function () {
+      toast('链接已复制，发给同学一起破案');
+    }).catch(function () {
+      toast('复制失败，请手动复制地址栏链接');
+    });
+  });
+
+  /* ---------- 事件 ---------- */
+  document.addEventListener('gd:auth', function (e) {
+    logged = !!(e.detail && e.detail.username);
+  });
+  document.addEventListener('gd:avatar', function () {
+    paintId(GD.getUser());
+  });
+  document.addEventListener('gd:progress', function (e) {
+    paint(e.detail || GD.emptyProgress());
+  });
+
+  paint(GD.emptyProgress());
+  GD.loadProgress().then(paint).catch(function () { paint(GD.emptyProgress()); });
+})();
+</script>
+<script>
+/* ==========================================================
+   档案袋拆封：蜡封碎 → 封舌翻 → 报告纸从袋里升起摊开
+   ========================================================== */
+(function () {
+  'use strict';
+
+  var gate = document.getElementById('dossier-gate');
+  var btn = document.getElementById('dossier');
+  if (!gate || !btn || gate.hidden) return;
+
+  var sheet = document.querySelector('.sheet');
+  var root = document.documentElement;
+  var busy = false;
+
+  function openDossier() {
+    if (busy) return;
+    busy = true;
+    btn.setAttribute('aria-expanded', 'true');
+    btn.classList.add('cracking');
+
+    setTimeout(function () { btn.classList.add('opening'); }, 300);
+
+    setTimeout(function () {
+      root.classList.remove('report-sealed');
+      gate.classList.add('opened');
+      if (sheet) sheet.classList.add('in');
+    }, 1120);
+
+    setTimeout(function () {
+      gate.hidden = true;
+      /* 报告正常界面露出后放彩蛋——每个账号只放一次（按用户名分键）：
+         该号第一次达成传奇 = 三件套；第一次六案全破 = 烟花。
+         拆封动效则每次进入都有 */
+      if (window.GD && GD.loadProgress) {
+        GD.loadProgress().then(function (p) {
+          if (!p) return;
+          var u = null;
+          try { u = GD.getUser(); } catch (e) {}
+          if (u && typeof u === 'object') u = u.username;
+          u = u || 'anon';
+          var kFire = 'gd_egg_fire3_' + u, kLegend = 'gd_egg_legend3_' + u;
+          if (GD.isLegend(p)) {
+            if (!localStorage.getItem(kLegend)) {
+              localStorage.setItem(kLegend, '1');
+              localStorage.setItem(kFire, '1');
+              GD.eggFireworks(); GD.eggBadgeRain(); GD.eggGiftNote(true);
+            }
+          } else if (GD.finalUnlocked(p) && !localStorage.getItem(kFire)) {
+            localStorage.setItem(kFire, '1');
+            GD.eggFireworks();
+          }
+        }).catch(function () {});
+      }
+    }, 1820);
+  }
+
+  btn.addEventListener('click', openDossier);
+
+  document.addEventListener('keydown', function (e) {
+    if (gate.hidden || busy) return;
+    if (e.key === 'Escape') { openDossier(); return; }
+    if (e.key === 'Enter' || e.key === ' ') {
+      if (e.target && e.target.closest && e.target.closest('button') === btn) return;
+      e.preventDefault();
+      openDossier();
+    }
+  });
+})();
+</script>
+<script src="helix.js"></script>
+</body>
+</html>

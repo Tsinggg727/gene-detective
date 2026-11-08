@@ -1,0 +1,1245 @@
+<!DOCTYPE html>
+<html lang="zh-CN" data-page-node-id="47kAAfjWAvFYQbfYsljlqK"><head data-page-node-id="KgdigWZPvmdduAYeGYjWvb">
+<meta charset="UTF-8" data-page-node-id="o8ZnFUuKdiSBsgbUOTDDJ7">
+<meta name="viewport" content="width=device-width, initial-scale=1.0" data-page-node-id="fBxH1OG7S4kAs1Cr4NqL5s">
+    <link rel="icon" type="image/svg+xml" href="favicon.svg">
+    <link rel="icon" type="image/png" sizes="64x64" href="favicon.png">
+<title>案件簿 · 基因侦探</title>
+<link rel="stylesheet" href="site.css" data-page-node-id="XM68Mfjst6CbizFgzk7uLl">
+<style>
+/* ==========================================================
+   F3 侦探挑战 · 散落的卷宗照片 + 右侧抽屉
+   · 没有底板：六张照片直接摊在纸面上，大小不一、歪斜错落
+   · 红线从照片边缘穿出，按办案顺序串成一条
+   · 点照片 → 案情引导从右侧抽屉拉出
+   ========================================================== */
+.page-head { padding-top: calc(var(--nav-h) + 44px); padding-bottom: 0; }
+.page-head::before { background-position: 24% 30%; opacity: .54; }
+.page-head h2 { margin-bottom: 0; }
+
+.board-sec { padding: 34px 0 70px; }
+.board-sec::before { opacity: .30; }
+
+/* ==========================================================
+   散落区：只是一块留白，没有边框没有底色
+   ========================================================== */
+.board { position: relative; width: 100%; aspect-ratio: 1000 / 580; margin-top: 22px; }
+/* 红线层：压在照片下面，只在照片之间的空隙里露出来 */
+.strings { position: absolute; inset: 0; width: 100%; height: 100%;
+  z-index: 3; pointer-events: none; overflow: visible; }
+.strings path { fill: none; stroke: rgb(186 84 96 / .70); stroke-width: 2.2; stroke-linecap: round; }
+.strings path.lk { stroke-dasharray: 5 7; stroke: rgb(186 84 96 / .32); }
+.strings circle { fill: rgb(186 84 96 / .82); }
+.strings circle.lk { fill: rgb(186 84 96 / .34); }
+
+/* ---------- 一份卷宗：档案夹 + 索引标签 + 贴住的证据照 ---------- */
+.pol { position: absolute; left: var(--x); top: var(--y); width: var(--w);
+  display: block; padding: 0; border: 0; background: none; font: inherit;
+  text-align: left; cursor: pointer; z-index: 2;
+  transform: translateY(var(--dy, 0px)) rotate(var(--rot, 0deg));
+  transition: transform .5s var(--ease-out-quart); }
+/* 开场交代期间整片先下移，讲完依次浮起（纯位移，动效失效也看得见） */
+html.gd-wait .pol { transform: translateY(calc(var(--dy, 0px) + 34px)) rotate(var(--rot, 0deg)); }
+
+/* 顶部索引标签：档案夹伸出来的那条舌头，压在卡身下面 */
+.pol-tab { position: absolute; left: 11%; top: -14px; z-index: 0;
+  height: 16px; padding: 0 10px 1px;
+  display: flex; align-items: center;
+  font-family: var(--font-mono); font-size: 8.5px; font-weight: 700; letter-spacing: .14em;
+  color: rgb(64 86 134 / .82);
+  background: linear-gradient(180deg, #fdfeff, #e3ecf9);
+  border: 1px solid rgb(var(--wc-blue-deep) / .28); border-bottom: 0;
+  border-radius: 4px 7px 0 0; }
+
+.pol-in { position: relative; z-index: 1; display: block;
+  padding: 9px 9px 0 17px;
+  border-radius: 4px 8px 4px 6px;
+  background: linear-gradient(163deg, #fffefb 0%, #f9fcff 42%, #dfeaf7 100%);
+  border: 1px solid rgb(63 74 107 / .26);
+  box-shadow: inset 0 0 0 1px rgb(255 255 255 / .72),
+    0 2px 3px rgb(63 74 107 / .18), 0 26px 40px -20px rgb(46 58 88 / .88);
+  transition: box-shadow .46s var(--ease-out-quart); }
+/* 左侧那排装订孔 */
+.pol-in::before { content: ""; position: absolute; left: 4px; top: 8px; bottom: 8px; width: 8px;
+  background:
+    radial-gradient(circle at 50% 22%, transparent 0 1.5px, rgb(84 106 156 / .42) 1.6px 2.7px, rgb(255 255 255 / .5) 2.8px 3.4px, transparent 3.5px),
+    radial-gradient(circle at 50% 50%, transparent 0 1.5px, rgb(84 106 156 / .42) 1.6px 2.7px, rgb(255 255 255 / .5) 2.8px 3.4px, transparent 3.5px),
+    radial-gradient(circle at 50% 78%, transparent 0 1.5px, rgb(84 106 156 / .42) 1.6px 2.7px, rgb(255 255 255 / .5) 2.8px 3.4px, transparent 3.5px); }
+
+.pol:hover { z-index: 12;
+  transform: translateY(calc(var(--dy, 0px) - 8px)) rotate(calc(var(--rot, 0deg) * .4)) scale(1.015); }
+.pol:hover .pol-in { box-shadow: 0 2px 3px rgb(63 74 107 / .14), 0 28px 40px -22px rgb(63 74 107 / .66); }
+/* 被点开的那张：摆正、抬高 */
+.pol.is-sel { z-index: 15;
+  transform: translateY(calc(var(--dy, 0px) - 10px)) rotate(0deg) scale(1.03); }
+.pol.is-sel .pol-in { box-shadow: 0 0 0 2px rgb(var(--wc-blue) / .5), 0 3px 4px rgb(63 74 107 / .14),
+  0 30px 44px -22px rgb(63 74 107 / .68); }
+.pol.is-sel.is-done .pol-in { box-shadow: 0 0 0 2px rgb(127 174 148 / .6), 0 3px 4px rgb(63 74 107 / .14),
+  0 30px 44px -22px rgb(63 74 107 / .68); }
+.pol:focus-visible { outline: none; }
+.pol:focus-visible .pol-in { box-shadow: 0 0 0 3px rgb(var(--wc-violet) / .55),
+  0 18px 30px -20px rgb(63 74 107 / .7); }
+
+/* 证据照：白边相纸 */
+.pol-photo { position: relative; display: grid; place-items: center; overflow: hidden;
+  container-type: inline-size;
+  aspect-ratio: var(--ar, 1); margin-top: 1px; border-radius: 1px;
+  background:
+    radial-gradient(120% 112% at 24% 12%, rgb(255 255 255 / .82), transparent 62%),
+    radial-gradient(88% 80% at 82% 96%, rgb(var(--wc-violet) / .30), transparent 74%),
+    linear-gradient(155deg, rgb(var(--wc-blue) / .46), rgb(var(--wc-blue) / .26) 58%, rgb(var(--wc-violet) / .30));
+  border: 3px solid rgb(255 255 255 / .95);
+  box-shadow: 0 2px 7px -3px rgb(63 74 107 / .58), inset 0 0 34px -14px rgb(63 74 107 / .55); }
+.pol-photo::after { content: ""; position: absolute; inset: 0; pointer-events: none;
+  background:
+    radial-gradient(38% 44% at 22% 26%, rgb(255 255 255 / .55), transparent 70%),
+    radial-gradient(46% 40% at 78% 74%, rgb(255 255 255 / .28), transparent 72%);
+  mix-blend-mode: screen; }
+
+/* 压住照片上沿的那条胶带 */
+.pol-tape { position: absolute; left: 50%; top: 1px; z-index: 6;
+  width: 46%; height: 15px; transform: translateX(-50%) rotate(-2.6deg);
+  background:
+    linear-gradient(100deg, transparent 6%, rgb(255 255 255 / .62) 20%, transparent 40%,
+      rgb(255 255 255 / .26) 66%, transparent 84%),
+    linear-gradient(180deg, rgb(224 234 250 / .82), rgb(192 208 236 / .70) 58%, rgb(216 229 247 / .78));
+  clip-path: polygon(1% 10%, 4% 0, 97% 3%, 100% 14%, 99% 92%, 95% 100%, 5% 97%, 0 86%);
+  box-shadow: 0 1px 4px rgb(63 74 107 / .16), inset 0 1px 0 rgb(255 255 255 / .8); }
+
+.pol-ic { position: relative; z-index: 1; width: 40%; height: 40%; max-width: 82px; max-height: 82px;
+  color: var(--blue-900); opacity: .70; stroke-width: 1.35; }
+/* 编号贴纸 */
+.pol-tag { position: absolute; left: 6px; top: 6px; z-index: 3;
+  font-family: var(--font-mono); font-size: 9px; font-weight: 700; letter-spacing: .12em;
+  color: rgb(84 106 156 / .82); padding: 2px 5px 2px 6px;
+  background: rgb(255 255 255 / .90);
+  border: 1px solid rgb(84 106 156 / .18);
+  border-radius: 2px 4px 2px 3px;
+  transform: rotate(-2.4deg);
+  box-shadow: 0 1px 2px rgb(63 74 107 / .18); }
+
+/* 未解锁：问号占位 */
+.pol-q { display: none; position: relative; z-index: 1;
+  font-family: var(--font-display); font-size: 24cqi; font-weight: 900;
+  line-height: 1; color: rgb(84 106 156 / .36); text-shadow: 0 1px 0 rgb(255 255 255 / .75); }
+.pol.is-locked .pol-ic { display: none; }
+.pol.is-locked .pol-q { display: block; position: absolute; left: 50%; top: 20%;
+  transform: translateX(-50%); }
+.pol.is-locked .pol-photo {
+  background:
+    radial-gradient(110% 100% at 30% 16%, rgb(255 255 255 / .74), transparent 62%),
+    linear-gradient(155deg, rgb(84 106 156 / .16), rgb(104 88 160 / .14));
+  box-shadow: 0 2px 7px -3px rgb(63 74 107 / .45), inset 0 0 30px -16px rgb(63 74 107 / .42); }
+.pol.is-locked .pol-photo::before { content: ""; position: absolute; inset: 0;
+  background: repeating-linear-gradient(135deg, rgb(84 106 156 / .035) 0 10px, transparent 10px 20px); }
+
+/* 封存：一道半透明封条 + 一枚红封缄章 */
+.pol-seal { display: none; position: absolute; inset: 0; z-index: 4; pointer-events: none; }
+.pol.is-locked .pol-seal { display: block; }
+.pol-seal::before { content: ""; position: absolute; left: -12%; right: -12%; top: 74%;
+  height: 9cqi; transform: translateY(-50%) rotate(-4.5deg);
+  background:
+    linear-gradient(96deg, transparent 8%, rgb(255 255 255 / .48) 24%, transparent 46%,
+      rgb(255 255 255 / .22) 70%, transparent 88%),
+    linear-gradient(180deg, rgb(214 226 245 / .88), rgb(184 201 232 / .82) 60%, rgb(212 226 245 / .86));
+  border-top: 1px solid rgb(255 255 255 / .74);
+  border-bottom: 1px solid rgb(255 255 255 / .44);
+  clip-path: polygon(0 6%, 3% 0, 100% 4%, 99% 96%, 96% 100%, 2% 96%);
+  box-shadow: 0 1px 4px rgb(63 74 107 / .16); }
+.pol-seal i { position: absolute; left: 50%; top: 74%; z-index: 1;
+  width: 21cqi; aspect-ratio: 1; display: grid; place-items: center;
+  transform: translate(-50%, -50%);
+  font-family: var(--font-display); font-size: 5.6cqi; font-weight: 900; letter-spacing: 0;
+  font-style: normal; color: rgb(166 78 90 / .90);
+  border: 1.1cqi solid rgb(166 78 90 / .62); border-radius: 50%;
+  background: radial-gradient(circle at 38% 30%, rgb(255 254 250 / .97), rgb(255 246 245 / .76));
+  box-shadow: inset 0 0 0 2px rgb(166 78 90 / .12), 0 2px 6px -2px rgb(63 74 107 / .42); }
+
+/* 结案：手盖的绿章——外圈粗、内圈细，油墨有点不匀 */
+.pol-stamp { position: absolute; right: 3%; bottom: 3%; z-index: 4; display: none;
+  width: 34%; aspect-ratio: 1; border-radius: 50%; place-items: center;
+  color: rgb(58 112 80 / .95);
+  font-family: var(--font-display); font-size: 10.2cqi; font-weight: 900; letter-spacing: .03em;
+  border: 1.5cqi solid rgb(88 144 108 / .82);
+  transform: rotate(-13deg);
+  background: radial-gradient(circle at 44% 34%, rgb(255 255 255 / .14), rgb(255 255 255 / 0) 64%); }
+.pol-stamp::before { content: ""; position: absolute; inset: 2.4cqi; border-radius: 50%;
+  border: .45cqi solid rgb(102 156 122 / .52); }
+/* 油墨没吃满：两处发白的斑，屏幕混合只提亮不盖字 */
+.pol-stamp::after { content: ""; position: absolute; inset: -1px; border-radius: 50%;
+  pointer-events: none; mix-blend-mode: screen;
+  background:
+    radial-gradient(30% 26% at 24% 18%, rgb(255 255 255 / .52), transparent 72%),
+    radial-gradient(24% 22% at 80% 76%, rgb(255 255 255 / .42), transparent 74%); }
+.pol.is-done .pol-stamp { display: grid; }
+
+.pol-cap { position: relative; display: block; padding: 8px 2px 10px; }
+.pol-cap::before { content: ""; position: absolute; left: 0; right: 0; top: 0;
+  border-top: 1px dashed rgb(var(--wc-blue-deep) / .26); }
+.pol-no { display: block; font-family: var(--font-mono); font-size: 8.5px; font-weight: 700;
+  letter-spacing: .12em; color: rgb(84 106 156 / .62); }
+.pol-tt { display: block; margin-top: 3px;
+  font-family: var(--font-display); font-size: clamp(11px, 1.05vw, 14.5px); font-weight: 700;
+  line-height: 1.35; color: var(--blue-900); }
+.pol.is-locked .pol-tt { color: var(--text-3); letter-spacing: .08em; }
+.pol.is-locked .pol-no { color: rgb(84 106 156 / .42); }
+
+/* 待侦办：一张贴了胶带的小纸条，红笔字 */
+.pol-flag { position: absolute; right: -3px; top: -8px; z-index: 7;
+  transform: rotate(3.4deg) scale(.94); transform-origin: 100% 0;
+  font-family: var(--font-body); font-size: 10px; font-weight: 700; letter-spacing: .12em;
+  white-space: nowrap; padding: 6px 9px 5px;
+  color: rgb(166 78 90 / .94);
+  background: linear-gradient(175deg, #fffefb, #f6f9fe);
+  border: 1px solid rgb(84 106 156 / .22);
+  border-radius: 1px 3px 2px 2px;
+  box-shadow: 0 4px 10px -5px rgb(63 74 107 / .62), inset 0 1px 0 #fff;
+  opacity: 0; transition: opacity .3s, transform .38s var(--ease-out-quart); }
+.pol-flag::before { content: ""; position: absolute; left: 50%; top: -5px;
+  width: 26px; height: 9px; margin-left: -13px; transform: rotate(-4deg);
+  background: linear-gradient(180deg, rgb(208 221 242 / .92), rgb(180 198 228 / .82));
+  box-shadow: 0 1px 2px rgb(63 74 107 / .22); }
+.pol.is-sel .pol-flag, .pol.is-open .pol-flag { opacity: 1; transform: rotate(3.4deg) scale(1); }
+.pol-flag[data-st="done"] { color: rgb(70 120 94 / .95); }
+/* 传奇侦探角标：金色墨、字距收紧一点放下「97 · 传奇侦探」 */
+.pol-flag.is-legend { color: rgb(150 108 34 / .96); letter-spacing: .04em; font-size: 10.5px;
+  border-color: rgb(196 152 62 / .45); }
+
+/* ---------- 散落区下方：进度 + 提示 ---------- */
+.board-foot { position: absolute; right: 0; bottom: 10px; width: min(250px, 30%);
+  display: grid; gap: 6px; justify-items: start; }
+.bf-lab { font-family: var(--font-mono); font-size: 11px; font-weight: 700;
+  letter-spacing: .08em; color: var(--blue-700); }
+.bf-bar { width: 100%; height: 5px; border-radius: 99px;
+  background: rgb(84 106 156 / .16); overflow: hidden; }
+.bf-bar i { display: block; height: 100%; width: 0%; border-radius: 99px;
+  background: linear-gradient(90deg, var(--blue-500), var(--violet-500));
+  transition: width .8s var(--ease-out-quart); }
+.bf-cnt { font-family: var(--font-mono); font-size: 11.5px; color: var(--text-3); }
+
+/* ==========================================================
+   右侧抽屉
+   ========================================================== */
+.dw-wrap { position: fixed; inset: 0; z-index: 220; pointer-events: none; }
+.dw-scrim { position: absolute; inset: 0; pointer-events: none; cursor: pointer;
+  background: linear-gradient(90deg, rgb(48 56 84 / .08), rgb(38 44 70 / .40));
+  opacity: 0; transition: opacity .42s var(--ease-out-quart); }
+.dw { position: absolute; top: 0; right: 0; height: 100%; pointer-events: auto;
+  width: min(432px, 94vw); display: flex; flex-direction: column;
+  border-radius: 24px 0 0 24px;
+  background: linear-gradient(168deg, #fffdf8 0%, #fbf5ea 58%, #f8f0e2 100%);
+  border-left: 1px solid rgb(var(--wc-blue-deep) / .18);
+  box-shadow: -22px 0 60px -26px rgb(46 58 88 / .55), inset 0 1px 0 #fff;
+  transform: translateX(104%); transition: transform .52s var(--ease-out-expo); }
+.dw:focus { outline: none; }
+/* 抽屉外那一片就是「空白」：点哪儿都收起 */
+.dw-wrap.open .dw-scrim { opacity: 1; pointer-events: auto; }
+.dw-wrap.open .dw { transform: none; }
+
+.dw-head { position: relative; padding: 22px 24px 16px;
+  background:
+    radial-gradient(120% 130% at 16% 0%, rgb(var(--wc-blue) / .18), transparent 70%),
+    radial-gradient(90% 90% at 92% 100%, rgb(var(--wc-violet) / .12), transparent 76%);
+  border-bottom: 1px dashed rgb(var(--wc-blue-deep) / .22); }
+.dw-kicker { font-family: var(--font-mono); font-size: 10px; font-weight: 700;
+  letter-spacing: .16em; color: var(--blue-500); }
+.dw-top { display: flex; align-items: center; gap: 8px; margin-top: 8px; min-height: 1.4em; }
+.dw-no { font-family: var(--font-mono); font-size: 10.5px; font-weight: 700;
+  letter-spacing: .09em; color: var(--blue-700); }
+.dw-title { font-family: var(--font-display); font-size: 23px; font-weight: 700;
+  line-height: 1.32; color: var(--blue-900); margin-top: 7px; min-height: 1.32em; }
+.dw-title.lock { color: var(--text-3); letter-spacing: .22em; }
+
+/* 抽屉右下角的状态章：跟档案编号同量级的橡皮章，压在纸面和字上 */
+.dw-stamp { --ink: 38 96 66;
+  position: absolute; right: 30px; bottom: 112px; z-index: 2; display: none;
+  width: 136px; height: 136px; place-items: center; border-radius: 50%;
+  font-family: var(--font-display); font-size: 33px; font-weight: 900;
+  line-height: 1; letter-spacing: .06em; text-indent: .06em;
+  color: rgb(var(--ink) / .92);
+  border: 3.6px solid rgb(var(--ink) / .74);
+  text-shadow: .9px .9px 0 rgb(var(--ink) / .3), -.5px -.5px 0 rgb(var(--ink) / .16);
+  transform: rotate(-11deg); opacity: .86; mix-blend-mode: multiply;
+  filter: url(#stampInk); }
+.dw-stamp.on { display: grid; }
+/* 结案章落纸：抽屉文字打完最后一个字，从高处砸下来盖定 */
+.dw-stamp.stamped { animation: dw-stamp-in .5s cubic-bezier(.2, 1.1, .32, 1) both; }
+@keyframes dw-stamp-in {
+  0% { opacity: 0; transform: rotate(-13deg) scale(2.15); }
+  46% { opacity: .95; transform: rotate(-9.5deg) scale(.94); }
+  66% { transform: rotate(-11.5deg) scale(1.05); }
+  84% { transform: rotate(-10.8deg) scale(.99); }
+  100% { opacity: .86; transform: rotate(-11deg); }
+}
+/* 内圈：细一圈的墨线，不与外框同重 */
+.dw-stamp::before { content: ""; position: absolute; inset: 9px; border-radius: 50%;
+  border: 1.7px solid rgb(var(--ink) / .52); }
+/* 外圈细齿：极淡的放射刻纹，只在框内一圈，像真章压出来的齿边 */
+.dw-stamp::after { content: ""; position: absolute; inset: 0; border-radius: 50%;
+  pointer-events: none; opacity: .13;
+  background: repeating-conic-gradient(from 0deg,
+    rgb(var(--ink) / .85) 0deg .6deg, transparent .6deg 3.2deg);
+  -webkit-mask: radial-gradient(closest-side, transparent 72%, #000 76% 93%, transparent 96%);
+  mask: radial-gradient(closest-side, transparent 72%, #000 76% 93%, transparent 96%); }
+.dw-stamp.done { --ink: 34 88 60; }
+/* 三个字的状态章缩一号，免得字顶到圈上 */
+.dw-stamp.open { --ink: 154 42 54; font-size: 27px; }
+.dw-stamp.locked { --ink: 112 122 146; font-size: 27px; opacity: .66; }
+
+/* 右下角那枚档案编号：斜着压在纸里，淡得像水印，状态章就盖在它上面 */
+.dw-ghost { position: absolute; right: 6px; bottom: 118px; z-index: 0;
+  font-family: var(--font-display); font-size: 176px; font-weight: 900;
+  line-height: .86; letter-spacing: -.015em;
+  transform: rotate(-9deg); transform-origin: 100% 100%;
+  color: rgb(var(--wc-blue-deep) / .16);
+  pointer-events: none; -webkit-user-select: none; user-select: none; }
+/* 窄屏：编号与章同比例缩一号，仍保持「章压在编号上」的叠法 */
+@media (max-width: 560px) {
+  .dw .dw-ghost { font-size: 128px; right: 10px; bottom: 90px; }
+  .dw-stamp { width: 112px; height: 112px; font-size: 22px;
+    right: 14px; bottom: 90px; }
+  .dw-stamp::before { inset: 6px; }
+  .dw-stamp.open, .dw-stamp.locked { font-size: 21px; }
+}
+
+.dw-body { position: relative; z-index: 1; flex: 1; overflow-y: auto; display: flex;
+  flex-direction: column; padding: 18px 24px 12px; overscroll-behavior: contain; }
+.dw-body::-webkit-scrollbar { width: 6px; }
+.dw-body::-webkit-scrollbar-thumb { background: rgb(84 106 156 / .22); border-radius: 99px; }
+.g-plot { font-size: 15.5px; line-height: 1.95; color: #465270;
+  min-height: 3.9em; letter-spacing: .01em; }
+/* 逐字打出时的光标：标题、委托人、任务、案情共用 */
+.typing::after { content: ""; display: inline-block; width: 2px; height: 1.02em;
+  margin-left: 2px; vertical-align: -.15em; background: var(--blue-700); opacity: .8;
+  animation: gd-caret 1.05s steps(2) infinite; }
+@keyframes gd-caret { 0%, 49% { opacity: .8; } 50%, 100% { opacity: 0; } }
+/* 委托栏：像案卷上的一栏登记，只靠一道竖线与虚线分栏，不铺底色 */
+.g-meta { display: grid; margin: 0 0 22px; padding: 0 0 0 14px;
+  border-left: 2px solid rgb(var(--wc-blue) / .40); }
+.g-meta > div { display: grid; grid-template-columns: 46px 1fr; gap: 12px;
+  align-items: baseline; padding: 6px 0; }
+.g-meta > div + div { border-top: 1px dashed rgb(var(--wc-blue-deep) / .26); margin-top: 4px;
+  padding-top: 9px; }
+.g-meta dt { font-family: var(--font-mono); font-size: 10.5px; font-weight: 700;
+  letter-spacing: .12em; color: var(--blue-500); }
+.g-meta dd { font-size: 13.5px; line-height: 1.8; color: var(--text-2); }
+.g-meta > div.is-task dt { color: var(--blue-700); }
+.g-meta > div.is-task dd { color: var(--blue-900); font-weight: 600; font-size: 14.5px; }
+
+/* 案情：小标 + 逐字打出的正文 */
+.g-plot-lab { display: flex; align-items: center; gap: 10px; margin-bottom: 11px;
+  font-family: var(--font-display); font-size: 13.5px; font-weight: 700;
+  letter-spacing: .14em; color: var(--blue-700); }
+.g-plot-lab::after { content: ""; flex: 1; height: 1px;
+  background: linear-gradient(90deg, rgb(var(--wc-blue-deep) / .24), transparent); }
+
+.g-sealed { margin-block: auto; display: grid; justify-items: center; gap: 12px; padding: 26px 10px 30px; text-align: center; }
+.seal-ring { width: 88px; height: 88px; display: grid; place-items: center;
+  border-radius: 50%; border: 2px dashed rgb(var(--wc-blue-deep) / .30);
+  background: radial-gradient(circle at 36% 28%, rgb(255 255 255 / .8), rgb(var(--wc-blue) / .12));
+  font-family: var(--font-display); font-size: 42px; font-weight: 900; line-height: 1;
+  color: rgb(84 106 156 / .40); transform: rotate(-5deg); }
+.seal-t { font-family: var(--font-display); font-size: 15px; font-weight: 700; color: var(--blue-900); }
+.seal-d { font-size: 12px; line-height: 1.85; color: var(--text-3); max-width: 240px; }
+
+.dw-foot { flex: none; padding: 14px 20px 18px;
+  border-top: 1px dashed rgb(var(--wc-blue-deep) / .2);
+  background: linear-gradient(180deg, rgb(255 253 248 / .5), rgb(var(--wc-blue) / .10));
+  display: grid; }
+.g-btn { width: 100%; justify-content: center; font-size: 14px; padding: 12px 18px; }
+.g-btn .ic { width: 16px; height: 16px; }
+.g-btn.is-off { color: var(--text-3); background: transparent; border-style: dashed;
+  border-color: rgb(84 106 156 / .28); box-shadow: none; }
+.g-btn.is-off:hover { transform: none; color: var(--text-2);
+  border-color: rgb(84 106 156 / .42); box-shadow: none; }
+
+html.gd-drawer { overflow: hidden; }
+
+/* 轻提示 */
+.toast { position: fixed; left: 50%; bottom: 34px; z-index: 300; max-width: calc(100% - 36px);
+  padding: 12px 20px; text-align: center; font-size: 13px; line-height: 1.6;
+  color: var(--blue-900); border-radius: 14px 18px 13px 17px;
+  background: linear-gradient(180deg, #fffdf8, #fbf6ee);
+  border: 1px solid rgb(var(--wc-blue-deep) / .22);
+  box-shadow: inset 0 1px 0 rgb(255 255 255 / .9), 0 18px 40px -18px rgb(63 74 107 / .5);
+  opacity: 0; transform: translate(-50%, 16px); pointer-events: none;
+  transition: opacity 280ms, transform 340ms var(--ease-out-quart); }
+.toast.show { opacity: 1; transform: translate(-50%, 0); }
+
+/* ---------- 响应式：窄屏不再散落，改成带歪斜的纵列 ---------- */
+@media (max-width: 980px) {
+  .board { aspect-ratio: auto; padding: 8px 0 0; }
+  .pol { position: relative; left: auto; top: auto;
+    width: calc(var(--wm, 82%) * 0.76); margin-bottom: 30px; }
+  .pol:nth-child(even) { margin-left: auto; margin-right: 4%; }
+  .pol:nth-child(odd) { margin-left: 4%; }
+  .strings { display: none; }
+  .board-foot { position: static; width: auto; margin-top: 20px; }
+  /* 窄屏卡片变大，章和问号跟着放大，否则像个小点 */
+  .pol-tab { height: 18px; font-size: 9.5px; top: -16px; }
+  .pol-tape { height: 18px; }
+  .pol-flag { font-size: 11.5px; padding: 7px 11px 6px; }
+
+</style>
+<script>
+function gdUserKey(base){var u='';try{u=(window.GD&&GD.getUser())||'';}catch(e){u='';}if(u&&typeof u==='object')u=u.username||'';return base+(u||'guest');}
+/* 首次进入：尽早打标，避免卷宗在开场交代之前先闪一下 */
+try {
+  if (localStorage.getItem(gdUserKey('gd_brief_seen_')) !== '1') {
+    document.documentElement.className += ' gd-wait';
+  }
+} catch (e) {}
+</script>
+<style id="__dm_no_drag_style__">* { -webkit-user-drag: none !important; }</style><style id="__dm_bindable_badge_style__">[data-sp-bindable="database"]{outline:1px dashed #0088ff;outline-offset:2px;border-radius:4px;}[data-sp-bindable="database"] *{pointer-events:none !important;transition:none !important;animation:none !important;}[data-sp-bindable="database"]{transition:none !important;animation:none !important;}</style></head>
+<body data-page-node-id="skiRgceIGMUi2noWJBbarQ" style="">
+
+<svg width="0" height="0" style="position:absolute" aria-hidden="true" data-page-node-id="600CNVOO1mcoBRcmHvtBWt"><defs data-page-node-id="TNmruick2m3XEAxn5O3IAE">
+  <symbol id="i-dna" viewBox="0 0 24 24" data-page-node-id="shSuDG0b6bc9KM2Nk0IRER"><path d="M8.5 2.5c0 4.6 7 6.6 7 9.5s-7 4.9-7 9.5" data-page-node-id="OoQfSB4UykormAA5GGvMzB"></path><path d="M15.5 2.5c0 4.6-7 6.6-7 9.5s7 4.9 7 9.5" data-page-node-id="o2t6s4HcgwCrjBiNsQ9Zbd"></path><path d="M9.6 6.2h4.8M9 12h6M9.6 17.8h4.8" data-page-node-id="MJdm0sqMobnxq2LZOsF3SS"></path></symbol>
+  <symbol id="i-home" viewBox="0 0 24 24" data-page-node-id="EQplfzpyHHr0PQQfOGFque"><path d="M3.6 10.4 12 3.4l8.4 7" data-page-node-id="CJbE3xQyAFOEYEm5gg9ZV6"></path><path d="M5.6 11.6V20h12.8v-8.4" data-page-node-id="xS1001YWRDyhuESfLnrKZw"></path><path d="M9.8 20v-5.2h4.4V20" data-page-node-id="iXSrCRNF0ZfPWcPnWknX7V"></path></symbol>
+  <symbol id="i-book" viewBox="0 0 24 24" data-page-node-id="LbCi0TF5y2mdAnMBg2tt4L"><path d="M12 6.4C10.4 5 8 4.4 4.4 4.6v13.2c3.6-.2 6 .4 7.6 1.8 1.6-1.4 4-2 7.6-1.8V4.6C16 4.4 13.6 5 12 6.4Z" data-page-node-id="sRGjhs1NwowXJlcO159jw2"></path><path d="M12 6.4v13.2" data-page-node-id="qUcf6TkPsj06ixB95iA1CR"></path></symbol>
+  <symbol id="i-case" viewBox="0 0 24 24" data-page-node-id="BpoHfHW8XFhom1RFuBTV6e"><path d="M3.4 8.2h17.2v10.4a1.6 1.6 0 0 1-1.6 1.6H5a1.6 1.6 0 0 1-1.6-1.6Z" data-page-node-id="26bou3R0awcPomTdx8WbvO"></path><path d="M8.4 8.2V5.6A1.6 1.6 0 0 1 10 4h4a1.6 1.6 0 0 1 1.6 1.6v2.6" data-page-node-id="d5fPWljIzT7tHxLuAT2oca"></path><path d="M3.4 12.6h17.2M10 12.6h4" data-page-node-id="OpueQt88dSbJcTveOpCYuU"></path></symbol>
+  <symbol id="i-medal" viewBox="0 0 24 24" data-page-node-id="nuP6OqZBMk7Qixzl0HOxYl"><circle cx="12" cy="14.6" r="5.4" data-page-node-id="Kc7yrg6SQE9FGLcLM7KwDT"></circle><path d="M9.2 9.6 6.6 3.4h10.8l-2.6 6.2" data-page-node-id="VtvbEO8rkBiB7E0cBKxLZW"></path><path d="M12 12.2l.9 1.9 2 .3-1.45 1.4.35 2-1.8-1-1.8 1 .35-2L9.1 14.4l2-.3Z" data-page-node-id="17yR71WhtxvQKVZrBDauPA"></path></symbol>
+  <symbol id="i-arrow" viewBox="0 0 24 24" data-page-node-id="jMgezOWKVbCT3zCo48DYBy"><path d="M4 12h15" data-page-node-id="RigfZcmmxwGsBruPzHFwoa"></path><path d="M13.4 6l6 6-6 6" data-page-node-id="KVPodC6R5xZnqdoFovAJYu"></path></symbol>
+  <symbol id="i-lock" viewBox="0 0 24 24" data-page-node-id="cCCrmBhom6TnL9X5sSXmtF"><rect x="4.6" y="10.6" width="14.8" height="10" rx="2.6" data-page-node-id="BiJpWHrd7bFiiJe8wCSGUQ"></rect><path d="M8.4 10.6V7.8a3.6 3.6 0 0 1 7.2 0v2.8" data-page-node-id="IFNcgBq9zruxGyZp4enpzV"></path><path d="M12 14.6v2.4" data-page-node-id="FcoFzgpXYYd8D2qLqfgj9n"></path></symbol>
+  <symbol id="i-down" viewBox="0 0 24 24" data-page-node-id="QQdcuumhWtNe3DnejWC3K2"><path d="M6 9.5l6 6 6-6" data-page-node-id="SsrHRBrIvJKYnuHuv7Vjvo"></path></symbol>
+  <symbol id="i-clock" viewBox="0 0 24 24" data-page-node-id="S0Sg5sidV8wJIG1jSBpFLG"><circle cx="12" cy="12" r="8.4" data-page-node-id="vLQ5SWa3oeKJsxEhae7QOS"></circle><path d="M12 7.4V12l3.2 2" data-page-node-id="37HVf0Y0MivRDXUBy7zBTM"></path></symbol>
+  <symbol id="i-close" viewBox="0 0 24 24" data-page-node-id="TmAdNu6oyyIDdyXrbaw50W"><path d="M6.4 6.4l11.2 11.2M17.6 6.4 6.4 17.6" data-page-node-id="t9GhHm5M7f5rFwpVKsWoKN"></path></symbol>
+  <symbol id="i-scissors" viewBox="0 0 24 24" data-page-node-id="Mh8Dkcx7FsaoW4wvLoF49k"><circle cx="6" cy="6.5" r="2.6" data-page-node-id="eOOiu2tqbmU7BDoPv8oxdE"></circle><circle cx="6" cy="17.5" r="2.6" data-page-node-id="COi7EZ3VrHkisKX3KtjWuz"></circle><path d="M8.2 8.2L20.5 18M20.5 6L8.2 15.8" data-page-node-id="7lpXH9HEuDrfBCtdWtEp9f"></path></symbol>
+  <symbol id="i-align" viewBox="0 0 24 24" data-page-node-id="7AGY9ceqRwAB0I2klZXJ3M"><path d="M3 6.5h18" data-page-node-id="PGx0rlGNWxdw28FBtnRWVN"></path><path d="M3 17.5h6.4M13.2 17.5H21" data-page-node-id="A2xPx0V5YvHDQLpo3lzmRg"></path><path d="M10.2 14.6v5.8" stroke-dasharray="1.6 2.2" data-page-node-id="2GFV6GrzZRHE1IB72blegd"></path><path d="M3 11.2h8.4M14.2 11.2H21" data-page-node-id="vPxDOD0ryzF6zqHB7gVUDT"></path></symbol>
+  <symbol id="i-search" viewBox="0 0 24 24" data-page-node-id="ocIMWMyU0dKnxdTs0SJoP5"><circle cx="10.5" cy="10.5" r="6.8" data-page-node-id="dfyOe8E44F9fbyiQW1RujV"></circle><path d="M15.6 15.6L21 21" data-page-node-id="okjam97MVsGONxUj2LztBW"></path></symbol>
+  <symbol id="i-code" viewBox="0 0 24 24" data-page-node-id="Pc79OJgMVZbyI7njrldnbn"><path d="M9 7.4 4 12l5 4.6" data-page-node-id="QzTX2J3hydhokdOlD8eFEN"></path><path d="M15 7.4 20 12l-5 4.6" data-page-node-id="C1SC9rJ4UF9EL0aMdpbHRI"></path><path d="M13.4 5l-2.8 14" data-page-node-id="knL58AOljwGjBCpyTShyHt"></path></symbol>
+  <symbol id="i-family" viewBox="0 0 24 24" data-page-node-id="ImZv7xbi7CftBxYFE0lqSE"><circle cx="7" cy="6.4" r="2.4" data-page-node-id="uGAsWja3X6WXaNTOHJrl6B"></circle><circle cx="17" cy="6.4" r="2.4" data-page-node-id="7h6g0HSYBYsStyVKAQCtd0"></circle><circle cx="12" cy="17.6" r="2.4" data-page-node-id="1rCwoZaLeXjQwmncDfgEws"></circle><path d="M7 8.8v3.4h10V8.8M12 12.2v3" data-page-node-id="sJLz7iRAOhPvHaxhoauwBa"></path></symbol>
+  <symbol id="i-pill" viewBox="0 0 24 24" data-page-node-id="kItZmuDOHpRqkqjQmXyrMV"><rect x="2.6" y="8.6" width="18.8" height="6.8" rx="3.4" data-page-node-id="399HFBLSjouORF3tLhJgN4"></rect><path d="M12 8.6v6.8" stroke-dasharray="1.8 2" data-page-node-id="4DRCRriuyK6IPu0jFeYcr7"></path></symbol>
+  <symbol id="i-check" viewBox="0 0 24 24" data-page-node-id="ZETZWZTxqmwnzMS2ImBy7U"><path d="M4.6 12.4 9.4 17l10-10" data-page-node-id="o3kYoWldiA1AIx9TkgMpbH"></path></symbol>
+  <symbol id="i-hand" viewBox="0 0 24 24" data-page-node-id="VmkOtKUZT1LJl5rFhjF5Dc"><path d="M8.6 11.4V5.6a1.8 1.8 0 0 1 3.6 0v5.2" data-page-node-id="ElzhMFnUYe8mZWb2qObj6A"></path><path d="M12.2 10.4V4.8a1.8 1.8 0 0 1 3.6 0v5.6" data-page-node-id="MLmiMBZurtxfT3On9vNoeg"></path><path d="M15.8 10.8V6.6a1.8 1.8 0 0 1 3.6 0v7.2c0 3.4-2.6 6.2-6 6.2s-5.4-1.6-6.6-4l-2-4a1.8 1.8 0 0 1 3.1-1.8l1.1 1.9" data-page-node-id="yZ0IJTU7I5psxvavDwVeTa"></path></symbol>
+  <filter id="stampInk" x="-16%" y="-16%" width="132%" height="132%" color-interpolation-filters="sRGB">
+    <feTurbulence type="fractalNoise" baseFrequency="1.05" numOctaves="3" seed="9" result="warp"></feTurbulence>
+    <feDisplacementMap in="SourceGraphic" in2="warp" scale="1.8" xChannelSelector="R" yChannelSelector="G" result="edge"></feDisplacementMap>
+    <feTurbulence type="fractalNoise" baseFrequency="0.5" numOctaves="4" seed="3" result="grain"></feTurbulence>
+    <feColorMatrix in="grain" type="luminanceToAlpha" result="mask0"></feColorMatrix>
+    <feComponentTransfer in="mask0" result="mask1">
+      <feFuncA type="table" tableValues="0.7 1 0.82 1 0.74 1"></feFuncA>
+    </feComponentTransfer>
+    <feComposite in="edge" in2="mask1" operator="in"></feComposite>
+  </filter>
+</defs></svg>
+
+<div id="wc" aria-hidden="true" data-page-node-id="Qns4xTtDjgkUTZPpWJJLPx"><span class="wc-veil" data-page-node-id="pJHSGzFMESe5fifXkkl2CT"></span></div>
+<div id="grain" aria-hidden="true" data-page-node-id="MOUKPAGJsi6SW2Pb0E09FB"></div>
+<div id="progress" data-page-node-id="izMDuAzyTtCnaVmiHgEUOf"></div>
+
+<div class="nav-shell" data-page-node-id="7TVsskb8pByojeFg5KQ3jP">
+  <nav class="top" data-page-node-id="K1t19SGeRHbvcXQggvIQ5Z">
+    <a class="logo" href="home.html" data-page-node-id="0u7SmqLE12TkKE6oA8ib9I"><svg class="mark ic" data-page-node-id="zSQp3DMUrCtQQjGUKuWfeP"><use href="#i-dna" data-page-node-id="2DxYj9CkJkESKnHoBNh2Fo"></use></svg><span class="word" data-page-node-id="GPmZBOnuoEjFlZshgepLmu">基因侦探</span></a>
+    <span class="nav-div" aria-hidden="true"></span>
+    <div class="nav-links">
+      <a href="home.html"><span class="hl"></span><svg class="ic"><use href="#i-home"/></svg><span class="lbl">首页</span></a>
+      <a href="science.html"><span class="hl"></span><svg class="ic"><use href="#i-book"/></svg><span class="lbl">手册</span></a>
+      <a href="cases.html" class="on"><span class="hl"></span><svg class="ic" viewBox="0 0 24 24"><path d="M6.4 3.6h8l3.2 3.2v9.2a1.4 1.4 0 0 1-1.4 1.4H6.4a1.4 1.4 0 0 1-1.4-1.4V5a1.4 1.4 0 0 1 1.4-1.4Z"/><path d="M14 3.6V7h3.4"/><path d="M8.4 11.4h5.2M8.4 14.6h5.2"/></svg><span class="lbl">案件簿</span></a>
+      <a href="ranking.html"><span class="hl"></span><svg class="ic" viewBox="0 0 24 24"><path d="M3.6 20h16.8"/><path d="M6.8 16.4V10h4.2V20"/><path d="M13.8 20V4.8h4.2V20"/></svg><span class="lbl">排行榜</span></a>
+      <a href="report.html"><span class="hl"></span><svg class="ic"><use href="#i-medal"/></svg><span class="lbl">我的报告</span></a>
+    </div>
+  <div class="nav-user"><a class="nu-btn" href="login.html?next=%E9%A6%96%E9%A1%B5.html"><svg class="ic" viewBox="0 0 24 24"><circle cx="12" cy="8.4" r="3.6"></circle><path d="M5 20c0-3.6 3.1-5.6 7-5.6s7 2 7 5.6"></path></svg><span class="nu-txt">登录</span></a></div></nav>
+</div>
+
+<section class="page-head" data-page-node-id="ATgbGpglg5oDx7GEwBZp72">
+  <div class="wrap" data-page-node-id="Go4bnajljmKADv9reG8fpG">
+    <span class="kicker rv" data-page-node-id="gd-k">Case Board · 案件簿</span>
+    <h2 class="rv" style="--i:1" data-page-node-id="isooyeaID0s76T2oG68jff">六宗案件，等你破案</h2>
+
+    <div class="brief rv" style="--i:3" data-page-node-id="gDvGzK2JoeYVQQxuC82QYE">
+      <span class="avatar" data-page-node-id="GSCnevftb2rqyRa3e0ecA6"><img src="assets/ip-chen-avatar.jpg" alt="陈探长" data-page-node-id="EDD7O0bGJqXc2P8WC1SYR1"></span>
+      <div class="brief-txt" data-page-node-id="hfzQMqKgVd8j18XBx2eeCu">
+        <div class="who" data-page-node-id="aS6Z1lFBC1wGUvf0WOS0dl">陈探长 · 精准医学侦探社</div>
+        <p data-page-node-id="cUPh5rl8MDNsStLdv97D1q">案卷都摊在桌上了，红线是办案顺序。点开哪份，右边就拉开哪份的案情。</p>
+      </div>
+    </div>
+  </div>
+</section>
+
+<section class="board-sec" data-page-node-id="BlLFqPDHBSIu04TkTSgvSH">
+  <div class="wrap" data-page-node-id="tfB12pRFsGnzPaRFAcYDbV">
+    <div class="board" id="board">
+      <svg class="strings" id="strings" aria-hidden="true" preserveAspectRatio="none"></svg>
+
+      <!-- CASE 01 -->
+      <button class="pol" type="button" data-n="1"
+        style="--x:0.5%; --y:3%; --w:19.5%; --ar:1; --rot:-3.4deg; --wm:78%" aria-label="CASE 01 潦草的抄本">
+        <span class="pol-tab" aria-hidden="true">CASE 01</span>
+        <span class="pol-in">
+          <span class="pol-tape" aria-hidden="true"></span>
+          <span class="pol-photo">
+            <svg class="ic pol-ic"><use href="#i-scissors"/></svg>
+            <span class="pol-q" aria-hidden="true">?</span>
+            <span class="pol-tag">01</span>
+            <span class="pol-seal" aria-hidden="true"><i>封存</i></span>
+            <span class="pol-stamp" aria-hidden="true">结案</span>
+          </span>
+          <span class="pol-cap"><span class="pol-no">CASE 01 · 质控</span><span class="pol-tt">潦草的抄本</span></span>
+          <span class="pol-flag" data-flag>待侦办</span>
+        </span>
+      </button>
+
+      <!-- CASE 02 -->
+      <button class="pol is-locked" type="button" data-n="2"
+        style="--x:8%; --y:55%; --w:13%; --ar:1.22; --rot:-2deg; --wm:58%" aria-label="CASE 02 未解锁">
+        <span class="pol-tab" aria-hidden="true">CASE 02</span>
+        <span class="pol-in">
+          <span class="pol-tape" aria-hidden="true"></span>
+          <span class="pol-photo">
+            <svg class="ic pol-ic"><use href="#i-align"/></svg>
+            <span class="pol-q" aria-hidden="true">?</span>
+            <span class="pol-tag">02</span>
+            <span class="pol-seal" aria-hidden="true"><i>封存</i></span>
+            <span class="pol-stamp" aria-hidden="true">结案</span>
+          </span>
+          <span class="pol-cap"><span class="pol-no">CASE 02 · 比对</span><span class="pol-tt">？？？</span></span>
+          <span class="pol-flag" data-flag>待侦办</span>
+        </span>
+      </button>
+
+      <!-- CASE 03 -->
+      <button class="pol is-locked" type="button" data-n="3"
+        style="--x:34%; --y:0.5%; --w:16%; --ar:0.95; --rot:2.4deg; --wm:64%" aria-label="CASE 03 未解锁">
+        <span class="pol-tab" aria-hidden="true">CASE 03</span>
+        <span class="pol-in">
+          <span class="pol-tape" aria-hidden="true"></span>
+          <span class="pol-photo">
+            <svg class="ic pol-ic"><use href="#i-search"/></svg>
+            <span class="pol-q" aria-hidden="true">?</span>
+            <span class="pol-tag">03</span>
+            <span class="pol-seal" aria-hidden="true"><i>封存</i></span>
+            <span class="pol-stamp" aria-hidden="true">结案</span>
+          </span>
+          <span class="pol-cap"><span class="pol-no">CASE 03 · AI 模块</span><span class="pol-tt">？？？</span></span>
+          <span class="pol-flag" data-flag>待侦办</span>
+        </span>
+      </button>
+
+      <!-- CASE 04 -->
+      <button class="pol is-locked" type="button" data-n="4"
+        style="--x:55%; --y:22.5%; --w:13.5%; --ar:1.1; --rot:3.3deg; --wm:60%" aria-label="CASE 04 未解锁">
+        <span class="pol-tab" aria-hidden="true">CASE 04</span>
+        <span class="pol-in">
+          <span class="pol-tape" aria-hidden="true"></span>
+          <span class="pol-photo">
+            <svg class="ic pol-ic"><use href="#i-code"/></svg>
+            <span class="pol-q" aria-hidden="true">?</span>
+            <span class="pol-tag">04</span>
+            <span class="pol-seal" aria-hidden="true"><i>封存</i></span>
+            <span class="pol-stamp" aria-hidden="true">结案</span>
+          </span>
+          <span class="pol-cap"><span class="pol-no">CASE 04 · 翻译</span><span class="pol-tt">？？？</span></span>
+          <span class="pol-flag" data-flag>待侦办</span>
+        </span>
+      </button>
+
+      <!-- CASE 05 -->
+      <button class="pol is-locked" type="button" data-n="5"
+        style="--x:78%; --y:29%; --w:21%; --ar:1.06; --rot:-2.5deg; --wm:68%" aria-label="CASE 05 未解锁">
+        <span class="pol-tab" aria-hidden="true">CASE 05</span>
+        <span class="pol-in">
+          <span class="pol-tape" aria-hidden="true"></span>
+          <span class="pol-photo">
+            <svg class="ic pol-ic"><use href="#i-family"/></svg>
+            <span class="pol-q" aria-hidden="true">?</span>
+            <span class="pol-tag">05</span>
+            <span class="pol-seal" aria-hidden="true"><i>封存</i></span>
+            <span class="pol-stamp" aria-hidden="true">结案</span>
+          </span>
+          <span class="pol-cap"><span class="pol-no">CASE 05 · 系谱</span><span class="pol-tt">？？？</span></span>
+          <span class="pol-flag" data-flag>待侦办</span>
+        </span>
+      </button>
+
+      <!-- CASE 06 -->
+      <button class="pol is-locked" type="button" data-n="6"
+        style="--x:33.5%; --y:58%; --w:24%; --ar:1.02; --rot:2.2deg; --wm:78%" aria-label="CASE 06 未解锁">
+        <span class="pol-tab" aria-hidden="true">CASE 06</span>
+        <span class="pol-in">
+          <span class="pol-tape" aria-hidden="true"></span>
+          <span class="pol-photo">
+            <svg class="ic pol-ic"><use href="#i-pill"/></svg>
+            <span class="pol-q" aria-hidden="true">?</span>
+            <span class="pol-tag">06</span>
+            <span class="pol-seal" aria-hidden="true"><i>封存</i></span>
+            <span class="pol-stamp" aria-hidden="true">结案</span>
+          </span>
+          <span class="pol-cap"><span class="pol-no">CASE 06 · 精准用药</span><span class="pol-tt">？？？</span></span>
+          <span class="pol-flag" data-flag>待侦办</span>
+        </span>
+      </button>
+    </div>
+
+    
+
+    <div class="board-foot" data-page-node-id="thQTXtaZpgwRtxD0VUE7pd">
+      <span class="bf-lab" data-page-node-id="os3X3h1QMjNCYVnncMURwl">案件簿进度</span>
+      <span class="bf-bar" data-page-node-id="8dmiAzcpRYcXYzH6nXxlf4"><i id="bf-bar" data-page-node-id="WA4ED5xjoICVbUhT7yBBZH"></i></span>
+      <span class="bf-cnt" id="bf-cnt" data-page-node-id="gAtvVTNPbC5iOxze6Wmv03">0 / 6 结案</span>
+    </div>
+  </div>
+</section>
+
+
+<!-- ============ 右侧抽屉 ============ -->
+<div class="dw-wrap" id="dw-wrap" aria-hidden="true" data-page-node-id="FoOw05dAJYdDbFfGwz3YS6">
+  <div class="dw-scrim" data-close="" data-page-node-id="9ypkLGbDKFm4EJkUAMIFam"></div>
+  <aside class="dw" role="dialog" aria-modal="true" aria-labelledby="g-title" tabindex="-1" data-page-node-id="HusC6fq7U0RdAtyG2D6UYA">
+    <span class="dw-ghost" id="g-ghost" aria-hidden="true"></span>
+    <span class="dw-stamp" id="g-stamp" aria-hidden="true"></span>
+    <header class="dw-head" data-page-node-id="KkWyBimOctPWo2O35PdtiN">
+      <div class="dw-top" data-page-node-id="hqyHFJFCdEzWQnBueYXMUl">
+        <span class="dw-no" id="g-no" data-page-node-id="l2CBw9A0ZNPHJxjHGZ0qCz">CASE 01 · 质控</span>
+      </div>
+      <h3 class="dw-title" id="g-title" data-page-node-id="2jE3M9x3SbQ5McFBtW6QZZ">潦草的抄本</h3>
+    </header>
+    <div class="dw-body" id="g-body" data-page-node-id="bum9if2X70bSeZuARzepS2">
+      <dl class="g-meta" data-page-node-id="opuFMktLxaMD2srqJ7KhK1">
+        <div data-page-node-id="0xSUY6IEmCPighkCBfulTC"><dt data-page-node-id="jCkn6FxD37BTCS9iI3WJIQ">委托人</dt><dd data-page-node-id="2iJEvErKuMlsYABQuD5EZ7">测序中心 · 夜班技术员</dd></div>
+        <div class="is-task" data-page-node-id="8t1tlcsBDHOrVbZ1GopWFE"><dt data-page-node-id="QAbnUT7jttr1N7sGDkFCu3">任务</dt><dd data-page-node-id="zh43nB5AwrAfplD2Kld4fQ">剪掉低质量区段，只留下可信的读段（40 个字母的读段 + 每个字母一个打分）</dd></div>
+      </dl>
+      <p class="g-plot-lab" data-page-node-id="4BBIRiVC1LTZC45g3aujY6">案情</p>
+      <p class="g-plot" id="g-plot" data-page-node-id="T1DBnJDw5uHW2LV1DMorgy">深夜，测序中心送来一批刚产出的读段，质检仪突然报警：其中一条的结尾「字迹潦草」，测序仪看走眼了。放任不管的话，后面的分析会把抄写错误当成基因突变，冤枉好人。</p>
+    </div>
+    <footer class="dw-foot" data-page-node-id="6ttrAJb7784cqKRNlBQsnj">
+      <button class="btn btn-primary g-btn" id="g-go" type="button" data-page-node-id="CkK1NOWG9DEhM56GyDK8nb">接案侦办 <svg class="ic" data-page-node-id="crb3Rb1khowT4yxFvUJlvC"><use href="#i-arrow" data-page-node-id="wS5TBJuvtrhbV9CkAnOCbq"></use></svg></button>
+    </footer>
+  </aside>
+</div>
+
+<footer data-page-node-id="w8j8rKUGARNPbE5wtZMePb">
+  <div class="wrap" data-page-node-id="4lVOgpHCMbVmGzeIXYod9y">
+    <div class="f-top" data-page-node-id="kVDQaewavYfXx1iLARWYEQ">
+      <b data-page-node-id="PddcX0aJDrZLfLsF1n6YU9">基因侦探 Gene Detective</b>
+    </div>
+    <span data-page-node-id="EJbEjlBhboC05vf3VItKkv">选题背景：用游戏化方式讲清「测序 → 质控 → 比对 → 变异识别 → 致病性解读」这条生物信息学主线</span>
+    <span data-page-node-id="aR9oRDkjNXms4uGtaLrESL">数据来源：NCBI ClinVar 公共数据库（教学用子集）</span>
+    <span>本站为课程作业，数据与流程均做了教学简化，不构成任何医学建议</span>
+  </div>
+</footer>
+
+<script src="site.js"></script>
+<script src="api.js"></script>
+<script src="terms.js"></script>
+<script src="gate.js"></script>
+<script>
+/* ==========================================================
+   挑战页 · 六宗案件数据（抽屉内容的唯一数据源）
+   ========================================================== */
+var CASES = [
+  {
+    n: 1, no: 'CASE 01 · 质控', title: '潦草的抄本',
+    plot: '测序中心质检环节拦下一条__读段__：末段__质量分值__持续低于 20，属于**不可靠数据**。__低质量碱基__若不剪除，会在后续比对中被误判为__基因变异__，直接影响分析结果。',
+    client: '测序中心 · 夜班技术员',
+    task: '读段尾部有一段低质量区：**点选它的起点和终点**，把它剪掉，只留下可信部分',
+    hintTitle: '锦囊 · 该剪哪儿', hintSrc: '见手册第 2 页',
+    hints: [
+      '① __Q ≥ 28__ 可靠；__Q < 20__ 不可靠。',
+      '② 分值从哪一位起**持续下降**，就从那一位剪到末尾。',
+      '③ __低质量碱基__不剪除，会被误判为__基因变异__。'
+    ],
+    end: '定位分值下降的起点，剪除至末尾，本案件即完成。'
+  },
+  {
+    n: 2, no: 'CASE 02 · 比对', title: '失踪的字母',
+    plot: '遗传门诊的比对报告显示：患者序列与__参考序列__无法完全对齐，原因是中间存在一个碱基的__缺失（Indel）__。缺失位置不确定，后续__变异解读__无法进行。',
+    client: '遗传门诊 · 李医生',
+    task: '患者序列中间缺了一个字母：**移动患者序列**，并在缺口处垫占位横线，让两条序列**完全对齐**',
+    hintTitle: '锦囊 · 怎么对齐', hintSrc: '见手册第 3 页',
+    hints: [
+      '① 先对齐两条序列的__开头__。',
+      '② __错配__集中的位置即差异点。',
+      '③ 在缺失处补 __gap__，错配会成片消失。'
+    ],
+    end: '对齐开头、定位错配集中区、补 gap，三个步骤完成即结案。'
+  },
+  {
+    n: 3, no: 'CASE 03 · AI 模块', title: '三个嫌疑人',
+    plot: '比对阶段检出三个待判定__变异__，临床性质各不相同：一个证据充分判定为__致病__，一个明确为__良性__，另一个**证据相互矛盾**。请按第 4 页的__判定规则__逐一给出结论。',
+    client: '肿瘤遗传咨询室',
+    task: '三名嫌疑人各有一个__变异__：给每人的变异选择「致病 / 良性 / 意义不明」，**提交后与 AI 评分对照**',
+    hintTitle: '锦囊 · 三个人怎么判', hintSrc: '见手册第 4 页',
+    hints: [
+      '① 频率 < 0.1% 支持__致病__；> 1% 支持__良性__。',
+      '② 预测分 ≥ 0.8 支持__致病__；≤ 0.3 支持__良性__。',
+      '③ 文献反复报道致病 → 支持致病。**三类证据方向一致才下结论。**'
+    ],
+    end: '三类证据方向一致才判定；证据冲突时，结论为「意义不明」。'
+  },
+  {
+    n: 4, no: 'CASE 04 · 翻译', title: '无声的暗号',
+    plot: '待分析样本包含一段 __DNA 编码序列__，长度 15 个碱基。按__遗传密码__规则：**每三个碱基为一个密码子**，对应一个__氨基酸__，翻译从__起始密码子__开始。',
+    client: '蛋白工厂 · 监听站',
+    task: '序列共 15 个碱基（5 组__密码子__）：**对照密码子表**，把每组译成对应的__氨基酸__',
+    hintTitle: '锦囊 · 怎么破译', hintSrc: '见手册第 5 页',
+    hints: [
+      '① 从第 1 个碱基起，**每 3 个为一组**，不可错位。',
+      '② 每组对照__密码子表__查出对应__氨基酸__。',
+      '③ __ATG__ 为起始密码子；__TAA / TAG / TGA__ 为终止密码子。'
+    ],
+    end: '按密码子表逐组翻译，并核对起始与终止密码子。'
+  },
+  {
+    n: 5, no: 'CASE 05 · 系谱', title: '家族的秘密',
+    plot: '一个大家族前来求助：祖母、父亲、姑姑先后确诊同一种__罕见病__，姐弟俩担心自己是否「中招」。没有测序仪的年代，遗传学家靠一张__家族树__就能**锁定遗传方式**。',
+    client: '王家 · 全体家属',
+    task: '王家三代__系谱__记录在卷：判断它符合哪种__遗传方式__，**从四个选项中选出来**',
+    hintTitle: '锦囊 · 家族树怎么看', hintSrc: '见手册第 6 页',
+    hints: [
+      '① 每代都有患者 → __显性__；隔代出现 → __隐性__。',
+      '② 男女均患病 → __常染色体__；仅男性患病 → 警惕 __X 连锁__。',
+      '③ 父亲传给儿子 → 排除__线粒体遗传__（仅母系传递）。'
+    ],
+    end: '依次判断连续性、性别分布与传递路径，即可确定遗传方式。'
+  },
+  {
+    n: 6, no: 'CASE 06 · 精准用药', title: '最后的处方',
+    plot: '收官委托：68 岁的__肺腺癌__患者王阿姨，基因检测检出 __EGFR L858R__。肿瘤科医生摆出**三套治疗方案**，需要确定：哪套方案与该__基因结果__匹配？',
+    client: '肿瘤科 · 会诊室',
+    task: '先读 __EGFR L858R__ 变异档案，再从三套方案中**选出最适合王阿姨的一线治疗**',
+    hintTitle: '锦囊 · 药怎么选', hintSrc: '见手册第 8 页',
+    hints: [
+      '① 有靶点吗？检出 __EGFR__ 这类__敏感突变__，就优先__靶向药__。',
+      '② 和化疗比：有__驱动突变__时，靶向药通常**更有效、反应更轻**。',
+      '③ 不看基因结果就开药，今天就**几乎一定是错的**。'
+    ],
+    end: '检出敏感突变且存在对应药物时，首选靶向治疗。'
+  }
+];
+
+/* ==========================================================
+   挑战页 · 陈探长开场
+   ========================================================== */
+(function () {
+  'use strict';
+
+  var LINES = [
+    '六份卷宗都摊在桌上了。红线是办案顺序，顺着走就不会乱。',
+    '想看哪份就点开哪份，右边会替你翻开案情，不着急，慢慢来。',
+    '还没走到红线那头的卷宗先封着——办完一宗，下一份自然就解封了。'
+  ];
+
+  var root = document.documentElement;
+
+  function revealCards() {
+    root.classList.remove('gd-wait');
+    document.querySelectorAll('.rv').forEach(function (el) { el.classList.add('in'); });
+    var cards = document.querySelectorAll('.pol');
+    Array.prototype.forEach.call(cards, function (c, i) {
+      c.style.transitionDelay = (60 + i * 80) + 'ms';
+    });
+    setTimeout(function () {
+      Array.prototype.forEach.call(cards, function (c) { c.style.transitionDelay = ''; });
+    }, 1200);
+    setTimeout(function () {
+      if (window.GDBoard && window.GDBoard.redraw) window.GDBoard.redraw();
+    }, 900);
+  }
+
+  function play(force) {
+    GDGate.play({
+      lines: LINES,
+      key: force ? '' : gdUserKey('gd_brief_seen_'),
+      endLabel: '翻开第一份卷宗',
+      onFinish: function () {
+        revealCards();
+        if (window.GDBoard) window.GDBoard.open(1);
+      }
+    });
+  }
+
+  if (GDGate.seen(gdUserKey('gd_brief_seen_'))) revealCards();
+  else play(false);
+})();
+</script><script>
+/* ==========================================================
+   挑战页 · 红线 + 右侧抽屉
+   ========================================================== */
+(function () {
+  'use strict';
+
+  var board = document.getElementById('board');
+  var svg = document.getElementById('strings');
+  var dwWrap = document.getElementById('dw-wrap');
+  var dwPanel = dwWrap.querySelector('.dw');
+  var dwBody = document.getElementById('g-body');
+  var gNo = document.getElementById('g-no');
+  var gStamp = document.getElementById('g-stamp');
+  var gGhost = document.getElementById('g-ghost');
+  var gTitle = document.getElementById('g-title');
+  var gGo = document.getElementById('g-go');
+  var bfBar = document.getElementById('bf-bar');
+  var bfCnt = document.getElementById('bf-cnt');
+
+  var SVGNS = 'http://www.w3.org/2000/svg';
+  var prog = GD.emptyProgress();
+  var state = { first: 1, sel: 0, open: false };
+  var lastFocus = null;
+
+  function card(n) { return board.querySelector('.pol[data-n="' + n + '"]'); }
+  function statusOf(n) {
+    if (prog['level' + n]) return 'done';
+    return n === state.first ? 'open' : 'locked';
+  }
+
+  /* 案件编号 → 对应手册页 id（与 manual.js 的 PAGES.caseNo 一致）。
+     第 1 页「什么是基因」、第 7 页「医学 AI」、第 9 页「从变异到诊断」不绑定具体案件。 */
+  function caseManualId(n) {
+    var map = { 1: 'c1', 2: 'c2', 3: 'c3', 4: 'c5', 5: 'c8', 6: 'c7' };
+    return map[n] || null;
+  }
+
+  /* 由卡片中心朝目标方向射出，与卡片矩形边界求交 → 边缘出线点 */
+  function edgePoint(rect, cx, cy, tx, ty, br) {
+    var dx = tx - cx, dy = ty - cy;
+    var hw = rect.width / 2, hh = rect.height / 2;
+    var tx1 = dx === 0 ? Infinity : hw / Math.abs(dx);
+    var ty1 = dy === 0 ? Infinity : hh / Math.abs(dy);
+    var t = Math.min(tx1, ty1);
+    if (!isFinite(t)) t = 0;
+    var len = Math.hypot(dx, dy) || 1;
+    return { x: cx + dx * t + (dx / len) * 6 - br.left,
+             y: cy + dy * t + (dy / len) * 6 - br.top };
+  }
+
+  function drawStrings() {
+    if (!svg || !board) return;
+    while (svg.firstChild) svg.removeChild(svg.firstChild);
+    if (window.matchMedia('(max-width: 980px)').matches) return;
+
+    var br = board.getBoundingClientRect();
+    if (!br.width || !br.height) return;
+    svg.setAttribute('viewBox', '0 0 ' + br.width + ' ' + br.height);
+
+    var geo = [];
+    for (var n = 1; n <= 6; n++) {
+      var c = card(n);
+      if (!c) { geo.push(null); continue; }
+      var r = c.getBoundingClientRect();
+      geo.push({ r: r, cx: r.left + r.width / 2, cy: r.top + r.height / 2 });
+    }
+
+    for (var i = 1; i < 6; i++) {
+      var A = geo[i - 1], B = geo[i];
+      if (!A || !B) continue;
+      var pa = edgePoint(A.r, A.cx, A.cy, B.cx, B.cy, br);
+      var pb = edgePoint(B.r, B.cx, B.cy, A.cx, A.cy, br);
+
+      /* 手拉的绳子不会绷直：给一点垂坠 */
+      var dx = pb.x - pa.x, dy = pb.y - pa.y;
+      var len = Math.hypot(dx, dy) || 1;
+      var sag = Math.min(16, len * 0.08);
+      var cx = (pa.x + pb.x) / 2 + (dy / len) * sag;
+      var cy = (pa.y + pb.y) / 2 + (dx / len) * sag;
+
+      var path = document.createElementNS(SVGNS, 'path');
+      path.setAttribute('d', 'M' + pa.x + ' ' + pa.y + ' Q' + cx + ' ' + cy + ' ' + pb.x + ' ' + pb.y);
+      var lk = statusOf(i + 1) === 'locked';
+      if (lk) path.setAttribute('class', 'lk');
+      svg.appendChild(path);
+
+      [[pa.x, pa.y], [pb.x, pb.y]].forEach(function (pt) {
+        var dot = document.createElementNS(SVGNS, 'circle');
+        dot.setAttribute('cx', pt[0]);
+        dot.setAttribute('cy', pt[1]);
+        dot.setAttribute('r', 3.2);
+        if (lk) dot.setAttribute('class', 'lk');
+        svg.appendChild(dot);
+      });
+    }
+  }
+
+  /* ==========================================================
+     抽屉内容逐字打出：卷宗号 → 标题 → 委托人 → 任务 → 案情
+     点一下抽屉正文可以立刻看全文
+     ========================================================== */
+  var typeTimer = null, typeEl = null, typeDone = true, typeList = [], typeWatch = null,
+      typeDoneCb = null;
+
+  function stopTyping() {
+    if (typeWatch) { clearTimeout(typeWatch); typeWatch = null; }
+    if (typeTimer) { clearTimeout(typeTimer); typeTimer = null; }
+    if (typeEl) { typeEl.classList.remove('typing'); typeEl = null; }
+    for (var i = 0; i < typeList.length; i++) {
+      if (typeList[i].el) typeList[i].el.classList.remove('typing');
+    }
+    typeList = [];
+    typeDone = true;
+    typeDoneCb = null;   /* 中途切走：这次不盖章 */
+  }
+
+  function finishTyping() {
+    if (typeDone) return false;
+    if (typeWatch) { clearTimeout(typeWatch); typeWatch = null; }
+    if (typeTimer) { clearTimeout(typeTimer); typeTimer = null; }
+    for (var i = 0; i < typeList.length; i++) {
+      var it = typeList[i];
+      if (!it.el) continue;
+      if (it.frags && window.GDTerms) GDTerms.fill(it.frags);   /* 已开打：按片段补全 */
+      else if (window.GDTerms && /(\*\*|__)/.test(it.text)) GDTerms.fill(GDTerms.build(it.el, it.text));
+      else it.el.textContent = it.text;
+      it.el.classList.remove('typing');
+    }
+    typeEl = null;
+    typeList = [];
+    typeDone = true;
+    if (typeDoneCb) { var cb = typeDoneCb; typeDoneCb = null; cb(); }
+    return true;
+  }
+
+  /* seq: [{ el, text, step, comma, gap }]
+     step 每字毫秒；comma 遇标点的停顿；gap 这一项打完后歇多久
+     速度按「看得清、跟得上」调：正文 30ms/字，标题 70ms/字 */
+  function typeSeq(seq, onDone) {
+    stopTyping();
+    typeDoneCb = onDone || null;
+    typeList = seq.filter(function (it) { return it && it.el; });
+
+    var calm = false;
+    try { calm = window.matchMedia('(prefers-reduced-motion: reduce)').matches; } catch (e) {}
+
+    if (calm || !typeList.length) {
+      for (var i = 0; i < typeList.length; i++) {
+        var it0 = typeList[i];
+        if (window.GDTerms && /(\*\*|__)/.test(it0.text)) GDTerms.fill(GDTerms.build(it0.el, it0.text));
+        else it0.el.textContent = it0.text;
+      }
+      typeList = [];
+      typeDone = true;
+      if (typeDoneCb) { var cb = typeDoneCb; typeDoneCb = null; cb(); }
+      return;
+    }
+
+    typeDone = false;
+    var k = 0;
+    /* 看门狗：动画链意外断掉时，兜底把全文补齐（正常打完则 finishTyping 幂等退出） */
+    if (typeWatch) clearTimeout(typeWatch);
+    var totalMs = 600;
+    typeList.forEach(function (it) {
+      totalMs += (it.text || '').length * (it.step || 30) + (it.gap || 150);
+    });
+    typeWatch = setTimeout(function () {
+      if (!typeDone) finishTyping();
+    }, totalMs + 900);
+    next();
+
+    function next() {
+      if (k >= typeList.length) {
+        typeEl = null; typeDone = true;
+        if (typeDoneCb) { var cb = typeDoneCb; typeDoneCb = null; cb(); }
+        return;
+      }
+      var it = typeList[k], el = it.el;
+      if (!el.isConnected) { k++; typeTimer = setTimeout(next, 0); return; }
+      var text = it.text || '';
+      var step = it.step || 30;
+      var comma = it.comma == null ? 145 : it.comma;
+      var gap = it.gap == null ? 150 : it.gap;
+      /* 带 **…** / __…__ 标注的文字：切成片段逐字写进片段里，高亮随打字长出来 */
+      var frags = (window.GDTerms && /(\*\*|__)/.test(text)) ? GDTerms.build(el, text) : null;
+      it.frags = frags;
+      el.classList.add('typing');
+      typeEl = el;
+      var i = 0, fi = 0, ci = 0;
+      var chars = frags ? frags.map(function (f) { return Array.from(f.s); }) : null;
+      (function tick() {
+        if (!el.isConnected) { stopTyping(); return; }
+        i++;
+        if (!frags) {
+          el.textContent = text.slice(0, i);
+        } else {
+          while (fi < chars.length && ci >= chars[fi].length) { fi++; ci = 0; }
+          if (fi < chars.length) frags[fi].el.textContent += chars[fi][ci++];
+        }
+        if (i < text.length) {
+          var ch = text.charAt(i - 1);
+          typeTimer = setTimeout(tick,
+            (comma && /[，。；：、」「？！]/.test(ch)) ? comma : step);
+        } else {
+          el.classList.remove('typing');
+          typeTimer = null;
+          k++;
+          typeTimer = setTimeout(next, gap);
+        }
+      })();
+    }
+  }
+
+  function renderDrawer() {
+    var n = state.sel;
+    if (!n) return;
+    var c = CASES[n - 1];
+    var st = statusOf(n);
+    stopTyping();
+
+    /* 文字交给打字器逐字落笔，这里只留空壳，避免闪一下全文 */
+    gNo.textContent = '';
+    if (gGhost) gGhost.textContent = ('0' + c.n).slice(-2);
+    var titleTxt = st === 'locked' ? '？？？' : c.title;
+    gTitle.textContent = '';
+    gTitle.classList.toggle('lock', st === 'locked');
+
+    /* 右下角那枚章：结案绿、待侦办红、未解锁灰。
+       结案章要等打字机打完最后一个字再"啪"地盖上；其余两枚直接在。 */
+    if (gStamp) {
+      gStamp.textContent = st === 'done' ? '结案' : (st === 'open' ? '待侦办' : '未解锁');
+      gStamp.className = 'dw-stamp ' + st + (st === 'done' ? '' : ' on');
+    }
+
+    var seq;
+
+    if (st === 'locked') {
+      dwBody.innerHTML =
+        '<div class="g-sealed">' +
+          '<span class="seal-ring" aria-hidden="true">?</span>' +
+          '<p class="seal-t"></p>' +
+          '<p class="seal-d"></p>' +
+        '</div>';
+      gGo.className = 'btn btn-ghost g-btn is-off';
+      gGo.innerHTML = '<svg class="ic"><use href="#i-lock"/></svg>先破上一案';
+      seq = [
+        { el: gNo, text: c.no, step: 26, gap: 130 },
+        { el: gTitle, text: titleTxt, step: 70, gap: 280 },
+        { el: dwBody.querySelector('.seal-t'), text: '这份卷宗还封着', step: 48, gap: 120 },
+        { el: dwBody.querySelector('.seal-d'),
+          text: '红线没走到这儿。先把上一宗办结，封条才会自己松开。', step: 32 }
+      ];
+    } else {
+      dwBody.innerHTML =
+        '<dl class="g-meta">' +
+          '<div><dt></dt><dd></dd></div>' +
+          '<div class="is-task"><dt></dt><dd></dd></div>' +
+        '</dl>' +
+        '<p class="g-plot-lab"><span></span></p>' +
+        '<p class="g-plot" id="g-plot"></p>';
+
+      gGo.className = 'btn btn-primary g-btn';
+      gGo.innerHTML = (st === 'done' ? '重阅卷宗' : '接案侦办') +
+        ' <svg class="ic"><use href="#i-arrow"/></svg>';
+
+      var dts = dwBody.querySelectorAll('.g-meta dt');
+      var dds = dwBody.querySelectorAll('.g-meta dd');
+      seq = [
+        { el: gNo, text: c.no, step: 26, gap: 130 },
+        { el: gTitle, text: titleTxt, step: 70, gap: 260 },
+        { el: dts[0], text: '委托人', step: 52, gap: 80 },
+        { el: dds[0], text: c.client, step: 42, gap: 230 },
+        { el: dts[1], text: '任务', step: 52, gap: 80 },
+        { el: dds[1], text: c.task, step: 34, gap: 260 },
+        { el: dwBody.querySelector('.g-plot-lab span'), text: '案情', step: 54, gap: 110 },
+        { el: document.getElementById('g-plot'), text: c.plot, step: 28 }
+      ];
+    }
+
+    /* 已结案：不打字机，全文直接落纸；结案章延后半拍再落，保留"砸下来"的动效。
+       待侦办 / 未解锁：等抽屉滑进来再逐字落笔 */
+    if (st === 'done') {
+      seq.forEach(function (it) {
+        if (!it.el) return;
+        if (window.GDTerms && /(\*\*|__)/.test(it.text)) GDTerms.fill(GDTerms.build(it.el, it.text));
+        else it.el.textContent = it.text;
+      });
+      var scopeD = n;
+      setTimeout(function () {
+        if (state.open && state.sel === scopeD && gStamp) gStamp.classList.add('on', 'stamped');
+      }, 750);
+    } else {
+      var scope = n;
+      setTimeout(function () {
+        if (state.open && state.sel === scope) typeSeq(seq);
+      }, 340);
+    }
+  }
+
+  function openDrawer(n) {
+    lastFocus = document.activeElement;
+    state.sel = n;
+    state.open = true;
+    renderDrawer();
+    marSelected();
+    dwWrap.classList.add('open');
+    dwWrap.setAttribute('aria-hidden', 'false');
+    document.documentElement.classList.add('gd-drawer');
+    setTimeout(function () { try { dwPanel.focus({ preventScroll: true }); } catch (e) {} }, 80);
+  }
+
+  function closeDrawer() {
+    if (!state.open) return;
+    stopTyping();
+    state.open = false;
+    dwWrap.classList.remove('open');
+    dwWrap.setAttribute('aria-hidden', 'true');
+    document.documentElement.classList.remove('gd-drawer');
+    if (lastFocus && lastFocus.focus) { try { lastFocus.focus({ preventScroll: true }); } catch (e) {} }
+  }
+
+  function marSelected() {
+    for (var i = 1; i <= 6; i++) {
+      var c = card(i);
+      if (!c) continue;
+      var sel = i === state.sel;
+      c.classList.toggle('is-sel', sel);
+      c.setAttribute('aria-pressed', sel ? 'true' : 'false');
+      var flag = c.querySelector('[data-flag]');
+      if (flag) {
+        var s = statusOf(i);
+        var txt = s === 'done' ? '已归档' : (s === 'open' ? '待侦办' : '封存中');
+        /* 评分只在最终报告解锁后出现，且仅当该案达到传奇侦探（≥95）才亮出来，
+           否则保持「已归档」——分数是冲刺目标，不是过程信息 */
+        var legend = false;
+        if (s === 'done' && window.GD && GD.isLegend(prog)) {
+          var sc = GD.caseScore(i, prog['level' + i] && prog['level' + i].elapsedSec);
+          if (sc != null && sc >= 95) { txt = sc + ' · 传奇侦探'; legend = true; }
+        }
+        flag.textContent = txt;
+        flag.classList.toggle('is-legend', legend);
+        flag.setAttribute('data-st', s);
+      }
+    }
+    drawStrings();
+  }
+
+  function paint(p) {
+    prog = p || GD.emptyProgress();
+    var done = 0, first = 0;
+    for (var i = 1; i <= 6; i++) if (p['level' + i]) done++;
+    for (var i = 1; i <= 6; i++) if (!p['level' + i]) { first = i; break; }
+    state.first = first || 7;
+
+    for (var i = 1; i <= 6; i++) {
+      var c = card(i);
+      if (!c) continue;
+      var st = statusOf(i);
+      c.classList.toggle('is-done', st === 'done');
+      c.classList.toggle('is-open', st === 'open');
+      c.classList.toggle('is-locked', st === 'locked');
+      c.setAttribute('aria-disabled', st === 'locked' ? 'true' : 'false');
+      var tt = c.querySelector('.pol-tt');
+      if (tt) tt.textContent = st === 'locked' ? '？？？' : CASES[i - 1].title;
+      c.setAttribute('aria-label', 'CASE 0' + i + ' ' + (st === 'locked' ? '未解锁' : CASES[i - 1].title));
+    }
+
+    if (bfBar) bfBar.style.width = Math.round(done / 6 * 100) + '%';
+    if (bfCnt) bfCnt.textContent = done + ' / 6 结案';
+
+    marSelected();
+    if (state.open) renderDrawer();
+  }
+
+  board.addEventListener('click', function (e) {
+    var c = e.target.closest('.pol');
+    if (!c) return;
+    openDrawer(Number(c.dataset.n));
+  });
+
+  dwWrap.addEventListener('click', function (e) {
+    if (e.target.closest('[data-close]')) { closeDrawer(); return; }
+
+    var n = state.sel;
+    if (!n) return;
+    var c = CASES[n - 1];
+
+    /* 正在落笔时，点抽屉正文可以把字一次补完；底部按钮不受影响 */
+    if (e.target.closest('.dw-body') || e.target.closest('.dw-head')) {
+      if (finishTyping()) return;
+    }
+
+    if (e.target.closest('#g-go')) {
+      var st = statusOf(n);
+      var href = 'case.html?n=' + n;
+      if (!GD.getToken()) { location.href = GD.loginUrl(href); return; }
+      /* 案件还封着：陈探长拦下，提示该先办哪一宗 */
+      if (st === 'locked') {
+        var fn = Math.min(6, Math.max(1, state.first));
+        GDGate.play({
+          force: true,
+          lines: [
+            '这宗还封着呢，案子得一宗一宗来。',
+            '先把第 ' + fn + ' 案办结，这宗的封条才会松开。'
+          ],
+          kicker: '接案提醒 · 陈探长',
+          choices: [
+            { label: '好，去办第 ' + fn + ' 案', onClick: function () { openDrawer(fn); } },
+            { label: '我再想想', onClick: function () { closeDrawer(); } }
+          ]
+        });
+        return;
+      }
+      /* 接案前先读对应手册页：未读则陈探长拦下，给「去翻手册」的返回键 */
+      var mid = caseManualId(n);
+      if (mid && window.GD.isManualRead && !GD.isManualRead(mid)) {
+        GDGate.play({
+          force: true,
+          lines: [
+            '别急，先把手册里那一页读透，再回来接这宗案。',
+            '判定规则都写在手册里，没读就上手，容易办岔。'
+          ],
+          kicker: '接案提醒 · 陈探长',
+          choices: [
+            { label: '好，去翻手册', onClick: function () { location.href = 'science.html#' + mid; } },
+            { label: '我再想想', onClick: function () { closeDrawer(); } }
+          ]
+        });
+        return;
+      }
+      location.href = href;
+    }
+  });
+
+  document.addEventListener('keydown', function (e) {
+    if (e.key === 'Escape' && state.open) closeDrawer();
+  });
+
+  /* 抽屉开着时：点卷宗直接换案情，点别处收起 */
+  document.addEventListener('click', function (e) {
+    if (!state.open) return;
+    if (e.target.closest('.dw') || e.target.closest('.pol')) return;
+    closeDrawer();
+  });
+
+  var toastEl = null, toastTimer = null;
+  function toast(msg) {
+    if (!toastEl) {
+      toastEl = document.createElement('div');
+      toastEl.className = 'toast';
+      document.body.appendChild(toastEl);
+    }
+    toastEl.textContent = msg;
+    setTimeout(function () { toastEl.classList.add('show'); }, 10);
+    clearTimeout(toastTimer);
+    toastTimer = setTimeout(function () { toastEl.classList.remove('show'); }, 3000);
+  }
+
+  document.addEventListener('gd:progress', function (e) { paint(e.detail || GD.emptyProgress()); });
+  document.addEventListener('gd:auth', function (e) {
+    if (!(e.detail && e.detail.username)) paint(GD.emptyProgress());
+  });
+
+  var rt = null;
+  window.addEventListener('resize', function () {
+    clearTimeout(rt);
+    rt = setTimeout(drawStrings, 140);
+  });
+  window.addEventListener('load', function () { setTimeout(drawStrings, 80); });
+
+  window.GDBoard = { redraw: drawStrings, open: openDrawer, close: closeDrawer,
+    first: function () { return state.first; } };
+
+  paint(GD.emptyProgress());
+  GD.loadProgress().then(paint).catch(function () { paint(GD.emptyProgress()); });
+
+  /* 手册「去接第 X 案」用 #caseN 直达：等卡片揭示后把对应抽屉拉开 */
+  var hm = (location.hash || '').match(/#case(\d)/);
+  if (hm) {
+    var hn = Math.min(6, Math.max(1, Number(hm[1])));
+    setTimeout(function () { openDrawer(hn); }, 700);
+  }
+
+})();
+</script>
+
+
+
+<script src="helix.js"></script>
+</body></html>

@@ -1,0 +1,11 @@
+fastapi>=0.115
+uvicorn[standard]>=0.30
+pydantic>=2.7
+pyjwt>=2.8
+
+# PythonAnywhere 部署：把 FastAPI(ASGI) 包装成 WSGI
+a2wsgi>=1.10
+
+# 开发与测试
+pytest>=8.0
+httpx>=0.27

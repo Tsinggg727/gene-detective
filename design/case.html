@@ -1,0 +1,1688 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <link rel="icon" type="image/svg+xml" href="favicon.svg">
+    <link rel="icon" type="image/png" sizes="64x64" href="favicon.png">
+<title>案件卷宗 · 基因侦探</title>
+<link rel="stylesheet" href="site.css">
+<style>
+/* ==========================================================
+   案件卷宗（?n=1..6）
+   一张固定高度的卡片，卷宗 → 题目 → 判定结果 都在卡里翻页
+   ========================================================== */
+.case-wrap { padding: calc(var(--nav-h) + 34px) 0 74px; }
+.case-top { display: flex; align-items: center; gap: 12px; max-width: 940px;
+  margin: 0 auto 12px; padding: 0 2px; }
+.back-link { display: inline-flex; align-items: center; gap: 6px; font-size: 12.5px;
+  white-space: nowrap; color: var(--text-3); text-decoration: none; padding: 5px 11px 5px 8px;
+  border-radius: 3px; transition: color .2s, background .2s; }
+.back-link:hover { color: var(--blue-900); background: rgb(var(--wc-blue) / .16); }
+.back-link .ic { width: 14px; height: 14px; transform: rotate(180deg); opacity: .7; }
+.case-top .ct-r { margin-left: auto; font-family: var(--font-mono); font-size: 10.5px;
+  letter-spacing: .1em; color: var(--text-3); white-space: nowrap; }
+
+/* ---------- 卡片骨架：方正档案夹 ----------
+   弃用大圆角软卡，改成档案夹的直角 + 墨线细框 + 硬投影，
+   与全站「纸 + 墨 + 朱红」设计语言对齐；左上角一道朱红索引签。 */
+.deck { position: relative; display: flex; flex-direction: column;
+  max-width: 940px; margin: 0 auto; overflow: hidden;
+  height: clamp(500px, 68vh, 620px);
+  border-radius: 6px;
+  background: linear-gradient(180deg, #fffefa 0%, #fdf9f1 100%);
+  border: 1px solid rgb(84 106 156 / .30);
+  box-shadow: inset 0 1px 0 rgb(255 255 255 / .9),
+              3px 3px 0 rgb(84 106 156 / .14),
+              0 24px 48px -24px rgb(58 76 112 / .42); }
+/* 左侧档案脊：一条墨蓝竖条，像卷宗装订边 */
+.deck::before { content: ""; position: absolute; left: 0; top: 0; bottom: 0; width: 5px;
+  background: linear-gradient(180deg, rgb(var(--wc-blue-deep) / .85), rgb(var(--wc-violet-deep) / .6));
+  opacity: .72; pointer-events: none; }
+/* 左上角朱红索引签：贴一张档案标签 */
+.deck::after { content: ""; position: absolute; left: 5px; top: 0; width: 42px; height: 9px;
+  background: linear-gradient(180deg, rgb(201 106 114 / .82), rgb(201 106 114 / .5));
+  border-radius: 0 0 3px 0; opacity: .8; pointer-events: none; }
+
+.dk-head { position: relative; flex: none; display: flex; align-items: center; gap: 11px;
+  padding: 15px 24px 12px 28px;
+  border-bottom: 2px solid rgb(84 106 156 / .22); }
+.dk-no { font-family: var(--font-mono); font-size: 10.5px; font-weight: 700;
+  letter-spacing: .18em; color: var(--blue-500); }
+.dk-title { font-family: var(--font-display); font-size: 22px; font-weight: 900;
+  color: var(--blue-900); letter-spacing: .02em; }
+.dk-tag { font-family: var(--font-mono); font-size: 10.5px; font-weight: 700;
+  letter-spacing: .08em; padding: 3px 2px; border-radius: 0;
+  color: var(--blue-500); background: none; border: none; }
+.dk-right { margin-left: auto; display: flex; align-items: center; gap: 10px; }
+.dk-pips { display: flex; align-items: center; gap: 5px; }
+.dk-pips i { width: 6px; height: 6px; border-radius: 99px; background: rgb(84 106 156 / .2);
+  transition: width .32s var(--ease-out-quart), background .32s; }
+.dk-pips i.on { width: 17px; background: var(--blue-500); }
+.dk-pips .dk-closed { font-family: var(--font-mono); font-size: 10px; font-weight: 700;
+  letter-spacing: .12em; color: #4d7f63; }
+
+.dk-body { position: relative; flex: 1; min-height: 0; }
+.dk-page { position: absolute; inset: 0; padding: 20px 30px 14px;
+  display: flex; flex-direction: column;
+  opacity: 0; visibility: hidden; transform: translateY(9px); pointer-events: none;
+  transition: opacity .3s var(--ease-out-quart), transform .34s var(--ease-out-quart),
+              visibility .34s;
+  overflow-y: auto; scrollbar-width: none; }
+.dk-page::-webkit-scrollbar { display: none; }
+.dk-page.on { opacity: 1; visibility: visible; transform: none; pointer-events: auto; }
+
+.dk-foot[hidden] { display: none; }
+.dk-foot { flex: none; display: flex; align-items: center; gap: 14px;
+  padding: 11px 24px 13px 28px;
+  border-top: 2px solid rgb(84 106 156 / .22);
+  background: rgb(var(--wc-blue) / .045); }
+/* 上一步固定在左下角，其余（计时/提示/锦囊/下一步）推到右侧 */
+#dk-prev { margin-right: auto; flex: none; }
+.dk-timer { display: inline-flex; align-items: center; gap: 5px; flex: none;
+  font-family: var(--font-mono); font-size: 11.5px; font-weight: 700;
+  letter-spacing: .05em; color: var(--blue-700); }
+.dk-timer .ic { width: 12px; height: 12px; opacity: .8; }
+.dk-hint { flex: 1 1 auto; min-width: 0; font-size: 12.6px; color: var(--text-3); line-height: 1.5;
+  overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.dk-hint.err { color: #a63d45; }
+.dk-nav { display: flex; gap: 8px; flex: none; }
+.dk-nav .btn { font-size: 13.2px; padding: 8px 18px; }
+
+/* ---------- 锦囊入口（手写批注：文字 + 箭头 + 锦囊） ---------- */
+.dk-pouch { position: relative; flex: none; display: inline-flex; align-items: center;
+  gap: 6px; padding: 5px 8px 5px 0; margin-right: 4px; cursor: pointer;
+  background: none; border: 0; color: var(--blue-700);
+  font-family: var(--font-body); -webkit-tap-highlight-color: transparent;
+  transition: color .2s; }
+.dk-pouch-tx { font-size: 13px; font-weight: 700; letter-spacing: .03em; color: var(--blue-700);
+  transition: color .2s; }
+.dk-pouch-arrow { width: 32px; height: 16px; flex: none; fill: none;
+  stroke: currentColor; stroke-width: 1.5; stroke-linecap: round; stroke-linejoin: round;
+  opacity: .62; transition: opacity .22s, transform .22s var(--ease-out-quart);
+  animation: arrow-nudge 2.9s ease-in-out 4; }
+@keyframes arrow-nudge {
+  0%, 100% { transform: translateX(0); }
+  46% { transform: translateX(3.5px); }
+}
+.dk-pouch-ic { display: grid; place-items: center; }
+.dk-pouch .ic { width: 23px; height: 23px; stroke: currentColor; stroke-width: 1.75;
+  transition: transform .32s var(--ease-out-quart); }
+.dk-pouch:hover { color: var(--blue-900); }
+.dk-pouch:hover .dk-pouch-tx { opacity: 1; }
+.dk-pouch:hover .dk-pouch-arrow { opacity: .9; transform: translateX(2px); animation: none; }
+.dk-pouch:hover .ic { transform: rotate(-8deg) scale(1.1); }
+.dk-pouch:active .ic { transform: rotate(-8deg) scale(.94); }
+.dk-pouch.is-burst .ic { animation: pouch-burst-icon .5s var(--ease-out-quart); }
+@keyframes pouch-burst-icon {
+  0% { transform: scale(1); }
+  34% { transform: scale(1.34) rotate(-10deg); }
+  62% { transform: scale(.9) rotate(4deg); }
+  100% { transform: scale(1); }
+}
+.dk-pouch[hidden] { display: none; }
+
+/* ---------- 打字光标 ---------- */
+.typing::after { content: ""; display: inline-block; width: 2px; height: .92em;
+  margin-left: 3px; vertical-align: -1px; background: var(--blue-500);
+  animation: caret .85s steps(1) infinite; }
+@keyframes caret { 0%, 49% { opacity: 1 } 50%, 100% { opacity: 0 } }
+
+/* ---------- 卷宗页 ---------- */
+.dz { display: flex; flex-direction: column; flex: 1; min-height: 0; position: relative; }
+/* 卷宗页左下角：返回案件簿（只要一个箭头，无框） */
+.dz-back { align-self: flex-start; margin-top: 10px; display: inline-flex;
+  align-items: center; gap: 5px; color: var(--text-3); text-decoration: none;
+  font-size: 12.5px; letter-spacing: .03em; transition: color .2s, transform .2s; }
+.dz-back:hover { color: var(--blue-900); transform: translateX(-3px); }
+.dz-back .ic { width: 15px; height: 15px; transform: rotate(180deg); opacity: .65; }
+.dz-back b { font-weight: 600; }
+.dz-story { font-size: 15px; line-height: 1.9; color: var(--text-2); }
+.dz-meta { display: flex; flex-wrap: wrap; gap: 6px 24px; margin: 13px 0 0;
+  padding: 10px 16px 10px 14px; border-radius: 3px;
+  background: rgb(var(--wc-blue) / .07);
+  border: 1px solid rgb(var(--wc-blue-deep) / .16);
+  border-left: 3px solid rgb(var(--wc-blue-deep) / .42); }
+.dz-meta span { display: flex; align-items: baseline; gap: 8px; min-width: 0;
+  font-size: 13.5px; color: var(--text-2); }
+.dz-meta i { flex: 0 0 auto; font-style: normal; font-family: var(--font-mono); font-size: 10.5px;
+  font-weight: 700; letter-spacing: .12em; color: var(--text-3); }
+.dz > .dz-story { margin-top: auto; }
+.dz > .dz-story:last-child { margin-bottom: auto; }
+.dz > .dz-how { margin-top: auto; }
+.dz-how { display: flex; flex-direction: column; margin-top: 15px;
+  position: relative;
+  padding: 14px 19px 12px; border-radius: 3px;
+  background: linear-gradient(160deg, rgb(var(--wc-violet) / .08), rgb(var(--wc-blue) / .05));
+  border: 1px solid rgb(var(--wc-violet) / .30); }
+/* 探长开腔前先挂一个大引号：缩到标题左侧空档里、与标题行对齐
+   （原来 74px 悬在标题上方，两个点看着像冒号） */
+.dz-how::before { content: "\201C"; position: absolute; left: 8px; top: -8px;
+  font-family: var(--font-display); font-weight: 900; font-size: 44px; line-height: 1;
+  color: rgb(var(--wc-violet) / .3); pointer-events: none;
+  text-shadow: 0 1px 0 rgb(255 255 255 / .7); }
+.dz-how-t { display: inline-flex; align-items: center; gap: 6px; margin-left: 80px; margin-bottom: 10px;
+  font-family: var(--font-mono); font-size: 10.5px; font-weight: 700;
+  letter-spacing: .16em; color: var(--blue-700); }
+.dz-how-t .ic { width: 12px; height: 12px; }
+.dz-how p { font-family: var(--font-display); font-size: 15px; line-height: 1.92;
+  color: var(--text-2); letter-spacing: .015em;
+  min-height: 3.9em; padding-top: 1px; }
+.dz-sign { align-self: flex-end; margin-top: 6px; font-family: var(--font-display);
+  font-size: 12.5px; letter-spacing: .06em; color: var(--text-3); opacity: .75; }
+
+/* ---------- 题目页公共 ---------- */
+.qz-kick { font-family: var(--font-mono); font-size: 10.5px; font-weight: 700;
+  letter-spacing: .18em; color: var(--blue-500); margin-bottom: 4px; }
+.qz-lead { font-size: 14px; line-height: 1.72; color: var(--text-2);
+  margin-bottom: 13px; min-height: 1.75em; }
+.qz-body { flex: 1; min-height: 0; display: flex; flex-direction: column;
+  overflow-y: auto; scrollbar-width: none; }
+.qz-body::-webkit-scrollbar { display: none; }
+.qz-body > *:first-child { margin-top: auto; }
+.qz-body > *:last-child { margin-bottom: auto; }
+.fbf { display: none; margin-top: 8px; font-size: 13.5px; line-height: 1.62;
+  color: #a63d45; padding: 8px 14px 8px 13px;
+  background: rgb(var(--wc-blue) / .07); border-left: 3px solid #c96a72; }
+.fbf.on { display: block; animation: fbf-in .3s var(--ease-out-quart); }
+@keyframes fbf-in { from { opacity: 0; transform: translateY(4px) } to { opacity: 1; transform: none } }
+.seq-ruler { display: grid; gap: 3px; margin-top: 3px; }
+.seq-ruler span { font-family: var(--font-mono); font-size: 8.5px; color: var(--text-3);
+  text-align: center; line-height: 1.3; }
+.seq-label { display: flex; align-items: baseline; gap: 8px; margin: 2px 0 5px;
+  font-family: var(--font-mono); font-size: 11.5px; font-weight: 700;
+  letter-spacing: .1em; color: var(--text-3); }
+.seq-label b { font-size: 11.5px; color: var(--blue-700); letter-spacing: .06em; }
+
+/* 碱基格 */
+.seq-grid { display: grid; grid-template-columns: repeat(20, minmax(0, 1fr)); gap: 3px; }
+.seq-grid.c24 { grid-template-columns: repeat(24, minmax(0, 1fr)); }
+.bc { position: relative; display: flex; flex-direction: column; align-items: center;
+  justify-content: center; min-height: 32px; padding: 3px 0 2px; border-radius: 2px;
+  background: #fffdf8; border: 1px solid rgb(84 106 156 / .28);
+  cursor: pointer; user-select: none;
+  transition: background .14s, border-color .14s, transform .14s; }
+.bc.qg { height: 68px; }
+.bc .lt { font-family: var(--font-mono); font-size: 13.5px; font-weight: 700;
+  color: var(--blue-900); line-height: 1.3; }
+.bc .qb { width: 62%; border-radius: 2px 2px 1px 1px; background: rgb(84 106 156 / .3); }
+.bc .qn { font-family: var(--font-mono); font-size: 8.5px; line-height: 1.45;
+  color: var(--text-3); }
+.bc.g .qb { background: #3d7a56; }
+.bc.m .qb { background: #c39627; }
+.bc.l .qb { background: #c0392b; }
+.bc:hover { transform: translateY(-2px); border-color: rgb(var(--wc-blue-deep) / .45); }
+.bc.sel { background: rgb(var(--wc-blue) / .3); border-color: var(--blue-500); }
+.bc.miss { background: rgb(201 106 114 / .1); border-color: rgb(192 57 43 / .5); }
+.bc.miss .lt { color: #a63d45; }
+.bc.hit { background: rgb(127 174 148 / .16); border-color: #6b9b80; }
+.bc.dash { color: var(--text-3); background: #f6f2ea; border-style: dashed; }
+.bc.void { border: none; background: transparent; cursor: default; pointer-events: none; }
+.q-legend { display: flex; gap: 16px; flex-wrap: wrap; margin-top: 11px;
+  font-size: 12.5px; color: var(--text-3); }
+.q-legend span { display: inline-flex; align-items: center; gap: 6px; }
+.q-legend i { width: 9px; height: 9px; border-radius: 2px; display: block; }
+.q-legend i.g { background: #3d7a56; }
+.q-legend i.m { background: #c39627; }
+.q-legend i.l { background: #c0392b; }
+.seq-note { margin-top: 10px; font-size: 13px; color: var(--text-3); line-height: 1.6;
+  font-family: var(--font-mono); letter-spacing: .02em; }
+.act-row { display: flex; gap: 8px; margin-top: 12px; }
+.act-row .btn { font-size: 13.5px; padding: 8px 16px; }
+
+/* 匹配率 */
+.rate-row { display: flex; align-items: center; gap: 12px; margin-top: 12px;
+  font-size: 13px; color: var(--text-2); }
+.rate-bar { flex: 1; max-width: 260px; height: 6px; border-radius: 99px;
+  background: rgb(84 106 156 / .13); overflow: hidden; }
+.rate-bar i { display: block; height: 100%; width: 0; border-radius: 99px;
+  background: linear-gradient(90deg, var(--blue-500), #3d7a56);
+  transition: width .35s var(--ease-out-quart); }
+.rate-row b { font-family: var(--font-mono); font-size: 13px; color: var(--blue-900); }
+
+/* 选项 */
+.opt-row { display: flex; gap: 8px; flex-wrap: wrap; }
+.opt-btn { padding: 9px 18px; font-size: 13.6px; font-weight: 600; cursor: pointer;
+  font-family: var(--font-body); color: var(--text-2); background: #fffdf8;
+  border: 1px solid rgb(63 74 107 / .32); border-radius: 3px;
+  transition: border-color .18s, background .18s, transform .16s, color .18s; }
+.opt-btn:hover { border-color: rgb(63 74 107 / .6); transform: translateY(-1px); }
+.opt-btn.active { color: var(--blue-900); background: rgb(var(--wc-blue) / .30);
+  border-color: var(--blue-500); box-shadow: 2px 2px 0 rgb(84 106 156 / .24); }
+.opt-btn.right { border-color: #3d7a56; background: rgb(127 174 148 / .18); }
+.opt-btn.wrong { border-color: #c0392b; background: rgb(201 106 114 / .14); color: #a63d45; }
+
+/* 嫌疑人 / 变异档案 */
+.sp-head { display: flex; align-items: baseline; gap: 10px; flex-wrap: wrap; margin-top: 2px; }
+.sp-head b { font-family: var(--font-display); font-size: 22px; font-weight: 900;
+  color: var(--blue-900); letter-spacing: .02em; }
+.sp-hgvs { font-family: var(--font-mono); font-size: 13px; color: var(--blue-700); }
+.sp-type { font-size: 11px; font-weight: 700; letter-spacing: .06em;
+  padding: 3px 9px; border-radius: 3px; color: var(--text-2);
+  background: rgb(84 106 156 / .1); border: 1px solid rgb(84 106 156 / .22); }
+.sp-src { font-size: 12px; color: var(--text-3); margin-top: 3px; }
+.ev-grid { display: grid; grid-template-columns: repeat(3, 1fr); gap: 9px; margin: 13px 0 15px; }
+.sp-opts { margin-top: 8px; }
+.sp-opts .opt-row { display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); gap: 9px; }
+.sp-opts .opt-btn { justify-content: center; padding: 11px 0; font-size: 14.2px; }
+.sp-opts { margin-top: 8px; }
+.sp-opts .opt-row { display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); gap: 9px; }
+.sp-opts .opt-btn { justify-content: center; padding: 11px 0; font-size: 14.2px; }
+.ev { position: relative; padding: 10px 13px 9px; border-radius: 3px;
+  background: rgb(var(--wc-blue) / .07); border: 1px solid rgb(var(--wc-blue-deep) / .20); }
+.ev::before { content: ""; position: absolute; left: -1px; top: -1px; width: 18px; height: 6px;
+  background: rgb(var(--wc-blue-deep) / .5); border-radius: 0 0 2px 0; opacity: .5; }
+.ev-t { font-family: var(--font-mono); font-size: 10.5px; font-weight: 700;
+  letter-spacing: .08em; color: var(--text-3); }
+.ev-v { font-size: 15.5px; font-weight: 700; color: var(--blue-700); margin: 2px 0 3px;
+  line-height: 1.35; }
+.ev-d { font-size: 12.5px; color: var(--text-2); line-height: 1.65; }
+
+/* 密码子 */
+.codon-table { display: flex; gap: 6px; flex-wrap: wrap; margin-bottom: 11px; }
+.codon-table span { font-family: var(--font-mono); font-size: 12px; color: var(--text-2);
+  padding: 4px 10px; border-radius: 3px; background: rgb(var(--wc-blue) / .08);
+  border: 1px dashed rgb(var(--wc-blue-deep) / .26); }
+.codon-table b { color: var(--blue-700); }
+.codon-row { display: grid; grid-template-columns: 70px minmax(0, 1fr); gap: 10px;
+  align-items: center; padding: 6px 10px; border-radius: 3px;
+  background: rgb(var(--wc-blue) / .05);
+  border-left: 3px solid rgb(var(--wc-blue-deep) / .34); }
+.codon-code { font-family: var(--font-mono); font-size: 14.5px; font-weight: 700;
+  letter-spacing: .12em; color: var(--blue-900); text-align: center; padding: 4px 0;
+  border-radius: 3px; background: rgb(var(--wc-blue) / .14);
+  border: 1px solid rgb(var(--wc-blue-deep) / .18); }
+.codon-row .opt-row { display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); gap: 6px; }
+.codon-row .opt-btn { padding: 7px 8px; font-size: 13px; text-align: center; }
+
+/* 系谱 */
+.ped-line { display: flex; align-items: baseline; gap: 10px; font-size: 13.8px;
+  color: var(--text-1); padding: 7px 14px 7px 12px; border-radius: 2px;
+  background: rgb(var(--wc-blue) / .06); border-left: 3px solid rgb(var(--wc-blue-deep) / .34); }
+.ped-line .g { flex: none; min-width: 16px; font-family: var(--font-body); font-size: 12px;
+  font-weight: 800; color: var(--blue-500); text-align: center; letter-spacing: 0; }
+.block-opts { display: grid; gap: 7px; }
+.block-opts .opt-row { display: grid; gap: 7px; }
+.block-opts .opt-btn { display: flex; align-items: center; text-align: left; padding: 9px 16px; }
+.block-opts .opt-btn::before { content: ""; flex: none; width: 10px; height: 10px;
+  margin-right: 10px; border-radius: 50%; border: 1.5px solid rgb(63 74 107 / .34);
+  transition: background .18s, box-shadow .18s, border-color .18s; }
+.block-opts .opt-btn:hover::before { border-color: rgb(63 74 107 / .6); }
+.block-opts .opt-btn.active::before { background: var(--blue-500);
+  border-color: var(--blue-500); box-shadow: inset 0 0 0 2.5px #fffdf8; }
+
+/* 判定结果页 */
+.rs { display: flex; flex-direction: column; flex: 1; min-height: 0; }
+.rs-kick { display: inline-flex; align-items: center; gap: 6px;
+  font-family: var(--font-mono); font-size: 10.5px; font-weight: 700;
+  letter-spacing: .18em; color: #4d7f63; }
+.rs-kick .ic { width: 13px; height: 13px; stroke: #4d7f63; stroke-width: 2.4; }
+.rs-title { font-family: var(--font-display); font-size: 26px; font-weight: 900;
+  color: var(--blue-900); margin: 5px 0 0; letter-spacing: .02em; }
+
+/* ---------- 结果页头行：左标题/摘要，右徽章 + 重演注释 ---------- */
+.rs-head { display: flex; align-items: flex-start; gap: 16px; }
+.rs-head-l { flex: 1; min-width: 0; }
+.rs-bar { display: flex; align-items: center; gap: 10px; flex-wrap: wrap; margin-top: 11px; }
+.rs-sum { font-size: 13px; color: var(--text-2); }
+.rs-head-r { flex: none; display: flex; flex-direction: column; align-items: flex-end; gap: 8px; }
+.rs-time { font-family: var(--font-mono); font-size: 11.5px;
+  color: var(--text-3); letter-spacing: .04em; text-align: right; }
+
+/* ---------- 结案徽章：新版珐琅章（复用全站 .medal 视觉语言） ----------
+   圆形章体 + 齿边 + 珐琅渐变 + 内圈凹槽；图标居中，称号刻在章体下方。
+   放结果页头行右侧，与标题自然对齐；盖章动效保留。 */
+.rs-badge { flex: none; display: inline-flex; flex-direction: column; align-items: center;
+  gap: 7px; padding-top: 4px; opacity: 0; }
+.rs-badge .rs-medal {
+  --m-size: 64px;
+  position: relative; width: var(--m-size); height: var(--m-size);
+  border-radius: 50%; display: grid; place-items: center;
+  color: #f8fbff;
+  background:
+    radial-gradient(circle at 30% 16%, rgb(255 255 255 / .62) 0%, rgb(255 255 255 / .16) 30%,
+                    rgb(255 255 255 / 0) 50%),
+    radial-gradient(circle at 78% 94%, rgb(34 46 92 / .38) 0%, rgb(34 46 92 / 0) 54%),
+    linear-gradient(163deg, #b3c1f0 0%, #94a3e2 34%, #7a8ad1 72%, #6575bd 100%);
+  border: 1px solid rgb(78 96 158);
+  box-shadow:
+    inset 0 0 0 2px rgb(255 255 255 / .16),
+    inset 0 2px 1px rgb(255 255 255 / .5),
+    inset 0 -4px 5px rgb(34 46 92 / .3),
+    0 2px 0 #57659f,
+    0 9px 16px -10px rgb(58 72 140 / .76);
+}
+.rs-badge .rs-medal::before { /* 齿边 */
+  content: ""; position: absolute; inset: 0; border-radius: 50%;
+  background: repeating-conic-gradient(from 0deg, #3f4f8c 0deg 2deg, transparent 2deg 6deg);
+  -webkit-mask: radial-gradient(circle, transparent 73%, #000 75%);
+          mask: radial-gradient(circle, transparent 73%, #000 75%);
+  opacity: .44; pointer-events: none;
+}
+.rs-badge .rs-medal::after { /* 内圈凹槽 */
+  content: ""; position: absolute; inset: 7px; border-radius: 50%;
+  box-shadow: inset 0 1px 3px rgb(34 46 92 / .26), 0 1px 0 rgb(255 255 255 / .34);
+  pointer-events: none;
+}
+.rs-badge .rs-medal .ic { position: relative; z-index: 1;
+  width: 28px; height: 28px; stroke-width: 2; filter: drop-shadow(0 1px 1px rgb(50 64 120 / .45)); }
+.rs-badge .rs-medal-name { font-family: var(--font-display); font-size: 13px; font-weight: 900;
+  color: #40548f; letter-spacing: .04em; }
+
+/* ---------- 星级评分（锦囊次数决定） ----------
+   三颗星，0 个锦囊 ★★★ / 1 个 ★★ / ≥2 个 ★；亮星与徽章同蓝紫珐琅色系、暗星浅灰蓝。
+   徽章盖章落定后，星星依次砸落点亮（stagger）。 */
+.rs-stars { display: inline-flex; align-items: center; gap: 3px; line-height: 1; }
+.rs-stars i { font-style: normal; font-size: 15px; color: #c9cddc;
+  text-shadow: 0 1px 0 rgb(255 255 255 / .6); transition: color .3s; }
+.rs-stars i.on { color: #6676bd;
+  text-shadow: 0 1px 2px rgb(78 96 158 / .4), 0 0 6px rgb(122 138 209 / .35); }
+.rs-stars i.pop { animation: star-pop .42s cubic-bezier(.2, 1.4, .4, 1) both; }
+@keyframes star-pop {
+  0% { transform: scale(.2) translateY(-8px) rotate(-18deg); opacity: 0; }
+  55% { opacity: 1; }
+  100% { transform: none; opacity: 1; }
+}
+
+/* 盖章：侦探笔记打完最后一个字，徽章从高处砸下来落定 */
+.rs-badge.stamped { animation: badge-stamp .5s cubic-bezier(.2, 1.1, .32, 1) both; }
+@keyframes badge-stamp {
+  0% { opacity: 0; transform: scale(2.3) rotate(-13deg); }
+  46% { opacity: 1; transform: scale(.93) rotate(2.5deg); }
+  66% { transform: scale(1.06) rotate(-1.2deg); }
+  84% { transform: scale(.985) rotate(.4deg); }
+  100% { opacity: 1; transform: none; }
+}
+
+.rs-main { display: flex; flex-direction: column; flex: 1; min-height: 0; }
+
+.rs-note { margin-top: 16px; padding: 12px 16px 13px; border-radius: 3px;
+  background: rgb(var(--wc-blue) / .07); border-left: 3px solid var(--blue-500); }
+.rs-note-t { display: block; margin-bottom: 4px; font-family: var(--font-mono);
+  font-size: 11px; font-weight: 700; letter-spacing: .16em; color: var(--blue-700); }
+.rs-note p { font-size: 15px; line-height: 1.82; color: var(--text-1); min-height: 1.85em; }
+
+/* ---------- 易错点：便签笔记（贴纸） ----------
+   一枚斜贴的便签，带一点折角与柔和投影，像随手贴在卷宗上的提醒。
+   配色用低饱和暖纸色，与全站「纸+墨」档案风一致（不再高饱和黄）。 */
+.rs-pit { position: relative; margin-top: 14px; margin-left: 4px;
+  max-width: 96%; padding: 13px 18px 15px;
+  background: linear-gradient(174deg, #f7f1e3 0%, #f1e8d3 100%);
+  border: 1px solid rgb(146 126 86 / .18);
+  box-shadow: 0 12px 22px -14px rgb(118 96 52 / .5), 0 1px 0 rgb(255 255 255 / .55) inset;
+  transform: rotate(-1.1deg); }
+/* 折角：右上角翻起一小块 */
+.rs-pit::before { content: ""; position: absolute; right: -1px; top: -1px; width: 0; height: 0;
+  border-style: solid; border-width: 0 17px 17px 0;
+  border-color: transparent #e6dbc2 transparent transparent; }
+.rs-pit::after { content: ""; position: absolute; right: -1px; top: -1px; width: 17px; height: 17px;
+  background: linear-gradient(225deg, #f2ead6 0%, #eee2c6 50%, #d6c9a6 100%);
+  clip-path: polygon(0 0, 100% 100%, 0 100%); opacity: .75; }
+.rs-pit .rs-note-t { color: #8a6b3c; }
+.rs-pit p { font-size: 14.5px; line-height: 1.78; color: #6b5a3a; }
+
+.rs-acts { display: flex; justify-content: flex-end; gap: 9px; margin-top: 16px; }
+.rs-acts .btn { font-size: 13.6px; padding: 9px 20px; }
+
+/* ---------- 锦囊浮层 ---------- */
+.pouch { position: fixed; inset: 0; z-index: 150; display: flex; align-items: center;
+  justify-content: center; padding: 26px; overflow-y: auto;
+  background: rgb(46 52 78 / .46);
+  -webkit-backdrop-filter: blur(0px); backdrop-filter: blur(0px);
+  opacity: 0; visibility: hidden;
+  transition: opacity .3s var(--ease-out-quart), visibility .3s,
+              backdrop-filter .36s, -webkit-backdrop-filter .36s; }
+.pouch.on { opacity: 1; visibility: visible;
+  -webkit-backdrop-filter: blur(8px); backdrop-filter: blur(8px); }
+
+/* 爆炸冲击波 */
+.pouch::before { content: ""; position: absolute; left: 50%; top: 50%;
+  width: 56px; height: 56px; margin: -28px; border-radius: 50%;
+  border: 3px solid rgb(255 251 240 / .92); opacity: 0; pointer-events: none;
+  box-shadow: 0 0 22px 6px rgb(255 244 214 / .5); }
+.pouch.on::before { animation: pouch-shock .74s cubic-bezier(.14, .8, .3, 1) both; }
+@keyframes pouch-shock {
+  0% { opacity: .9; transform: scale(.22); border-width: 5px; }
+  52% { opacity: .28; }
+  100% { opacity: 0; transform: scale(9.5); border-width: 1px; }
+}
+/* 第二道冲击波：错开扩散，才有爆开的层次 */
+.pouch::after { content: ""; position: absolute; left: 50%; top: 50%; z-index: 0;
+  width: 70px; height: 70px; margin: -35px; border-radius: 50%;
+  border: 2px solid rgb(255 252 241 / .82); opacity: 0; pointer-events: none;
+  box-shadow: 0 0 30px 10px rgb(255 250 234 / .34); }
+.pouch.on::after { animation: pouch-shock2 .92s .06s cubic-bezier(.1, .72, .26, 1) both; }
+@keyframes pouch-shock2 {
+  0% { opacity: .85; transform: scale(.35); }
+  60% { opacity: .18; }
+  100% { opacity: 0; transform: scale(7.4); }
+}
+
+/* 卷轴从袋心炸开：先过冲再回弹 */
+.pouch-card { position: relative; z-index: 1; display: flex; flex-direction: column;
+  width: min(700px, 94vw); margin: auto; max-height: 78vh; overflow: hidden;
+  border-radius: 8px;
+  background: linear-gradient(180deg, #fffefa, #fdf8ef);
+  border: 1px solid rgb(84 106 156 / .30);
+  box-shadow: 0 34px 70px -30px rgb(30 36 56 / .62), 0 2px 0 rgb(84 106 156 / .06);
+  transform: scale(.12) rotate(-9deg); opacity: 0; filter: blur(3px); }
+.pouch.on .pouch-card { animation: pouch-burst .62s cubic-bezier(.18, .92, .26, 1.02) both; }
+@keyframes pouch-burst {
+  0% { opacity: 0; transform: scale(.12) rotate(-9deg); filter: blur(3px);
+       box-shadow: 0 0 0 0 rgb(255 251 238 / 0); }
+  14% { opacity: 1; }
+  34% { opacity: 1; transform: scale(1.058) rotate(1.3deg); filter: blur(0);
+        box-shadow: 0 0 96px 38px rgb(255 251 238 / .52); }
+  58% { transform: scale(.982) rotate(-.55deg);
+        box-shadow: 0 0 44px 12px rgb(255 251 238 / .2); }
+  78% { transform: scale(1.008) rotate(.2deg);
+        box-shadow: 0 18px 50px -22px rgb(30 36 56 / .4); }
+  100% { opacity: 1; transform: none; filter: blur(0);
+         box-shadow: 0 34px 70px -30px rgb(30 36 56 / .62), 0 2px 0 rgb(84 106 156 / .06); }
+}
+/* 关闭：攥回袋里 */
+.pouch:not(.on) .pouch-card { transition: transform .2s ease-in, opacity .16s ease-in,
+  filter .16s ease-in; }
+
+.pouch-head { flex: none; display: flex; align-items: center; gap: 9px;
+  padding: 17px 22px 12px; border-bottom: 2px solid rgb(84 106 156 / .22); }
+.pouch-head .ic { width: 17px; height: 17px; stroke: var(--blue-700); stroke-width: 1.8; }
+.pouch-head b { font-family: var(--font-display); font-size: 17.5px; color: var(--blue-900);
+  letter-spacing: .02em; }
+.pouch-x { margin-left: auto; width: 28px; height: 28px; display: grid; place-items: center;
+  cursor: pointer; border-radius: 3px; background: transparent;
+  border: 1px solid transparent; color: var(--text-3); font-size: 17px; line-height: 1;
+  transition: background .2s, color .2s; }
+.pouch-x:hover { background: rgb(var(--wc-blue) / .18); color: var(--blue-900); }
+
+.pouch-body { flex: 1 1 auto; min-height: 0; overflow-y: auto; scrollbar-width: thin;
+  padding: 6px 22px 20px; font-size: 14px; color: var(--text-2); line-height: 1.8; }
+.pouch-body table { width: 100%; border-collapse: separate; border-spacing: 0;
+  margin: 10px 0 2px; border: 1px solid rgb(var(--wc-blue-deep) / .18);
+  border-radius: 4px; overflow: hidden; }
+.pouch-body th, .pouch-body td { padding: 10px 13px; text-align: left; vertical-align: top;
+  font-size: 13.6px; line-height: 1.62;
+  border-bottom: 1px solid rgb(var(--wc-blue-deep) / .12); }
+.pouch-body th { background: rgb(var(--wc-blue) / .16); color: var(--blue-900);
+  font-family: var(--font-mono); font-size: 11.5px; font-weight: 700;
+  letter-spacing: .06em; white-space: nowrap; }
+.pouch-body tr:last-child td { border-bottom: 0; }
+.pouch-body tbody td:first-child { color: var(--blue-900); font-weight: 700;
+  white-space: nowrap; width: 1%; }
+.pouch-body tbody tr:nth-child(even) td { background: rgb(var(--wc-blue) / .04); }
+.pouch-body mark { color: #26346e; font-weight: 800; padding: 1px 4px; border-radius: 4px;
+  background: rgb(158 176 234 / .5); box-shadow: inset 0 -1px 0 rgb(84 106 156 / .28); }
+/* 打开时逐行落位 */
+.pouch-body tr { opacity: 0; transform: translateY(7px); }
+.pouch.on .pouch-body tr { animation: pouch-row .44s var(--ease-out-quart) forwards;
+  animation-delay: calc(.1s + var(--i, 0) * .06s); }
+@keyframes pouch-row { to { opacity: 1; transform: none; } }
+
+@media (max-width: 900px) {
+  .case-wrap { padding-top: calc(var(--nav-h) + 24px); }
+  .deck { height: auto; min-height: 74vh; }
+  .dk-page { position: relative; inset: auto; padding: 16px 18px 12px; }
+  .dk-page:not(.on) { position: absolute; inset: 0; }
+  .dk-head { padding: 13px 16px 11px 20px; flex-wrap: wrap; gap: 8px; }
+  .dk-title { font-size: 17px; }
+  .dk-body { overflow: hidden; }
+  .dk-foot { padding: 10px 16px 12px 20px; flex-wrap: wrap; gap: 8px; }
+  .dk-hint { display: none; }
+  .dk-pouch { margin-left: auto; padding: 6px 0 6px 2px; gap: 4px; }
+  .dk-pouch-tx { font-size: 12px; }
+  .dk-pouch-arrow { width: 26px; }
+  .dk-pouch .ic { width: 17px; height: 17px; }
+  .dk-nav { margin-left: auto; }
+  .dk-nav .btn { text-align: center; justify-content: center; }
+  .pouch { padding: 12px; }
+  .pouch-card { width: 100%; max-height: 86vh; }
+  .pouch-head { padding: 15px 16px 11px; }
+  .pouch-head b { font-size: 16px; }
+  .pouch-body { padding: 4px 16px 16px; }
+  .pouch-body th, .pouch-body td { padding: 8px 9px; font-size: 12.8px; min-width: 62px; }
+  .pouch-body th { font-size: 10.8px; }
+  .pouch-body mark { white-space: nowrap; }
+  .pouch-body tbody td:first-child { white-space: normal; width: auto; }
+  .seq-grid { grid-template-columns: repeat(10, minmax(0, 1fr)); }
+  .seq-grid.c24 { grid-template-columns: repeat(12, minmax(0, 1fr)); }
+  .dz-meta { flex-direction: column; gap: 7px; }
+  .ev-grid { grid-template-columns: 1fr; gap: 7px; margin: 11px 0 12px; }
+  .ev { padding: 8px 11px; }
+  .ev-v { font-size: 13.5px; }
+  .ev-d { font-size: 10.8px; line-height: 1.6; }
+  .codon-row { grid-template-columns: 58px minmax(0, 1fr); }
+  .codon-row .opt-row { gap: 5px; }
+  .codon-row .opt-btn { padding: 4px 9px; font-size: 11px; }
+  .rs-title { font-size: 21px; }
+  /* 移动端：徽章缩小并换行，避免挤压标题 */
+  .rs-head { flex-wrap: wrap; }
+  .rs-badge .rs-medal { --m-size: 54px; }
+}
+</style>
+</head>
+<body>
+
+<svg width="0" height="0" style="position:absolute" aria-hidden="true"><defs>
+  <symbol id="i-dna" viewBox="0 0 24 24"><path d="M8.5 2.5c0 4.6 7 6.6 7 9.5s-7 4.9-7 9.5"/><path d="M15.5 2.5c0 4.6-7 6.6-7 9.5s7 4.9 7 9.5"/><path d="M9.6 6.2h4.8M9 12h6M9.6 17.8h4.8"/></symbol>
+  <symbol id="i-home" viewBox="0 0 24 24"><path d="M3.6 10.4 12 3.4l8.4 7"/><path d="M5.6 11.6V20h12.8v-8.4"/><path d="M9.8 20v-5.2h4.4V20"/></symbol>
+  <symbol id="i-book" viewBox="0 0 24 24"><path d="M12 6.4C10.4 5 8 4.4 4.4 4.6v13.2c3.6-.2 6 .4 7.6 1.8 1.6-1.4 4-2 7.6-1.8V4.6C16 4.4 13.6 5 12 6.4Z"/><path d="M12 6.4v13.2"/></symbol>
+  <symbol id="i-case" viewBox="0 0 24 24"><path d="M3.4 8.2h17.2v10.4a1.6 1.6 0 0 1-1.6 1.6H5a1.6 1.6 0 0 1-1.6-1.6Z"/><path d="M8.4 8.2V5.6A1.6 1.6 0 0 1 10 4h4a1.6 1.6 0 0 1 1.6 1.6v2.6"/><path d="M3.4 12.6h17.2M10 12.6h4"/></symbol>
+  <symbol id="i-medal" viewBox="0 0 24 24"><circle cx="12" cy="14.6" r="5.4"/><path d="M9.2 9.6 6.6 3.4h10.8l-2.6 6.2"/><path d="M12 12.2l.9 1.9 2 .3-1.45 1.4.35 2-1.8-1-1.8 1 .35-2L9.1 14.4l2-.3Z"/></symbol>
+  <symbol id="i-arrow" viewBox="0 0 24 24"><path d="M4 12h15"/><path d="M13.4 6l6 6-6 6"/></symbol>
+  <symbol id="i-lock" viewBox="0 0 24 24"><rect x="4.6" y="10.6" width="14.8" height="10" rx="2.6"/><path d="M8.4 10.6V7.8a3.6 3.6 0 0 1 7.2 0v2.8"/><path d="M12 14.6v2.4"/></symbol>
+  <symbol id="i-clock" viewBox="0 0 24 24"><circle cx="12" cy="12" r="8.4"/><path d="M12 7.4V12l3.2 2"/></symbol>
+  <symbol id="i-pouch" viewBox="0 0 24 24"><path style="fill:currentColor;stroke:none" d="M8.6 10.6h6.8c2 2.2 3.3 4.3 3.3 6 0 2.9-2.9 4.9-6.7 4.9s-6.7-2-6.7-4.9c0-1.7 1.3-3.8 3.3-6z"/><path style="fill:currentColor;stroke:none" d="M9.9 6.1h4.2l1.2 3.2H8.7z"/><path d="M8.7 10.6h6.6"/></symbol>
+  <symbol id="i-hat" viewBox="0 0 24 24"><path d="M3.4 13.6h17.2"/><path d="M6 13.6V9.4a6 6 0 0 1 12 0v4.2"/><path d="M9.4 13.6v5.8M14.6 13.6v5.8"/></symbol>
+  <symbol id="i-scissors" viewBox="0 0 24 24"><circle cx="6" cy="6.5" r="2.6"/><circle cx="6" cy="17.5" r="2.6"/><path d="M8.2 8.2L20.5 18M20.5 6L8.2 15.8"/></symbol>
+  <symbol id="i-align" viewBox="0 0 24 24"><path d="M3 6.5h18"/><path d="M3 17.5h6.4M13.2 17.5H21"/><path d="M10.2 14.6v5.8" stroke-dasharray="1.6 2.2"/><path d="M3 11.2h8.4M14.2 11.2H21"/></symbol>
+  <symbol id="i-search" viewBox="0 0 24 24"><circle cx="10.5" cy="10.5" r="6.8"/><path d="M15.6 15.6L21 21"/></symbol>
+  <symbol id="i-code" viewBox="0 0 24 24"><path d="M9 7.4 4 12l5 4.6"/><path d="M15 7.4 20 12l-5 4.6"/><path d="M13.4 5l-2.8 14"/></symbol>
+  <symbol id="i-family" viewBox="0 0 24 24"><circle cx="7" cy="6.4" r="2.4"/><circle cx="17" cy="6.4" r="2.4"/><circle cx="12" cy="17.6" r="2.4"/><path d="M7 8.8v3.4h10V8.8M12 12.2v3"/></symbol>
+  <symbol id="i-pill" viewBox="0 0 24 24"><rect x="2.6" y="8.6" width="18.8" height="6.8" rx="3.4"/><path d="M12 8.6v6.8" stroke-dasharray="1.8 2"/></symbol>
+  <symbol id="i-check" viewBox="0 0 24 24"><path d="M4.6 12.4 9.4 17l10-10"/></symbol>
+  <symbol id="i-user" viewBox="0 0 24 24"><circle cx="12" cy="8.4" r="3.6"/><path d="M5 20c0-3.6 3.1-5.6 7-5.6s7 2 7 5.6"/></symbol>
+  <symbol id="i-chip" viewBox="0 0 24 24"><rect x="5.4" y="5.4" width="13.2" height="13.2" rx="2.4"/><path d="M9.4 9.4h5.2v5.2H9.4z"/><path d="M12 2.6v2.8M12 18.6v2.8M2.6 12h2.8M18.6 12h2.8"/></symbol>
+</defs></svg>
+
+<div id="wc" aria-hidden="true"><span class="wc-veil"></span></div>
+<div id="grain" aria-hidden="true"></div>
+<div id="progress"></div>
+
+<div class="nav-shell">
+  <nav class="top">
+    <a class="logo" href="home.html"><svg class="mark ic"><use href="#i-dna"/></svg><span class="word">基因侦探</span></a>
+    <span class="nav-div" aria-hidden="true"></span>
+    <div class="nav-links">
+      <a href="home.html"><span class="hl"></span><svg class="ic"><use href="#i-home"/></svg><span class="lbl">首页</span></a>
+      <a href="science.html"><span class="hl"></span><svg class="ic"><use href="#i-book"/></svg><span class="lbl">手册</span></a>
+      <a href="cases.html" class="on"><span class="hl"></span><svg class="ic" viewBox="0 0 24 24"><path d="M6.4 3.6h8l3.2 3.2v9.2a1.4 1.4 0 0 1-1.4 1.4H6.4a1.4 1.4 0 0 1-1.4-1.4V5a1.4 1.4 0 0 1 1.4-1.4Z"/><path d="M14 3.6V7h3.4"/><path d="M8.4 11.4h5.2M8.4 14.6h5.2"/></svg><span class="lbl">案件簿</span></a>
+      <a href="ranking.html"><span class="hl"></span><svg class="ic" viewBox="0 0 24 24"><path d="M3.6 20h16.8"/><path d="M6.8 16.4V10h4.2V20"/><path d="M13.8 20V4.8h4.2V20"/></svg><span class="lbl">排行榜</span></a>
+      <a href="report.html"><span class="hl"></span><svg class="ic"><use href="#i-medal"/></svg><span class="lbl">我的报告</span></a>
+    </div>
+  </nav>
+</div>
+
+<section class="case-wrap">
+  <div class="wrap">
+    <div class="case-top">
+      <a class="back-link" href="cases.html"><svg class="ic"><use href="#i-arrow"/></svg>返回案件簿</a>
+      <span class="ct-r" id="ct-r">CASE FILE · —</span>
+    </div>
+
+    <div class="deck rv" id="deck">
+      <div class="dk-head">
+        <span class="dk-no" id="dk-no">CASE —</span>
+        <span class="dk-title" id="dk-title">卷宗加载中</span>
+        <span class="dk-tag" id="dk-tag" hidden></span>
+        <div class="dk-right">
+          <div class="dk-pips" id="dk-pips"></div>
+        </div>
+      </div>
+
+      <div class="dk-body" id="dk-body"></div>
+
+      <div class="dk-foot">
+        <button class="btn btn-ghost" id="dk-prev" type="button">上一步</button>
+        <span class="dk-timer" id="dk-timer" hidden><svg class="ic"><use href="#i-clock"/></svg><b>00:00</b></span>
+        <span class="dk-hint" id="dk-hint"></span>
+        <button class="dk-pouch" id="dk-pouch" type="button" hidden aria-label="打开锦囊">
+          <span class="dk-pouch-tx">看不懂？</span>
+          <svg class="dk-pouch-arrow" viewBox="0 0 36 18" aria-hidden="true">
+            <path d="M1.6 13.2c5.6-6.6 13.8-9.2 23.6-7.2 2.7.6 4.8 1.5 6.6 2.8"/>
+            <path d="M27.4 3.2 32.8 8.8l-7.3 1.9"/>
+          </svg>
+          <span class="dk-pouch-ic"><svg class="ic"><use href="#i-pouch"/></svg></span>
+        </button>
+        <div class="dk-nav">
+          <button class="btn btn-primary" id="dk-next" type="button">继续</button>
+        </div>
+      </div>
+    </div>
+  </div>
+</section>
+
+<div class="pouch" id="pouch" role="dialog" aria-modal="true" aria-label="锦囊">
+  <div class="pouch-card">
+    <div class="pouch-head">
+      <svg class="ic"><use href="#i-pouch"/></svg>
+      <b>锦囊 · 口诀速查</b>
+      <button class="pouch-x" id="pouch-x" type="button" aria-label="关闭">×</button>
+    </div>
+    <div class="pouch-body" id="pouch-body"></div>
+  </div>
+</div>
+
+<footer>
+  <div class="wrap">
+    <div class="f-top">
+      <b>基因侦探 Gene Detective</b>
+
+    </div>
+    <span>选题背景：用游戏化方式讲清「测序 → 质控 → 比对 → 变异识别 → 致病性解读」这条生物信息学主线</span>
+    <span>数据来源：NCBI ClinVar 公共数据库（教学用子集）</span>
+    <span>本站为课程作业，数据与流程均做了教学简化，不构成任何医学建议</span>
+  </div>
+</footer>
+
+<script src="site.js"></script>
+<script src="terms.js"></script>
+<script src="api.js"></script>
+<script>
+(function () {
+  'use strict';
+
+  var params = new URLSearchParams(location.search);
+  var n = parseInt(params.get('n'), 10);
+  if (!(n >= 1 && n <= 6)) { location.replace('cases.html'); return; }
+  function gdUserKey(base){var u='';try{u=(window.GD&&GD.getUser())||'';}catch(e){u='';}if(u&&typeof u==='object')u=u.username||'';return base+(u||'guest');}
+if (!GD.getToken()) { location.replace(GD.loginUrl('case.html?n=' + n)); return; }
+
+  var TAGS = { 1: '质控', 2: '比对', 3: '变异判定', 4: '翻译', 5: '系谱', 6: '精准用药' };
+  var LEAD = {
+    1: '点两个字母选出要剪的区间：第一下起点，第二下终点。',
+    2: '左右挪动患者序列，在缺口前垫一个 gap（—），让字母一一归位。',
+    3: '看完三张证据卡，给这位嫌疑人一个判定。',
+    4: '对照密码子表，为每组三个字母选一个氨基酸。',
+    5: '读三代家族记录，选出这种病的遗传方式。',
+    6: '看完变异档案，为王阿姨选出你的处方。'
+  };
+
+  var deck = document.getElementById('deck');
+  var bodyEl = document.getElementById('dk-body');
+  var pipsEl = document.getElementById('dk-pips');
+  var hintEl = document.getElementById('dk-hint');
+  var timerEl = document.getElementById('dk-timer');
+  var btnPrev = document.getElementById('dk-prev');
+  var btnNext = document.getElementById('dk-next');
+  var pouch = document.getElementById('pouch');
+  var pouchBody = document.getElementById('pouch-body');
+
+  var pages = [], cur = -1, busy = false;
+  var D = null, solved = false;
+  var timerStart = null, timerInt = null;
+  var typeJob = null;
+
+  /* ============================================================
+     基础
+     ============================================================ */
+  function h(tag, cls, text) {
+    var e = document.createElement(tag);
+    if (cls) e.className = cls;
+    if (text != null) e.textContent = text;
+    return e;
+  }
+  function add(parent) {
+    for (var i = 1; i < arguments.length; i++) if (arguments[i]) parent.appendChild(arguments[i]);
+    return parent;
+  }
+
+  /* 术语标注（terms.js）：专有名词着色 + 定义短语高亮；模块缺失时退化为纯文本 */
+  function tmHTML(s) {
+    return window.GDTerms ? GDTerms.html(s) : String(s == null ? '' : s)
+      .replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;');
+  }
+  function tmBuild(node, text) {
+    if (window.GDTerms) return GDTerms.build(node, text);
+    node.textContent = '';
+    return [{ el: node, s: String(text == null ? '' : text) }];
+  }
+  function tmFill(frags) {
+    if (window.GDTerms) { GDTerms.fill(frags); return; }
+    (frags || []).forEach(function (f) { f.el.textContent = f.s; });
+  }
+
+  /* ============================================================
+     打字机
+     ============================================================ */
+  function typeText(node, text, done, fast) {
+    var i = 0, timer = null, stopped = false;
+    node.classList.add('typing');
+
+    /* 先按标注把文本切成片段，再逐字写进片段里 ——
+       专有名词和定义短语的样式会随打字一起长出来，不用等打完再回填。 */
+    var frags = tmBuild(node, text);
+    var jobs = [];
+    frags.forEach(function (f) {
+      var chars = Array.from(f.s);
+      for (var k = 0; k < chars.length; k++) jobs.push({ frag: f, ch: chars[k] });
+    });
+
+    function end() {
+      node.classList.remove('typing');
+      if (typeJob === job) typeJob = null;
+    }
+    var job = {
+      skip: function () {
+        if (stopped) return;
+        stopped = true; clearTimeout(timer);
+        tmFill(frags);
+        end();
+        if (done) done();
+      },
+      cancel: function () {
+        if (stopped) return;
+        stopped = true; clearTimeout(timer);
+        end();
+      }
+    };
+    typeJob = job;
+
+    function step() {
+      if (stopped) return;
+      if (i >= jobs.length) { end(); if (done) done(); return; }
+      var j = jobs[i++];
+      j.frag.el.textContent += j.ch;
+      /* fast 档：结果页侦探笔记用，30 字左右约 0.9s 打完，与落章（950ms）同步 */
+      var wait = fast ? 20 : 22;
+      if ('，、；：'.indexOf(j.ch) >= 0) wait = fast ? 90 : 120;
+      else if ('。！？'.indexOf(j.ch) >= 0) wait = fast ? 150 : 210;
+      timer = setTimeout(step, wait);
+    }
+    step();
+    return job;
+  }
+
+  /* ============================================================
+     分页
+     ============================================================ */
+  function addPage(node, cfg) {
+    cfg = cfg || {};
+    node.classList.add('dk-page');
+    bodyEl.appendChild(node);
+    var p = {
+      node: node,
+      hint: cfg.hint || '',
+      nextLabel: cfg.nextLabel || '继续',
+      onNext: cfg.onNext || null,
+      onEnter: cfg.onEnter || null,
+      lead: cfg.lead || '',
+      typed: false,
+      isResult: !!cfg.isResult
+    };
+    pages.push(p);
+    renderPips();
+    return p;
+  }
+
+  function renderPips() {
+    var list = pages.filter(function (p) { return !p.isResult; });
+    pipsEl.innerHTML = list.map(function () { return '<i></i>'; }).join('');
+    markPips();
+  }
+  function markPips() {
+    var list = pages.filter(function (p) { return !p.isResult; });
+    var at = cur >= 0 ? list.indexOf(pages[cur]) : -1;
+    var dots = pipsEl.querySelectorAll('i');
+    for (var k = 0; k < dots.length; k++) dots[k].classList.toggle('on', k === at);
+  }
+
+  function go(i) {
+    if (i < 0 || i >= pages.length) return;
+    if (typeJob) typeJob.cancel();
+    pages.forEach(function (p, k) { p.node.classList.toggle('on', k === i); });
+    cur = i;
+    var p = pages[i];
+
+    if (p.isResult) {
+      pipsEl.innerHTML = '<span class="dk-closed">已结案</span>';
+    } else {
+      markPips();
+    }
+
+    if (!p.typed) {
+      p.typed = true;
+      if (p.lead) {
+        var lead = p.node.querySelector('.qz-lead');
+        if (lead) typeText(lead, p.lead);
+      }
+    }
+    if (p.onEnter) p.onEnter(p);
+    document.querySelector('.dk-foot').hidden = !!p.isResult;
+    syncFoot();
+  }
+
+  function syncFoot() {
+    var p = pages[cur];
+    if (!p) return;
+    hintEl.textContent = p.hint || '';
+    hintEl.classList.remove('err');
+    btnPrev.hidden = (cur === 0) || p.isResult;
+    btnNext.hidden = !!p.isResult;
+    btnNext.textContent = p.nextLabel;
+    btnNext.disabled = busy;
+  }
+
+  function setHint(txt) { hintEl.textContent = txt || ''; }
+  function showErr(node, msg) {
+    if (!node) { setHint(msg); hintEl.classList.add('err'); return; }
+    node.textContent = msg;
+    node.classList.add('on');
+  }
+  function clearErr(node) {
+    if (node) { node.textContent = ''; node.classList.remove('on'); }
+  }
+
+  btnNext.addEventListener('click', function () {
+    if (busy) return;
+    if (typeJob) { typeJob.skip(); return; }
+    var p = pages[cur];
+    if (!p) return;
+    if (p.onNext) p.onNext();
+    else go(cur + 1);
+  });
+  btnPrev.addEventListener('click', function () {
+    if (busy) return;
+    if (typeJob) typeJob.cancel();
+    go(cur - 1);
+  });
+  deck.addEventListener('click', function (e) {
+    if (!typeJob) return;
+    if (e.target.closest('button, a, .bc, .opt-btn, .dk-pouch')) return;
+    typeJob.skip();
+  });
+
+  /* ============================================================
+     计时
+     ============================================================ */
+  function startTimer() {
+    if (solved) return;
+    timerStart = Date.now();
+    timerEl.hidden = false;
+    timerInt = setInterval(function () {
+      var b = timerEl.querySelector('b');
+      if (b) b.textContent = GD.fmtSec((Date.now() - timerStart) / 1000);
+    }, 1000);
+  }
+  function stopTimer() {
+    if (timerInt) { clearInterval(timerInt); timerInt = null; }
+    if (timerStart) {
+      var b = timerEl.querySelector('b');
+      if (b) b.textContent = GD.fmtSec((Date.now() - timerStart) / 1000);
+    }
+  }
+  function sessionSec() {
+    return timerStart ? Math.round((Date.now() - timerStart) / 1000) : null;
+  }
+
+  /* ============================================================
+     判定
+     ============================================================ */
+  function judge(url, payload, summaryFn) {
+    if (busy) return;
+    busy = true;
+    btnNext.disabled = true;
+    btnNext.textContent = '判定中…';
+    GD.api(url, { method: 'POST', body: payload }).then(function (resp) {
+      busy = false;
+      btnNext.disabled = false;
+      btnNext.textContent = pages[cur] ? pages[cur].nextLabel : '继续';
+      if (resp.passed) {
+        showResult(resp, summaryFn ? summaryFn(resp) : '');
+      } else {
+        var p = pages[cur];
+        showErr(p && p.node.querySelector('.fbf'), resp.feedback || '这次没对，再想想。');
+      }
+    }).catch(function (e) {
+      busy = false;
+      btnNext.disabled = false;
+      btnNext.textContent = pages[cur] ? pages[cur].nextLabel : '继续';
+      var p = pages[cur];
+      showErr(p && p.node.querySelector('.fbf'), e.message || '判定失败，请稍后重试。');
+    });
+  }
+
+  function showResult(resp, summary) {
+    stopTimer();
+    var r = resp.reward || {};
+    var sec = sessionSec();
+
+    var node = h('div', 'rs');
+    var kick = h('span', 'rs-kick');
+    kick.innerHTML = '<svg class="ic"><use href="#i-check"/></svg>CASE CLOSED · 第 ' + n + ' 宗';
+    var title = h('h3', 'rs-title', D.caseTitle.replace(/^案件. · /, ''));
+
+    /* 头行左侧：标题 + 摘要 */
+    var headL = h('div', 'rs-head-l');
+    headL.appendChild(kick);
+    headL.appendChild(title);
+    var bar = h('div', 'rs-bar');
+    if (summary) bar.appendChild(h('span', 'rs-sum', summary));
+    headL.appendChild(bar);
+
+    /* 新版结案徽章：珐琅章，放头行右侧 */
+    var badge = h('span', 'rs-badge');
+    var BADGE_IC = { 1: '#i-scissors', 2: '#i-align', 3: '#i-search',
+                     4: '#i-code', 5: '#i-family', 6: '#i-pill' };
+    var medal = h('span', 'rs-medal');
+    medal.innerHTML = '<svg class="ic"><use href="' + (BADGE_IC[n] || '#i-medal') + '"/></svg>';
+    var badgeName = h('span', 'rs-medal-name', r.badge || '侦破徽章');
+
+    /* 星级评分：锦囊次数决定（0→★★★ / 1→★★ / ≥2→★） */
+    var stars = h('span', 'rs-stars');
+    var starCount = GD.caseStars ? GD.caseStars(pouchUsed) : null;
+    if (starCount == null) starCount = 3;
+    for (var k = 0; k < 3; k++) {
+      var st = h('i', k < starCount ? 'on' : 'off', '★');
+      stars.appendChild(st);
+    }
+
+    badge.appendChild(medal);
+    badge.appendChild(badgeName);
+    badge.appendChild(stars);
+
+    /* 头行右侧：徽章 + 重演注释（右上角，紧挨 CASE CLOSED） */
+    var headR = h('div', 'rs-head-r');
+    add(headR, badge);
+
+    var time = h('span', 'rs-time',
+      sec != null ? '用时 ' + GD.fmtSec(sec) : '重演 · 不计入排行');
+    headR.appendChild(time);
+
+    var head = h('div', 'rs-head');
+    add(head, headL, headR);
+
+    var pit = h('div', 'rs-pit');
+    pit.appendChild(h('span', 'rs-note-t', '易错点'));
+    pit.appendChild(h('p', null, r.pitfall || ''));
+
+    var note = h('div', 'rs-note');
+    note.appendChild(h('span', 'rs-note-t', '侦探笔记'));
+    var noteP = h('p');
+    note.appendChild(noteP);
+
+    var acts = h('div', 'rs-acts');
+    var back = h('a', 'btn btn-ghost', '返回案件簿');
+    back.href = 'cases.html';
+    acts.appendChild(back);
+
+    var main = h('div', 'rs-main');
+    add(main, head, pit, note);
+    add(node, main, acts);
+
+    addPage(node, {
+      isResult: true,
+      onEnter: function () {
+        badge.classList.remove('stamped');
+        /* 盖章与打字同时进行：章先落下，星星随后点亮；打字并行跑。
+           跳转放行（rsSealDone）取两者中更长的时长：typeDone && starDone */
+        var typeDone = false, starDone = false;
+        function sealCheck() { if (typeDone && starDone) rsSealDone = true; }
+        typeText(noteP, D.knowledgeNote, function () { typeDone = true; sealCheck(); }, true);
+        setTimeout(function () {
+          badge.classList.add('stamped');
+          /* 盖章落定后，星星依次点亮 */
+          var items = stars.querySelectorAll('i');
+          var delay = 0;
+          for (var j = 0; j < items.length; j++) {
+            if (items[j].className.indexOf('on') < 0) continue;
+            (function (el) {
+              setTimeout(function () { el.classList.add('pop'); }, delay);
+            })(items[j]);
+            delay += 140;
+          }
+          setTimeout(function () { starDone = true; sealCheck(); }, delay + 900);
+        }, 450);
+      }
+    });
+    go(pages.length - 1);
+
+    saveEntry(resp);
+  }
+
+  var rsSealDone = false;   /* 结案仪式（打字机→盖章→星星）是否走完 */
+  function jumpWhenSealed(url) {
+    var t0 = Date.now();
+    (function poll() {
+      if (rsSealDone || Date.now() - t0 > 15000) location.replace(url);
+      else setTimeout(poll, 250);
+    })();
+  }
+
+  function saveEntry(resp) {
+    GD.loadProgress().then(function (p) {
+      var base = (n === 3 ? (resp.results || {}) : (resp.result || {}));
+      var entry = Object.assign({}, base, {
+        badge: resp.reward.badge,
+        clue: resp.reward.clue,
+        pitfall: resp.reward.pitfall || ''
+      });
+      var prev = p['level' + n];
+      var best = sessionSec();
+      if (prev && typeof prev.elapsedSec === 'number' &&
+          (best == null || prev.elapsedSec < best)) best = prev.elapsedSec;
+      if (best != null) entry.elapsedSec = best;
+      /* 锦囊次数取历史最少（星级只升不降），和用时一样鼓励回头重打 */
+      if (prev && typeof prev.hints === 'number') entry.hints = Math.min(prev.hints, pouchUsed);
+      else entry.hints = pouchUsed;
+      p['level' + n] = entry;
+      /* 彩蛋：① 首案结案 → 陈探长手写贺卡+烟花（本页）；
+                ② 每次结完第六案（全部档案解锁）→ 等结案仪式走完跳报告页放彩蛋 */
+      var firstEver = GD.countDone(p) === 1;
+      return GD.saveProgress(p).then(function () {
+        var noteKey = gdUserKey('gd_egg_note1_');
+        if (firstEver && !localStorage.getItem(noteKey)) {
+          localStorage.setItem(noteKey, '1');
+          GD.eggFireworks();              /* 首案贺信同款烟花 */
+          GD.eggGiftNote(false);          /* 首案贺卡：留在结案页看 */
+        }
+        if (GD.finalUnlocked(p)) {
+          /* 里程碑跳转（每账号一次，标记按用户名分键、由报告页放完彩蛋后写入）：
+             该号第一次六案全破 → fire；第一次达成传奇 → legend */
+          var u = null;
+          try { u = GD.getUser(); } catch (e) {}
+          if (u && typeof u === 'object') u = u.username;
+          u = u || 'anon';
+          var needJump = !localStorage.getItem('gd_egg_fire3_' + u) ||
+            (GD.isLegend(p) && !localStorage.getItem('gd_egg_legend3_' + u));
+          if (needJump) jumpWhenSealed('report.html?egg=' + (GD.isLegend(p) ? 'legend' : 'fire'));
+        }
+      });
+    }).then(function () { GD.refreshNav(); }).catch(function () {});
+  }
+
+  /* ============================================================
+     第 1 页 · 卷宗
+     ============================================================ */
+  function buildDossier(d) {
+    var wrap = h('div', 'dz');
+    var storyP = h('p', 'dz-story');
+    storyP.innerHTML = tmHTML(d.story);
+    wrap.appendChild(storyP);
+
+    var meta = h('div', 'dz-meta');
+    var c1 = h('span');
+    c1.appendChild(h('i', null, '委托人'));
+    c1.appendChild(h('b', null, d.client.name));
+    var c2 = h('span');
+    c2.appendChild(h('i', null, '任务'));
+    c2.appendChild(document.createTextNode(d.task));
+    add(meta, c1, c2);
+    wrap.appendChild(meta);
+
+    var how = h('div', 'dz-how');
+    var howT = h('span', 'dz-how-t');
+    howT.innerHTML = '<svg class="ic"><use href="#i-hat"/></svg>玩法说明';
+    var howP = h('p');
+    add(how, howT, howP, h('span', 'dz-sign', '—— 陈探长'));
+
+    wrap.appendChild(how);
+
+    /* 左下角：返回案件簿（箭头） */
+    var back = h('a', 'dz-back');
+    back.href = 'cases.html';
+    back.innerHTML = '<svg class="ic"><use href="#i-arrow"/></svg><b>返回案件簿</b>';
+    wrap.appendChild(back);
+
+    var typed = false;
+    addPage(wrap, {
+      nextLabel: '开始侦办',
+
+      onEnter: function () {
+        if (typed) return;
+        typed = true;
+        typeText(howP, d.instruction);
+      }
+    });
+  }
+
+  /* ============================================================
+     第 2 页起 · 六种玩法
+     ============================================================ */
+  function pageHead(kickText) {
+    var node = h('div');
+    node.appendChild(h('p', 'qz-kick', kickText));
+    node.appendChild(h('p', 'qz-lead'));
+    return node;
+  }
+  function optRow(options, onPick, current) {
+    var row = h('div', 'opt-row');
+    var btns = [];
+    options.forEach(function (opt) {
+      var b = h('button', 'opt-btn', opt);
+      b.type = 'button';
+      b.addEventListener('click', function () {
+        btns.forEach(function (x) { x.classList.remove('active'); });
+        b.classList.add('active');
+        onPick(opt);
+      });
+      btns.push(b);
+      row.appendChild(b);
+    });
+    return { row: row, btns: btns };
+  }
+
+  /* ---------- 案件一：质控修剪 ---------- */
+  function buildTrim(d) {
+    var node = pageHead('ACTION · 选出低质量区段');
+    var wrap = h('div', 'qz-body');
+
+    var grid = h('div', 'seq-grid');
+    var cells = [], sel = [];
+    d.read.split('').forEach(function (b, i) {
+      var q = d.qualities[i];
+      var c = h('span', 'bc qg ' + (q >= 28 ? 'g' : q >= 20 ? 'm' : 'l'));
+      c.appendChild(h('span', 'lt', b));
+      var bar = h('i', 'qb');
+      bar.style.height = (5 + Math.min(q, 40) / 40 * 21).toFixed(1) + 'px';
+      c.appendChild(bar);
+      c.appendChild(h('span', 'qn', String(q)));
+      c.addEventListener('click', function () { tap(i); });
+      cells.push(c);
+      grid.appendChild(c);
+    });
+    wrap.appendChild(grid);
+
+    var legend = h('div', 'q-legend');
+    legend.innerHTML = '<span><i class="g"></i>Q ≥ 28 · 可信</span>' +
+      '<span><i class="m"></i>20–27 · 存疑</span>' +
+      '<span><i class="l"></i>Q &lt; 20 · 该剪</span>';
+    wrap.appendChild(legend);
+
+    var note = h('p', 'seq-note', '点两个字母：第一下起点，第二下终点。');
+    wrap.appendChild(note);
+    node.appendChild(wrap);
+
+    var fbf = h('p', 'fbf');
+    node.appendChild(fbf);
+
+    function range() {
+      if (!sel.length) return null;
+      if (sel.length === 1) return [sel[0], sel[0]];
+      return [Math.min(sel[0], sel[1]), Math.max(sel[0], sel[1])];
+    }
+    function paint() {
+      var r = range();
+      cells.forEach(function (c, i) { c.classList.toggle('sel', !!r && i >= r[0] && i <= r[1]); });
+      if (!r) note.textContent = '点两个字母：第一下起点，第二下终点。';
+      else if (sel.length === 1) note.textContent = '起点：第 ' + (r[0] + 1) + ' 位 —— 再点一下终点。';
+      else note.textContent = '已选：第 ' + (r[0] + 1) + '–' + (r[1] + 1) + ' 位，共 ' + (r[1] - r[0] + 1) + ' 个字母。';
+      clearErr(fbf);
+    }
+    function tap(i) {
+      if (sel.length === 2) sel = [];
+      if (!sel.length) sel = [i];
+      else if (sel[0] === i) sel = [];
+      else sel.push(i);
+      paint();
+    }
+
+    addPage(node, {
+      lead: LEAD[1],
+      hint: '选中一段低质量区段后提交 · 点完格子还能改',
+      nextLabel: '提交修剪',
+      onEnter: function () { paint(); },
+      onNext: function () {
+        var r = range();
+        if (!r || sel.length < 2) { showErr(fbf, '还没选好——先点两个字母，框出一段要剪掉的位置。'); return; }
+        var bp = r[1] - r[0] + 1;
+        judge('/levels/1/judge', { start: r[0], end: r[1] }, function () {
+          return '修剪 ' + bp + ' bp · 保留 ' + (d.read.length - bp) + ' bp';
+        });
+      }
+    });
+  }
+
+  /* ---------- 案件二：序列比对 ---------- */
+  function buildAlign(d) {
+    var node = pageHead('ACTION · 对齐患者序列');
+    var wrap = h('div', 'qz-body');
+    var cols = d.ref.length + d.maxOffset;
+    var offset = 0, gapPos = null, touched = false;
+
+    function gridOf(cls) {
+      var g = h('div', 'seq-grid ' + cls);
+      g.style.gridTemplateColumns = 'repeat(' + cols + ', minmax(0, 1fr))';
+      return g;
+    }
+
+    var labRef = h('p', 'seq-label');
+    labRef.appendChild(document.createTextNode('参考序列'));
+    labRef.appendChild(h('b', null, 'REF · ' + d.ref.length + ' bp'));
+    var refRow = gridOf();
+    d.ref.split('').forEach(function (b) {
+      var c = h('span', 'bc');
+      c.appendChild(h('span', 'lt', b));
+      refRow.appendChild(c);
+    });
+    for (var k = d.ref.length; k < cols; k++) {
+      var v = h('span', 'bc void'); v.innerHTML = '&nbsp;'; refRow.appendChild(v);
+    }
+
+    var ruler = h('div', 'seq-ruler');
+    ruler.style.gridTemplateColumns = 'repeat(' + cols + ', minmax(0, 1fr))';
+    for (var ri = 1; ri <= d.ref.length; ri++) {
+      var mark = (ri === 1 || ri % 5 === 0 || ri === d.ref.length) ? String(ri) : '';
+      ruler.appendChild(h('span', null, mark));
+    }
+    for (var rj = d.ref.length; rj < cols; rj++) ruler.appendChild(h('span'));
+
+    var labPat = h('p', 'seq-label');
+    labPat.appendChild(document.createTextNode('患者序列'));
+    labPat.appendChild(h('b', null, 'PATIENT · 点字母垫 gap'));
+    var patRow = gridOf();
+
+    var rateRow = h('div', 'rate-row');
+    rateRow.appendChild(h('span', null, '匹配率'));
+    var bar = h('div', 'rate-bar'), fill = h('i');
+    bar.appendChild(fill);
+    rateRow.appendChild(bar);
+    var rateTxt = h('b', null, '--%');
+    rateRow.appendChild(rateTxt);
+
+    var acts = h('div', 'act-row');
+    var left = h('button', 'btn btn-ghost', '← 左移');
+    var right = h('button', 'btn btn-ghost', '右移 →');
+    left.type = right.type = 'button';
+    add(acts, left, right);
+
+    add(wrap, labRef, refRow, ruler, labPat, patRow, rateRow, acts);
+    node.appendChild(wrap);
+
+    var fbf = h('p', 'fbf');
+    node.appendChild(fbf);
+
+    function aligned() {
+      var arr = d.patient.split('');
+      if (gapPos !== null) arr.splice(gapPos, 0, '-');
+      return arr;
+    }
+    function matchRate() {
+      var compared = 0, matched = 0;
+      aligned().forEach(function (c, j) {
+        var r = d.ref[j + offset];
+        if (r === undefined || c === '-') return;
+        compared++;
+        if (c === r) matched++;
+      });
+      return compared ? Math.round(matched / compared * 100) : 0;
+    }
+    function paint() {
+      patRow.innerHTML = '';
+      for (var k2 = 0; k2 < offset; k2++) {
+        var sp = h('span', 'bc void'); sp.innerHTML = '&nbsp;'; patRow.appendChild(sp);
+      }
+      aligned().forEach(function (c, j) {
+        var isGap = c === '-';
+        var cell = h('span', 'bc' + (isGap ? ' dash' : ''));
+        cell.appendChild(h('span', 'lt', isGap ? '—' : c));
+        var r = d.ref[j + offset];
+        if (touched && r !== undefined) cell.classList.add(isGap || c !== r ? 'miss' : 'hit');
+        cell.addEventListener('click', function () {
+          if (isGap) gapPos = null;
+          else gapPos = (gapPos !== null && j > gapPos) ? j - 1 : j;
+          touched = true;
+          paint();
+          clearErr(fbf);
+        });
+        patRow.appendChild(cell);
+      });
+      var rate = matchRate();
+      rateTxt.textContent = rate + '%';
+      fill.style.width = rate + '%';
+      left.disabled = offset <= 0;
+      right.disabled = offset >= d.maxOffset;
+    }
+
+    left.addEventListener('click', function () { if (offset > 0) { offset--; touched = true; paint(); } });
+    right.addEventListener('click', function () { if (offset < d.maxOffset) { offset++; touched = true; paint(); } });
+
+    addPage(node, {
+      lead: LEAD[2],
+      hint: '挪位置 + 垫 gap，让两行字母对上',
+      nextLabel: '提交比对',
+      onEnter: function () { paint(); },
+      onNext: function () {
+        if (gapPos === null) { showErr(fbf, '还没垫 gap——患者序列少了一个字母，先补一个占位符（—）。'); return; }
+        judge('/levels/2/judge', { offset: offset, gapPos: gapPos }, function (resp) {
+          return '匹配率 ' + (resp.result ? resp.result.matchRate : matchRate()) + '%';
+        });
+      }
+    });
+  }
+
+  /* ---------- 案件三：三个嫌疑人（一页一位） ---------- */
+  function buildSuspects(d) {
+    var answers = {};
+    var pageIdx = [];
+
+    d.suspects.forEach(function (s, idx) {
+      var node = pageHead('SUSPECT ' + (idx + 1) + ' / ' + d.suspects.length);
+      var wrap = h('div', 'qz-body');
+
+      var head = h('div', 'sp-head');
+      head.appendChild(h('b', null, s.gene));
+      head.appendChild(h('span', 'sp-hgvs', s.hgvs));
+      head.appendChild(h('span', 'sp-type', s.type));
+      wrap.appendChild(head);
+      wrap.appendChild(h('div', 'sp-src', s.protein + '｜' + s.source));
+
+      var ev = h('div', 'ev-grid');
+      s.evidence.forEach(function (e) {
+        var c = h('div', 'ev');
+        c.appendChild(h('div', 'ev-t', e.title));
+        c.appendChild(h('div', 'ev-v', e.value));
+        c.appendChild(h('div', 'ev-d', e.desc));
+        ev.appendChild(c);
+      });
+      wrap.appendChild(ev);
+
+      var lab = h('p', 'seq-label');
+      lab.style.marginTop = '2px';
+      lab.appendChild(h('b', null, '你的判定'));
+      lab.appendChild(document.createTextNode('这名变异属于哪一类？'));
+      wrap.appendChild(lab);
+
+      var opts = optRow(d.options, function (v) {
+        answers[s.id] = v;
+        clearErr(fbf);
+      });
+      var optBox = h('div', 'sp-opts');
+      optBox.appendChild(opts.row);
+      wrap.appendChild(optBox);
+      node.appendChild(wrap);
+
+      var fbf = h('p', 'fbf');
+      node.appendChild(fbf);
+
+      var last = idx === d.suspects.length - 1;
+      var p = addPage(node, {
+        lead: idx === 0 ? LEAD[3] : '',
+        hint: '第 ' + (idx + 1) + ' 位嫌疑人 · 三人判完才能提交',
+        nextLabel: last ? '提交全部判定' : '下一位 →',
+        onNext: function () {
+          if (!answers[s.id]) { showErr(fbf, '这位还没给结论——选一个再继续。'); return; }
+          if (!last) { go(pageIdx[idx + 1]); return; }
+          var miss = d.suspects.filter(function (x) { return !answers[x.id]; });
+          if (miss.length) {
+            go(pageIdx[d.suspects.indexOf(miss[0])]);
+            setHint('「' + miss[0].gene + '」还没判。');
+            return;
+          }
+          judge('/levels/3/judge', { answers: answers }, function (resp) {
+            var keys = Object.keys(resp.results || {});
+            var ok = keys.filter(function (k) { return resp.results[k].passed; }).length;
+            return ok + ' / ' + keys.length + ' 名判定正确';
+          });
+        }
+      });
+      pageIdx[idx] = pages.indexOf(p);
+    });
+  }
+
+  /* ---------- 案件四：密码子 ---------- */
+  function buildCodon(d) {
+    var node = pageHead('ACTION · 把电报译成氨基酸');
+    var wrap = h('div', 'qz-body');
+
+    var table = h('div', 'codon-table');
+    Object.keys(d.codonTable).forEach(function (k) {
+      var chip = h('span');
+      chip.appendChild(h('b', null, k));
+      chip.appendChild(document.createTextNode(' → ' + d.codonTable[k]));
+      table.appendChild(chip);
+    });
+    wrap.appendChild(table);
+
+    var picks = [];
+    d.codons.forEach(function (codon, gi) {
+      var row = h('div', 'codon-row');
+      row.appendChild(h('span', 'codon-code', codon));
+      var opts = optRow(d.aminoOptions[gi] || [], function (v) {
+        picks[gi] = v;
+        clearErr(fbf);
+      });
+      row.appendChild(opts.row);
+      wrap.appendChild(row);
+    });
+    node.appendChild(wrap);
+
+    var fbf = h('p', 'fbf');
+    node.appendChild(fbf);
+
+    addPage(node, {
+      lead: LEAD[4],
+      hint: '五组密码子都要选，选完提交',
+      nextLabel: '提交破译',
+      onNext: function () {
+        if (picks.length < d.codons.length || picks.some(function (p) { return !p; })) {
+          showErr(fbf, '还有密码子没翻译——每组都要选一个氨基酸。');
+          return;
+        }
+        judge('/levels/4/judge', { aminoAcids: picks }, function (resp) {
+          return '明文 ' + (resp.result ? resp.result.protein : '');
+        });
+      }
+    });
+  }
+
+  /* ---------- 案件五：系谱 ---------- */
+  function buildPedigree(d) {
+    var node = pageHead('ACTION · 判断遗传方式');
+    var wrap = h('div', 'qz-body');
+    var choice = null;
+
+    var ped = h('div', 'block-opts');
+    ped.style.gap = '7px';
+    d.pedigreeDesc.forEach(function (line, i) {
+      var row = h('div', 'ped-line');
+      row.appendChild(h('span', 'g', ['Ⅰ', 'Ⅱ', 'Ⅲ'][i] || '·'));
+      row.appendChild(h('span', null, line));
+      ped.appendChild(row);
+    });
+    wrap.appendChild(ped);
+
+    var pLab = h('p', 'seq-label');
+    pLab.style.marginTop = '14px';
+    pLab.appendChild(h('b', null, '你的判定'));
+    pLab.appendChild(document.createTextNode('这种病的遗传方式是？'));
+    wrap.appendChild(pLab);
+
+    var opts = h('div', 'block-opts');
+    opts.style.marginTop = '8px';
+    var o = optRow(d.options, function (v) { choice = v; clearErr(fbf); });
+    opts.appendChild(o.row);
+    wrap.appendChild(opts);
+    node.appendChild(wrap);
+
+    var fbf = h('p', 'fbf');
+    node.appendChild(fbf);
+
+    addPage(node, {
+      lead: LEAD[5],
+      hint: '四种遗传方式选一种',
+      nextLabel: '提交判定',
+      onNext: function () {
+        if (!choice) { showErr(fbf, '先选一种遗传方式。'); return; }
+        judge('/levels/5/judge', { choice: choice }, function (resp) {
+          return resp.result ? resp.result.choice : choice;
+        });
+      }
+    });
+  }
+
+  /* ---------- 案件六：处方 ---------- */
+  function buildRx(d) {
+    var node = pageHead('ACTION · 选出你的处方');
+    var wrap = h('div', 'qz-body');
+    var choice = null;
+    var v = d.variant;
+
+    var head = h('div', 'sp-head');
+    head.appendChild(h('b', null, v.gene));
+    head.appendChild(h('span', 'sp-hgvs', v.hgvs));
+    head.appendChild(h('span', 'sp-type', v.type));
+    wrap.appendChild(head);
+    wrap.appendChild(h('div', 'sp-src', v.protein + '｜' + v.source));
+
+    var ev = h('div', 'ev-grid');
+    v.evidence.forEach(function (e) {
+      var c = h('div', 'ev');
+      c.appendChild(h('div', 'ev-t', e.title));
+      c.appendChild(h('div', 'ev-v', e.value));
+      c.appendChild(h('div', 'ev-d', e.desc));
+      ev.appendChild(c);
+    });
+    wrap.appendChild(ev);
+
+    var rLab = h('p', 'seq-label');
+    rLab.style.marginTop = '2px';
+    rLab.appendChild(h('b', null, '你的处方'));
+    rLab.appendChild(document.createTextNode('一线治疗方案选？'));
+    wrap.appendChild(rLab);
+
+    var rxOpts = h('div', 'block-opts');
+    var o = optRow(d.options, function (x) { choice = x; clearErr(fbf); });
+    rxOpts.appendChild(o.row);
+    wrap.appendChild(rxOpts);
+    node.appendChild(wrap);
+
+    var fbf = h('p', 'fbf');
+    node.appendChild(fbf);
+
+    addPage(node, {
+      lead: LEAD[6],
+      hint: '三套方案选一套',
+      nextLabel: '提交判定',
+      onNext: function () {
+        if (!choice) { showErr(fbf, '先选一套方案。'); return; }
+        judge('/levels/6/judge', { choice: choice }, function (resp) {
+          return resp.result ? resp.result.choice : choice;
+        });
+      }
+    });
+  }
+
+  var GAMES = { 1: buildTrim, 2: buildAlign, 3: buildSuspects, 4: buildCodon, 5: buildPedigree, 6: buildRx };
+
+  /* ============================================================
+     锦囊
+     ============================================================ */
+  var GUIDE_HEAD = {
+    evidence: '证据', suspicious: '可疑（指向致病）', benign: '放心（指向良性）',
+    uncertain: '存疑', range: '分值区间', color: '柱色', meaning: '含义',
+    action: '处理', step: '步骤', detail: '要点'
+  };
+
+  /* 锦囊正文：`**重点**` 渲染为荧光高亮，其余原样输出 */
+  function richText(v) {
+    var s = String(v == null ? '' : v);
+    var frag = document.createDocumentFragment();
+    var re = /\*\*(.+?)\*\*/g, last = 0, m;
+    while ((m = re.exec(s)) !== null) {
+      if (m.index > last) frag.appendChild(document.createTextNode(s.slice(last, m.index)));
+      frag.appendChild(h('mark', null, m[1]));
+      last = m.index + m[0].length;
+    }
+    if (last < s.length) frag.appendChild(document.createTextNode(s.slice(last)));
+    return frag;
+  }
+
+  /* 锦囊只留口诀表：intro / conclusion 不再渲染，重点靠表内高亮传达 */
+  function renderGuide(g) {
+    var btn = document.getElementById('dk-pouch');
+    var rows = (g && (g.rows || g.rules)) || [];
+    if (!rows.length) { btn.hidden = true; return; }
+    btn.hidden = false;
+    pouchBody.innerHTML = '';
+
+    var heads = Object.keys(rows[0]);
+    var table = h('table');
+    var thead = h('thead');
+    var hr = h('tr');
+    hr.style.setProperty('--i', 0);
+    heads.forEach(function (k) { hr.appendChild(h('th', null, GUIDE_HEAD[k] || k)); });
+    thead.appendChild(hr);
+    table.appendChild(thead);
+
+    var tbody = h('tbody');
+    rows.forEach(function (r, i) {
+      var tr = h('tr');
+      tr.style.setProperty('--i', i + 1);
+      heads.forEach(function (k) {
+        var td = h('td');
+        td.appendChild(richText(r[k]));
+        tr.appendChild(td);
+      });
+      tbody.appendChild(tr);
+    });
+    table.appendChild(tbody);
+    pouchBody.appendChild(table);
+  }
+
+  var dkPouch = document.getElementById('dk-pouch');
+  var burstTimer = 0;
+  var pouchUsed = 0;                             /* 本次侦办打开锦囊的次数，结案时计入档案 */
+  function openPouch() {
+    pouchUsed++;
+    /* 袋口先炸一下，再把整卷甩出来 */
+    dkPouch.classList.remove('is-burst');
+    void dkPouch.offsetWidth;
+    dkPouch.classList.add('is-burst');
+    pouch.classList.remove('on');
+    void pouch.offsetWidth;
+    clearTimeout(burstTimer);
+    burstTimer = setTimeout(function () { pouch.classList.add('on'); }, 110);
+  }
+  function closePouch() {
+    clearTimeout(burstTimer);
+    pouch.classList.remove('on');
+  }
+  dkPouch.addEventListener('click', openPouch);
+  document.getElementById('pouch-x').addEventListener('click', closePouch);
+  pouch.addEventListener('click', function (e) {
+    if (e.target === pouch) closePouch();
+  });
+  document.addEventListener('keydown', function (e) {
+    if (e.key === 'Escape' && pouch.classList.contains('on')) closePouch();
+  });
+
+  /* ============================================================
+     启动
+     ============================================================ */
+  GD.api('/levels').then(function (levels) {
+    var d = levels['level' + n];
+    if (!d) { location.replace('cases.html'); return null; }
+    return GD.loadProgress().then(function (p) {
+      for (var i = 1; i < n; i++) {
+        if (!p['level' + i]) { location.replace('cases.html'); return null; }
+      }
+      return { d: d, p: p };
+    });
+  }).then(function (ctx) {
+    if (!ctx) return;
+    D = ctx.d;
+    solved = !!ctx.p['level' + n];
+
+    document.title = D.caseTitle + ' · 基因侦探';
+    document.getElementById('dk-no').textContent = 'CASE ' + (n < 10 ? '0' + n : n) + ' / 06';
+    document.getElementById('dk-title').textContent = D.caseTitle.replace(/^案件. · /, '');
+    var tag = document.getElementById('dk-tag');
+    tag.textContent = TAGS[n] || '';
+    tag.hidden = false;
+    document.getElementById('ct-r').textContent =
+      'CASE FILE · 第 ' + n + ' / 6 宗 · ' + (solved ? '已侦破 · 可重演' : '待侦办');
+
+    renderGuide(D.judgementGuide);
+
+    buildDossier(D);
+    GAMES[n](D);
+    go(0);
+    startTimer();
+  }).catch(function (e) {
+    /* 别把异常吞掉：控制台留一条线索，方便定位是哪一步炸的 */
+    if (window.console && console.error) console.error('[卷宗渲染失败]', e);
+    document.getElementById('dk-title').textContent = '卷宗加载失败';
+    document.getElementById('dk-no').textContent = 'CASE FILE · ERROR';
+    var box = h('div', 'dz');
+    box.appendChild(h('p', 'dz-story', (e.message || '网络异常') +
+      ' —— 请确认后端已启动，再返回案件簿重试。'));
+    addPage(box);
+    go(0);
+    btnNext.hidden = true;
+    document.getElementById('dk-prev').hidden = true;
+  });
+})();
+</script>
+<script src="helix.js"></script>
+</body>
+</html>
