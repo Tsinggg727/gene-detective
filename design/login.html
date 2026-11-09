@@ -341,6 +341,14 @@
   var params = new URLSearchParams(location.search);
   var next = GD.safeNext(params.get('next')) || 'home.html';
   if (/登录\.html$/.test(next)) next = 'home.html';
+  if (/^login\.html$/.test(next)) next = 'home.html';
+
+  /* 已有有效登录态：不再停留登录页，直接进站（换账号先在站内退出再来） */
+  if (GD.getToken()) {
+    GD.me().then(function (user) {
+      if (user && user.username) location.replace(next);
+    }).catch(function () { /* 凭证失效：留在登录页正常登录 */ });
+  }
 
   var form = document.getElementById('auth-form');
   var msg = document.getElementById('msg');

@@ -387,7 +387,7 @@ body { min-height: 100vh; }
         if (u.origin === location.origin) {
           var f = decodeURIComponent(u.pathname.split('/').pop() || '');
           /* 登录页不是"来处"，别把用户送回表单；自己也不回自己 */
-          if (f && f !== 'entry.html' && !/登录\.html$/.test(f)) return u.href;
+          if (f && f !== 'entry.html' && f !== 'login.html' && !/登录\.html$/.test(f)) return u.href;
         }
       }
     } catch (err) { /* 解析不了就走兜底 */ }
