@@ -272,6 +272,33 @@
     return LEVELS.filter(function (k) { return !!results[k]; }).length;
   }
 
+  /* ---------- 用服务器进度回填本地「看过」标记 ----------
+     开场白/收书/引导/手册已读这些标记只存 localStorage（跟随浏览器），
+     而结案进度在服务器。换浏览器、无痕窗口或清过缓存的老账号，
+     本地标记全丢 → 新手对话重播、案件簿导航被拦、接案被手册拦截。
+     进度加载后统一回填：结过案的账号视为已完成全部新手流程。 */
+  var CASE_MANUAL_MAP = { 1: 'c1', 2: 'c2', 3: 'c3', 4: 'c5', 5: 'c8', 6: 'c7' };
+  function userKeyNS(base) {
+    var u = getUser();
+    if (u && typeof u === 'object') u = u.username || '';
+    return base + (u || 'guest');
+  }
+  function syncOnboardingFromProgress(p) {
+    var done = countDone(p);
+    if (done < 1) return;
+    try {
+      ['gd_guide_done_', 'gd_brief_seen_', 'gd_manual_intro_v2_'].forEach(function (k) {
+        var key = userKeyNS(k);
+        if (localStorage.getItem(key) !== '1') localStorage.setItem(key, '1');
+      });
+      /* 已结案件对应的手册页也补「已读」 */
+      for (var n = 1; n <= Math.min(done, 6); n++) {
+        var mid = CASE_MANUAL_MAP[n];
+        if (mid) localStorage.setItem(userKeyNS('gd_manual_') + '_' + mid, '1');
+      }
+    } catch (e) { /* 隐私模式存不进就作罢，各页面另有进度兜底 */ }
+  }
+
   /* ---------- 评分（最终结案报告解锁后才展示） ----------
      分数 = 100 − 用时扣分（每案有基准用时，超 30s 扣 2，最多扣 40，下限 60）
      星级 = 锦囊次数（0 个 ★★★ / 1 个 ★★ / ≥2 个 ★），重演保留历史最好 */
@@ -678,26 +705,35 @@
       if (href.indexOf('cases.html') < 0) return;
       /* 引导已走完，放行 */
       if (isGuideDone()) return;
+      /* 本地无标记可能是换浏览器/清过缓存的老号：先问服务器进度再决定拦不拦 */
       e.preventDefault();
-      /* 已读完第 2 页但引导没走完的老账号：直接补播接案引导，别拿「还没到时候」劝退 */
-      if (window.GDGate && window.GDManual && GDManual.isArchived &&
-          GDManual.isArchived('c1') && GDManual.playFirstCaseGuide) {
-        GDManual.playFirstCaseGuide();
-        return;
-      }
-      if (window.GDGate) {
-        GDGate.play({
-          force: true,
-          lines: [
-            '案子还没到你来接的时候。',
-            '先把《侦探须知》第 2 页读完，陈探长会亲自把第一宗案交到你手上。'
-          ],
-          kicker: '引导提醒 · 陈探长',
-          endLabel: '好，我继续读手册'
-        });
-      } else if (bubble) {
-        bubble('先把手册第 2 页读完，陈探长才会交给你第一宗案。');
-      }
+      loadProgress().catch(function () { return emptyProgress(); }).then(function (p) {
+        /* 结过案 → 引导必然早完成了：补标记并放行 */
+        if (countDone(p) >= 1) {
+          try { localStorage.setItem(userKeyNS('gd_guide_done_'), '1'); } catch (err) {}
+          location.href = href;
+          return;
+        }
+        /* 已读完第 2 页但引导没走完的老账号：直接补播接案引导，别拿「还没到时候」劝退 */
+        if (window.GDGate && window.GDManual && GDManual.isArchived &&
+            GDManual.isArchived('c1') && GDManual.playFirstCaseGuide) {
+          GDManual.playFirstCaseGuide();
+          return;
+        }
+        if (window.GDGate) {
+          GDGate.play({
+            force: true,
+            lines: [
+              '案子还没到你来接的时候。',
+              '先把《侦探须知》第 2 页读完，陈探长会亲自把第一宗案交到你手上。'
+            ],
+            kicker: '引导提醒 · 陈探长',
+            endLabel: '好，我继续读手册'
+          });
+        } else if (bubble) {
+          bubble('先把手册第 2 页读完，陈探长才会交给你第一宗案。');
+        }
+      });
     });
   }
 
@@ -720,6 +756,7 @@
       emit('gd:auth', { username: name });
       if (!name) { renderNavProgress(0); emit('gd:progress', emptyProgress()); return; }
       return loadProgress().then(function (p) {
+        syncOnboardingFromProgress(p);
         renderNavProgress(countDone(p));
       }).catch(function () {
         renderNavProgress(0);

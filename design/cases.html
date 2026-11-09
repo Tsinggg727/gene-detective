@@ -760,7 +760,17 @@ var CASES = [
     /* 开场白已看过：#caseN 直达的抽屉照常拉开 */
     if (hm) setTimeout(function () { window.GDBoard.open(openTarget); }, 700);
   } else {
-    play(false);
+    /* 本地无标记：可能是新号，也可能是换浏览器/清过缓存的老号——问服务器进度兜底 */
+    GD.loadProgress().catch(function () { return GD.emptyProgress(); }).then(function (p) {
+      if (GD.countDone(p) >= 1) {
+        /* 结过案的老账号：补标记者 + 直接亮卡，不再播开场白 */
+        try { localStorage.setItem(gdUserKey('gd_brief_seen_'), '1'); } catch (e) {}
+        revealCards();
+        if (hm) setTimeout(function () { window.GDBoard.open(openTarget); }, 700);
+      } else {
+        play(false);
+      }
+    });
   }
 })();
 </script><script>

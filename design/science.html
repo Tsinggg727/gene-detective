@@ -825,7 +825,16 @@ function gdUserKey(base){var u='';try{u=(window.GD&&GD.getUser())||'';}catch(e){
   /* 第一次自动播，之后安静等着 */
   var seen = false;
   try { seen = localStorage.getItem(gdUserKey('gd_manual_intro_v2_')) === '1'; } catch (e) { seen = false; }
-  if (!seen) setTimeout(play, 480);
+  if (!seen) {
+    /* 本地无标记：老账号换浏览器/清缓存时用服务器进度兜底，结过案就不再收书 */
+    GD.loadProgress().catch(function () { return GD.emptyProgress(); }).then(function (p) {
+      if (GD.countDone(p) >= 1) {
+        try { localStorage.setItem(gdUserKey('gd_manual_intro_v2_'), '1'); } catch (e) {}
+        return;
+      }
+      setTimeout(play, 480);
+    });
+  }
 })();
 </script>
 <script src="helix.js"></script>
