@@ -737,6 +737,10 @@ var CASES = [
     }, 900);
   }
 
+  /* 手册「去接第 X 案」用 #caseN 直达；没带锚点就默认第 1 案 */
+  var hm = (location.hash || '').match(/#case(\d)/);
+  var openTarget = hm ? Math.min(6, Math.max(1, Number(hm[1]))) : 1;
+
   function play(force) {
     GDGate.play({
       lines: LINES,
@@ -744,13 +748,20 @@ var CASES = [
       endLabel: '翻开第一份卷宗',
       onFinish: function () {
         revealCards();
-        if (window.GDBoard) window.GDBoard.open(1);
+        /* 开场白完整走完才弹抽屉：用户没法趁开场白没播完就接案跳走，
+           也就不会出现「接案完回来开场白又重播」 */
+        if (window.GDBoard) window.GDBoard.open(openTarget);
       }
     });
   }
 
-  if (GDGate.seen(gdUserKey('gd_brief_seen_'))) revealCards();
-  else play(false);
+  if (GDGate.seen(gdUserKey('gd_brief_seen_'))) {
+    revealCards();
+    /* 开场白已看过：#caseN 直达的抽屉照常拉开 */
+    if (hm) setTimeout(function () { window.GDBoard.open(openTarget); }, 700);
+  } else {
+    play(false);
+  }
 })();
 </script><script>
 /* ==========================================================
@@ -1166,19 +1177,15 @@ var CASES = [
         });
         return;
       }
-      /* 接案前先读对应手册页：未读则陈探长拦下，给「去翻手册」的返回键 */
+      /* 接案前先读对应手册页：未读则陈探长拦下，只给一张卡片 + 直跳手册对应页的键 */
       var mid = caseManualId(n);
       if (mid && window.GD.isManualRead && !GD.isManualRead(mid)) {
         GDGate.play({
           force: true,
-          lines: [
-            '别急，先把手册里那一页读透，再回来接这宗案。',
-            '判定规则都写在手册里，没读就上手，容易办岔。'
-          ],
+          lines: ['先去把手册里对应的那一页读透——判定规则都写在里头，没读就上手，容易办岔。'],
           kicker: '接案提醒 · 陈探长',
           choices: [
-            { label: '好，去翻手册', onClick: function () { location.href = 'science.html#' + mid; } },
-            { label: '我再想想', onClick: function () { closeDrawer(); } }
+            { label: '好，去翻手册', onClick: function () { location.href = 'science.html#' + mid; } }
           ]
         });
         return;
@@ -1228,13 +1235,6 @@ var CASES = [
 
   paint(GD.emptyProgress());
   GD.loadProgress().then(paint).catch(function () { paint(GD.emptyProgress()); });
-
-  /* 手册「去接第 X 案」用 #caseN 直达：等卡片揭示后把对应抽屉拉开 */
-  var hm = (location.hash || '').match(/#case(\d)/);
-  if (hm) {
-    var hn = Math.min(6, Math.max(1, Number(hm[1])));
-    setTimeout(function () { openDrawer(hn); }, 700);
-  }
 
 })();
 </script>

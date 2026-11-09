@@ -396,11 +396,17 @@ body { min-height: 100vh; }
 
   function leaveCard() { location.replace(backTarget()); }
 
+  /* 刚登记成功：工牌先亮相，用户点击后才切探长的欢迎引导 */
+  var welcomePending = false;
+
   document.addEventListener('click', function (e) {
     if (!cardStage || cardStage.hidden) return;            /* 还在登记：空白不返回 */
     if (document.querySelector('.gd-gate')) return;        /* 探长对话层在：这一下是在推进台词 */
     if (document.querySelector('.av-modal.open')) return;  /* 头像弹层开着：这一下是关弹层 */
-    if (e.target.closest('#idcard, .ladder, a, button')) return;
+    if (e.target.closest('a, button')) return;
+    /* 工牌刚亮出来：点工牌或点空白处，都切到陈探长的欢迎引导 */
+    if (welcomePending) { welcomePending = false; playCardWelcome(); return; }
+    if (e.target.closest('#idcard, .ladder')) return;
     leaveCard();
   });
 
@@ -460,8 +466,8 @@ body { min-height: 100vh; }
       submitBtn.innerHTML = '已建档 · 盖章中';
       setTimeout(function () {
         showCard();
-        /* 工牌亮出来后，探长出来鼓励并引导去翻手册 */
-        playCardWelcome();
+        /* 工牌先亮相让新手看清；点工牌或空白处才切探长引导（见 welcomePending） */
+        welcomePending = true;
       }, 620);
     }).catch(function (err) {
       busy = false;
