@@ -26,6 +26,21 @@ app.add_middleware(
     allow_headers=["*"],
 )
 
+
+@app.middleware("http")
+async def html_no_cache(request, call_next):
+    """所有 text/html 响应统一加 no-cache（允许缓存但每次必须向服务器校验）。
+
+    StaticFiles 挂载的 .html 直链原本只有 etag，没有 Cache-Control，
+    浏览器会启发式缓存导致改版后用户看到旧页面（抽屉与开场白"打架"即此因）。
+    API 的 JSON 响应不受影响。
+    """
+    response = await call_next(request)
+    ctype = response.headers.get("content-type", "")
+    if ctype.startswith("text/html"):
+        response.headers["Cache-Control"] = "no-cache"
+    return response
+
 app.include_router(auth.router, prefix=config.API_PREFIX)
 app.include_router(content.router, prefix=config.API_PREFIX)
 app.include_router(game.router, prefix=config.API_PREFIX)
