@@ -14,7 +14,7 @@ GAME_FILE = DATA_DIR / "game.json"          # 关卡配置（含答案，仅服�
 VARIANTS_FILE = DATA_DIR / "variants.json"  # 变异与 AI 预计算数据（ClinVar 教学子集）
 
 # ---- 登录会话（JWT）----
-# 演示/提交前用环境变量 GD_SECRET_KEY 覆盖（见 README）
+# 演示/提交前用环境变量 GD_SECRET_KEY 覆盖
 SECRET_KEY = os.getenv(
     "GD_SECRET_KEY", "gene-detective-dev-secret-please-change-before-demo"
 )
