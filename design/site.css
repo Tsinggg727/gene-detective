@@ -347,7 +347,9 @@ footer .sep { opacity: .3; margin: 0 6px; }
    · 遮罩负责遮挡，内容不做透明隐藏 → 动效失效也一定能看全
    ========================================================== */
 html.gd-locked { overflow: hidden; }
-.gd-gate { position: fixed; inset: 0; z-index: 150; display: grid; place-items: center;
+.gd-gate { position: fixed; inset: 0; z-index: 260; display: grid; place-items: center;
+  /* 260：压过案件抽屉(220)与探长气泡(240)——拦截对话出现时卡片必须在最上层；
+     仍低于头像弹窗(300) */
   padding: 26px; transition: opacity .5s var(--ease-out-quart); }
 .gd-gate.closing { opacity: 0; transition-duration: .42s; }
 .gd-scrim { position: absolute; inset: 0; cursor: pointer;
