@@ -645,8 +645,10 @@
       ],
       kicker: '引导接案 · 陈探长',
       choices: [
-        { label: '好，去接第一案', onClick: function () { location.href = 'cases.html#case1'; } },
-        { label: '我再看会儿手册', onClick: function () { /* 留在本页继续读 */ } }
+        /* 只给一个出口：读完手册必须走「接案」这条线。
+           不能给「留在手册」的选项——点了它同样会触发 onFinish 把引导标记成
+           已完成，之后案件簿导航栏的拦截就再也不会出现，引导链路就断了 */
+        { label: '好，去接第一案', onClick: function () { location.href = 'cases.html#case1'; } }
       ],
       /* 无论选哪个，对话一结束就算引导走完 */
       onFinish: function () { lsSet(GUIDE_DONE_KEY + userNs(), '1'); }
