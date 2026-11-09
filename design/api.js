@@ -560,9 +560,11 @@
     errEl.textContent = '';
     var pickEl = modal.querySelector('.av-pick');
     if (pickEl) pickEl.textContent = '';
-    modal.dataset.pending = '';               // 本轮待确认的选中项
+    /* 默认选中当前头像：打开即可按「确认」（无变化则直接收起），不会出现"点了没反应" */
+    var current0 = getAvatar();
+    modal.dataset.pending = current0;
     var applyBtn = modal.querySelector('.av-apply');
-    applyBtn.disabled = true;
+    applyBtn.disabled = false;
     applyBtn.textContent = '确认更换';
     modal.classList.add('open');
 
@@ -574,6 +576,7 @@
       var grid = modal.querySelector('.av-grid');
       grid.innerHTML = '';
       var current = getAvatar();
+      var curAvatar = null;
       AVATARS.forEach(function (a) {
         var unlocked = done >= a.tier;
         var b = document.createElement('button');
@@ -611,8 +614,11 @@
           if (pickEl) pickEl.textContent = '已选 · ' + a.label;
           errEl2.textContent = '';
         });
+        if (a.id === current) curAvatar = a;
         grid.appendChild(b);
       });
+      /* 打开弹窗即显示当前头像为默认选中项 */
+      if (curAvatar && pickEl) pickEl.textContent = '已选 · ' + curAvatar.label;
     });
   }
 
