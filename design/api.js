@@ -600,13 +600,15 @@
             b.classList.add('shake');
             return;
           }
-          /* 仅标记待确认，不落库——按「确认更换」才生效 */
+          /* 仅标记待确认，不落库——按「确认更换」才生效。
+             点当前原头像也一样：可选、可确认（确认后无变化直接收起），
+             不禁用按钮，否则点了像没反应 */
           modal.dataset.pending = a.id;
           modal.querySelectorAll('.av-opt').forEach(function (x) { x.classList.remove('active'); });
           b.classList.add('active');
-          applyBtn.disabled = a.id === current;
+          applyBtn.disabled = false;
           applyBtn.textContent = '确认更换';
-          if (pickEl) pickEl.textContent = a.id === current ? '' : '已选 · ' + a.label;
+          if (pickEl) pickEl.textContent = '已选 · ' + a.label;
           errEl2.textContent = '';
         });
         grid.appendChild(b);
