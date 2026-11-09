@@ -48,6 +48,13 @@ body { min-height: 100vh; }
   font-family: var(--font-mono); letter-spacing: .08em; color: var(--blue-700);
   margin-bottom: 7px; }
 .field .box { position: relative; }
+.field .f-peek { position: absolute; right: 7px; top: 50%; transform: translateY(-50%);
+  width: 30px; height: 30px; display: grid; place-items: center;
+  border: none; background: transparent; border-radius: 9px; cursor: pointer;
+  color: var(--text-3); transition: color .15s, background .15s; }
+.field .f-peek:hover { color: var(--blue-700); background: rgb(var(--wc-blue) / .14); }
+.field .f-peek .ic { width: 16px; height: 16px; }
+.field input.has-peek { padding-right: 44px; }
 .field input { width: 100%; font-family: var(--font-body); font-size: 14.5px;
   color: var(--blue-900); padding: 12px 14px; border-radius: 12px 15px 11px 14px;
   background: rgb(255 253 248 / .9);
@@ -204,6 +211,8 @@ body { min-height: 100vh; }
   <symbol id="i-code" viewBox="0 0 24 24"><path d="M9 7.4 4 12l5 4.6"/><path d="M15 7.4 20 12l-5 4.6"/><path d="M13.4 5l-2.8 14"/></symbol>
   <symbol id="i-family" viewBox="0 0 24 24"><circle cx="7" cy="6.4" r="2.4"/><circle cx="17" cy="6.4" r="2.4"/><circle cx="12" cy="17.6" r="2.4"/><path d="M7 8.8v3.4h10V8.8M12 12.2v3"/></symbol>
   <symbol id="i-pill" viewBox="0 0 24 24"><rect x="2.6" y="8.6" width="18.8" height="6.8" rx="3.4"/><path d="M12 8.6v6.8" stroke-dasharray="1.8 2"/></symbol>
+  <symbol id="i-eye" viewBox="0 0 24 24"><path d="M2.6 12S6 6.4 12 6.4 21.4 12 21.4 12 18 17.6 12 17.6 2.6 12 2.6 12Z"/><circle cx="12" cy="12" r="2.8"/></symbol>
+  <symbol id="i-eye-off" viewBox="0 0 24 24"><path d="M4 4l16 16"/><path d="M9.4 5.2A9.6 9.6 0 0 1 12 4.9c6 0 9.4 7.1 9.4 7.1a17 17 0 0 1-3.1 4"/><path d="M6.3 6.6A16.6 16.6 0 0 0 2.6 12S6 19.1 12 19.1a9.5 9.5 0 0 0 4-.87"/><path d="M10.2 10.4a2.6 2.6 0 0 0 3.6 3.6"/></symbol>
 </defs></svg>
 
 <div id="wc" aria-hidden="true"><span class="wc-veil"></span></div>
@@ -230,13 +239,21 @@ body { min-height: 100vh; }
       <div class="field" id="f-pass">
         <label for="password">暗号</label>
         <div class="box"><input id="password" name="password" type="password" autocomplete="new-password"
-          placeholder="至少 6 位"></div>
+          class="has-peek" placeholder="至少 6 位">
+          <button class="f-peek" type="button" data-peek="password" aria-label="显示暗号">
+            <svg class="ic"><use href="#i-eye"/></svg>
+          </button>
+        </div>
         <span class="f-hint">暗号至少 6 位</span>
       </div>
       <div class="field" id="f-confirm">
         <label for="confirm">再写一遍暗号</label>
         <div class="box"><input id="confirm" name="confirm" type="password" autocomplete="new-password"
-          placeholder="两次要一致"></div>
+          class="has-peek" placeholder="两次要一致">
+          <button class="f-peek" type="button" data-peek="confirm" aria-label="显示暗号">
+            <svg class="ic"><use href="#i-eye"/></svg>
+          </button>
+        </div>
         <span class="f-hint">两次输入的暗号不一致</span>
       </div>
 
@@ -319,6 +336,19 @@ body { min-height: 100vh; }
   function hideMsg() { msg.classList.remove('show'); }
   function isName(v) { return /^[\u4e00-\u9fa5A-Za-z0-9_]{2,16}$/.test(v); }
   function isPass(v) { return v.length >= 6 && v.length <= 64; }
+
+  /* 暗号显隐开关（两个密码框各一个） */
+  document.querySelectorAll('.f-peek[data-peek]').forEach(function (btn) {
+    btn.addEventListener('click', function () {
+      var input = field(btn.dataset.peek);
+      if (!input) return;
+      var show = input.type === 'password';
+      input.type = show ? 'text' : 'password';
+      btn.innerHTML = '<svg class="ic"><use href="#i-' + (show ? 'eye-off' : 'eye') + '"/></svg>';
+      btn.setAttribute('aria-label', show ? '隐藏暗号' : '显示暗号');
+      try { input.focus({ preventScroll: true }); } catch (e) { /* ignore */ }
+    });
+  });
 
   function revealJoin() {
     cardStage.hidden = true;
