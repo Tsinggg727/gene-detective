@@ -380,6 +380,11 @@ html.gd-drawer { overflow: hidden; }
   .pol-tape { height: 18px; }
   .pol-flag { font-size: 11.5px; padding: 7px 11px 6px; }
 
+  /* ---------- 移动端性能：状态章的 feTurbulence 置换滤镜在中低端 GPU
+     上会随抽屉打字反复重光栅化导致「网页无响应」，手机版关闭（纯色章替代） ---------- */
+  .dw-stamp { filter: none !important; }
+  .pol-stamp { filter: none !important; }
+
   /* ---------- 接案抽屉改底部上滑面板：固定约半屏高，内容内部滚动 ---------- */
   .dw { top: auto; bottom: 0; left: 0; right: 0; width: 100%; height: 72vh;
     border-radius: 22px 22px 0 0; border-left: none;

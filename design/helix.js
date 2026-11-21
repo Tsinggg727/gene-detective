@@ -28,13 +28,19 @@
   var W = 0, H = 0, DPR = 1, t0 = 0, on = true;
   var dyes = ['#5872b0', '#6a90c2', '#7767b4', '#3a4878'];
 
+  /* 移动端（≤900px）：只画一帧静置——持续 rAF 与打字机等高频重绘
+     叠加会让中低端手机 GPU 反复无响应（测试反馈），桌面保持动画 */
+  var MOBILE = false;
+  try { MOBILE = matchMedia('(max-width: 900px)').matches; } catch (e) {}
+  var animate = !MOBILE;
+
   function size() {
     DPR = Math.min(window.devicePixelRatio || 1, 2);
     W = cv.width = Math.round(cv.offsetWidth * DPR);
     H = cv.height = Math.round(cv.offsetHeight * DPR);
   }
   size();
-  addEventListener('resize', size, { passive: true });
+  addEventListener('resize', function () { size(); if (!animate) draw(); }, { passive: true });
 
   function draw() {
     if (!on) return;
@@ -95,18 +101,18 @@
     }
 
     t0 += .0085;
-    requestAnimationFrame(draw);
+    if (animate) requestAnimationFrame(draw);
   }
 
   /* 切到后台就停，回来继续 —— 省电，也免得回来时跳一大格 */
   document.addEventListener('visibilitychange', function () {
     if (document.hidden) {
       on = false;
-    } else if (!on) {
+    } else if (!on && animate) {
       on = true;
       requestAnimationFrame(draw);
     }
   });
 
-  requestAnimationFrame(draw);
+  if (MOBILE) draw(); else requestAnimationFrame(draw);
 })();
