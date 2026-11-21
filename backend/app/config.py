@@ -14,10 +14,15 @@ GAME_FILE = DATA_DIR / "game.json"          # 关卡配置（含答案，仅服�
 VARIANTS_FILE = DATA_DIR / "variants.json"  # 变异与 AI 预计算数据（ClinVar 教学子集）
 
 # ---- 登录会话（JWT）----
-# 演示/提交前用环境变量 GD_SECRET_KEY 覆盖
-SECRET_KEY = os.getenv(
-    "GD_SECRET_KEY", "gene-detective-dev-secret-please-change-before-demo"
-)
+# 密钥三级来源：环境变量 GD_SECRET_KEY → backend/.secret_key 文件（不入库）→ 开发默认值
+# 部署时任选其一设置真实密钥（仓库已公开，切勿使用默认值上线）
+SECRET_KEY = os.getenv("GD_SECRET_KEY", "")
+if not SECRET_KEY:
+    _secret_file = BASE_DIR / ".secret_key"
+    if _secret_file.exists():
+        SECRET_KEY = _secret_file.read_text(encoding="utf-8").strip()
+if not SECRET_KEY:
+    SECRET_KEY = "gene-detective-dev-secret-please-change-before-demo"
 JWT_ALGORITHM = "HS256"
 TOKEN_EXPIRE_DAYS = 7
 
