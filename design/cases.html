@@ -373,12 +373,33 @@ html.gd-drawer { overflow: hidden; }
     width: calc(var(--wm, 82%) * 0.76); margin-bottom: 30px; }
   .pol:nth-child(even) { margin-left: auto; margin-right: 4%; }
   .pol:nth-child(odd) { margin-left: 4%; }
-  .strings { display: none; }
+  /* 红线在手机版保留：卡片改纵列后，红线照样按卡片边缘连线（竖着串起办案顺序） */
   .board-foot { position: static; width: auto; margin-top: 20px; }
   /* 窄屏卡片变大，章和问号跟着放大，否则像个小点 */
   .pol-tab { height: 18px; font-size: 9.5px; top: -16px; }
   .pol-tape { height: 18px; }
   .pol-flag { font-size: 11.5px; padding: 7px 11px 6px; }
+
+  /* ---------- 接案抽屉改底部上滑面板：固定约半屏高，内容内部滚动 ---------- */
+  .dw { top: auto; bottom: 0; left: 0; right: 0; width: 100%; height: 72vh;
+    border-radius: 22px 22px 0 0; border-left: none;
+    border-top: 1px solid rgb(var(--wc-blue-deep) / .18);
+    transform: translateY(106%); box-shadow: 0 -18px 50px -24px rgb(46 58 88 / .55); }
+  .dw-wrap.open .dw { transform: none; }
+  .dw-head { padding: 13px 18px 10px; }
+  .dw-title { font-size: 19px; margin-top: 5px; }
+  /* 序号水印与状态章留在右下角原位；正文区在其上方滚动，不与它们重合 */
+  .dw-ghost { font-size: 104px; right: 8px; bottom: 64px; }
+  .dw-stamp { width: 104px; height: 104px; font-size: 21px; right: 14px; bottom: 70px; }
+  .dw-stamp::before { inset: 7px; }
+  .dw-body { padding: 10px 18px 8px; margin-bottom: 182px; }
+  .g-meta { margin-bottom: 12px; }
+  .g-meta > div { padding: 4px 0; }
+  .g-plot { min-height: 0; font-size: 14px; line-height: 1.75; }
+  .g-sealed { padding: 10px 8px 14px; }
+  .seal-ring { width: 64px; height: 64px; font-size: 30px; }
+  .dw-foot { padding: 10px 16px 14px; }
+  .g-btn { padding: 11px 16px; }
 
 </style>
 <script>
@@ -408,6 +429,7 @@ try {
   <symbol id="i-align" viewBox="0 0 24 24" data-page-node-id="7AGY9ceqRwAB0I2klZXJ3M"><path d="M3 6.5h18" data-page-node-id="PGx0rlGNWxdw28FBtnRWVN"></path><path d="M3 17.5h6.4M13.2 17.5H21" data-page-node-id="A2xPx0V5YvHDQLpo3lzmRg"></path><path d="M10.2 14.6v5.8" stroke-dasharray="1.6 2.2" data-page-node-id="2GFV6GrzZRHE1IB72blegd"></path><path d="M3 11.2h8.4M14.2 11.2H21" data-page-node-id="vPxDOD0ryzF6zqHB7gVUDT"></path></symbol>
   <symbol id="i-search" viewBox="0 0 24 24" data-page-node-id="ocIMWMyU0dKnxdTs0SJoP5"><circle cx="10.5" cy="10.5" r="6.8" data-page-node-id="dfyOe8E44F9fbyiQW1RujV"></circle><path d="M15.6 15.6L21 21" data-page-node-id="okjam97MVsGONxUj2LztBW"></path></symbol>
   <symbol id="i-code" viewBox="0 0 24 24" data-page-node-id="Pc79OJgMVZbyI7njrldnbn"><path d="M9 7.4 4 12l5 4.6" data-page-node-id="QzTX2J3hydhokdOlD8eFEN"></path><path d="M15 7.4 20 12l-5 4.6" data-page-node-id="C1SC9rJ4UF9EL0aMdpbHRI"></path><path d="M13.4 5l-2.8 14" data-page-node-id="knL58AOljwGjBCpyTShyHt"></path></symbol>
+  <symbol id="i-target" viewBox="0 0 24 24"><circle cx="12" cy="12" r="7.4"/><circle cx="12" cy="12" r="2.3"/><path d="M12 2.6v3.6M12 17.8v3.6M2.6 12h3.6M17.8 12h3.6"/></symbol>
   <symbol id="i-family" viewBox="0 0 24 24" data-page-node-id="ImZv7xbi7CftBxYFE0lqSE"><circle cx="7" cy="6.4" r="2.4" data-page-node-id="uGAsWja3X6WXaNTOHJrl6B"></circle><circle cx="17" cy="6.4" r="2.4" data-page-node-id="7h6g0HSYBYsStyVKAQCtd0"></circle><circle cx="12" cy="17.6" r="2.4" data-page-node-id="1rCwoZaLeXjQwmncDfgEws"></circle><path d="M7 8.8v3.4h10V8.8M12 12.2v3" data-page-node-id="sJLz7iRAOhPvHaxhoauwBa"></path></symbol>
   <symbol id="i-pill" viewBox="0 0 24 24" data-page-node-id="kItZmuDOHpRqkqjQmXyrMV"><rect x="2.6" y="8.6" width="18.8" height="6.8" rx="3.4" data-page-node-id="399HFBLSjouORF3tLhJgN4"></rect><path d="M12 8.6v6.8" stroke-dasharray="1.8 2" data-page-node-id="4DRCRriuyK6IPu0jFeYcr7"></path></symbol>
   <symbol id="i-check" viewBox="0 0 24 24" data-page-node-id="ZETZWZTxqmwnzMS2ImBy7U"><path d="M4.6 12.4 9.4 17l10-10" data-page-node-id="o3kYoWldiA1AIx9TkgMpbH"></path></symbol>
@@ -451,7 +473,7 @@ try {
       <span class="avatar" data-page-node-id="GSCnevftb2rqyRa3e0ecA6"><img src="assets/ip-chen-avatar.jpg" alt="陈探长" data-page-node-id="EDD7O0bGJqXc2P8WC1SYR1"></span>
       <div class="brief-txt" data-page-node-id="hfzQMqKgVd8j18XBx2eeCu">
         <div class="who" data-page-node-id="aS6Z1lFBC1wGUvf0WOS0dl">陈探长 · 精准医学侦探社</div>
-        <p data-page-node-id="cUPh5rl8MDNsStLdv97D1q">案卷都摊在桌上了，红线是办案顺序。点开哪份，右边就拉开哪份的案情。</p>
+        <p data-page-node-id="cUPh5rl8MDNsStLdv97D1q">案卷都摊在桌上了，红线是办案顺序——每一宗，都是流水线上的一道工序。点开哪份，右边就拉开案情。</p>
       </div>
     </div>
   </div>
@@ -541,13 +563,13 @@ try {
         <span class="pol-in">
           <span class="pol-tape" aria-hidden="true"></span>
           <span class="pol-photo">
-            <svg class="ic pol-ic"><use href="#i-family"/></svg>
+            <svg class="ic pol-ic"><use href="#i-target"/></svg>
             <span class="pol-q" aria-hidden="true">?</span>
             <span class="pol-tag">05</span>
             <span class="pol-seal" aria-hidden="true"><i>封存</i></span>
             <span class="pol-stamp" aria-hidden="true">结案</span>
           </span>
-          <span class="pol-cap"><span class="pol-no">CASE 05 · 系谱</span><span class="pol-tt">？？？</span></span>
+          <span class="pol-cap"><span class="pol-no">CASE 05 · 基因编辑</span><span class="pol-tt">？？？</span></span>
           <span class="pol-flag" data-flag>待侦办</span>
         </span>
       </button>
@@ -630,9 +652,9 @@ try {
 var CASES = [
   {
     n: 1, no: 'CASE 01 · 质控', title: '潦草的抄本',
-    plot: '测序中心质检环节拦下一条__读段__：末段__质量分值__持续低于 20，属于**不可靠数据**。__低质量碱基__若不剪除，会在后续比对中被误判为__基因变异__，直接影响分析结果。',
+    plot: '质检拦下一条__读段__：末段__质量分值__持续低于 20。不剪掉这些__低质量碱基__，会被误判为__基因变异__。',
     client: '测序中心 · 夜班技术员',
-    task: '读段尾部有一段低质量区：**点选它的起点和终点**，把它剪掉，只留下可信部分',
+    task: '**点选起点和终点**，剪掉尾部低质量区',
     hintTitle: '锦囊 · 该剪哪儿', hintSrc: '见手册第 2 页',
     hints: [
       '① __Q ≥ 28__ 可靠；__Q < 20__ 不可靠。',
@@ -642,69 +664,69 @@ var CASES = [
     end: '定位分值下降的起点，剪除至末尾，本案件即完成。'
   },
   {
-    n: 2, no: 'CASE 02 · 比对', title: '失踪的字母',
-    plot: '遗传门诊的比对报告显示：患者序列与__参考序列__无法完全对齐，原因是中间存在一个碱基的__缺失（Indel）__。缺失位置不确定，后续__变异解读__无法进行。',
+    n: 2, no: 'CASE 02 · 比对算法', title: '失踪的字母',
+    plot: '患者序列比__参考序列__短一个碱基，缺口附近又全是重复字母。这次用__Needleman–Wunsch 算法__：填矩阵、回溯，让数字定位缺口。',
     client: '遗传门诊 · 李医生',
-    task: '患者序列中间缺了一个字母：**移动患者序列**，并在缺口处垫占位横线，让两条序列**完全对齐**',
-    hintTitle: '锦囊 · 怎么对齐', hintSrc: '见手册第 3 页',
+    task: '在**打分矩阵**逐格取最大（对上 +1 / 错配 −1 / gap −2），填完**回溯**出缺口',
+    hintTitle: '锦囊 · 矩阵怎么填', hintSrc: '见手册第 3 页',
     hints: [
-      '① 先对齐两条序列的__开头__。',
-      '② __错配__集中的位置即差异点。',
-      '③ 在缺失处补 __gap__，错配会成片消失。'
+      '① 第一行、第一列是**只垫 gap** 的累积分：0、−2、−4……',
+      '② 每格三个候选：**左上**（对上 +1 / 错配 −1）、**上**、**左**（各 −2），取最大并记住方向。',
+      '③ 从右下角顺着方向退到左上角，走过「上」的那一步就是 __gap__。'
     ],
-    end: '对齐开头、定位错配集中区、补 gap，三个步骤完成即结案。'
+    end: '填满十二格 → 回溯到左上角 → 缺口位置由路径给出，本案件即完成。'
   },
   {
     n: 3, no: 'CASE 03 · AI 模块', title: '三个嫌疑人',
-    plot: '比对阶段检出三个待判定__变异__，临床性质各不相同：一个证据充分判定为__致病__，一个明确为__良性__，另一个**证据相互矛盾**。请按第 4 页的__判定规则__逐一给出结论。',
+    plot: '比对检出三名__变异__嫌疑人：一个__致病__、一个__良性__、一个**证据矛盾**。按__判定规则__逐一给结论。',
     client: '肿瘤遗传咨询室',
-    task: '三名嫌疑人各有一个__变异__：给每人的变异选择「致病 / 良性 / 意义不明」，**提交后与 AI 评分对照**',
+    task: '按 __ACMG 规则表__ 组合证据代码，给出「致病 / 良性 / 意义不明」，**与 AI 评分对照**',
     hintTitle: '锦囊 · 三个人怎么判', hintSrc: '见手册第 4 页',
     hints: [
-      '① 频率 < 0.1% 支持__致病__；> 1% 支持__良性__。',
-      '② 预测分 ≥ 0.8 支持__致病__；≤ 0.3 支持__良性__。',
-      '③ 文献反复报道致病 → 支持致病。**三类证据方向一致才下结论。**'
+      '① 1 条 __PVS1__ → 致病；1 条 __PS__ + ≥1 条 __PM__ → 致病。',
+      '② 1 条 __BA1__（频率 > 5%）→ 良性，单独一条即可。',
+      '③ 拼不出任何规则、或方向冲突 → **意义不明（VUS）**。'
     ],
-    end: '三类证据方向一致才判定；证据冲突时，结论为「意义不明」。'
+    end: '先看有没有一锤定音的证据，再看能否拼成规则；拼不出来就如实写 VUS。'
   },
   {
-    n: 4, no: 'CASE 04 · 翻译', title: '无声的暗号',
-    plot: '待分析样本包含一段 __DNA 编码序列__，长度 15 个碱基。按__遗传密码__规则：**每三个碱基为一个密码子**，对应一个__氨基酸__，翻译从__起始密码子__开始。',
-    client: '蛋白工厂 · 监听站',
-    task: '序列共 15 个碱基（5 组__密码子__）：**对照密码子表**，把每组译成对应的__氨基酸__',
-    hintTitle: '锦囊 · 怎么破译', hintSrc: '见手册第 5 页',
+    n: 4, no: 'CASE 04 · 翻译', title: '一字之差',
+    plot: '__HBB 基因__第 6 个密码子：健康 __GAG__，患者 __GTG__，**只差一个字母**。翻译两段序列，看这一字之差是哪类__变异__。',
+    client: '血液科 · 分子诊断室',
+    task: '**翻译**野生型与患者各 6 组__密码子__，再判断变异类型',
+    hintTitle: '锦囊 · 怎么译、怎么判', hintSrc: '见手册第 5 页',
     hints: [
-      '① 从第 1 个碱基起，**每 3 个为一组**，不可错位。',
-      '② 每组对照__密码子表__查出对应__氨基酸__。',
-      '③ __ATG__ 为起始密码子；__TAA / TAG / TGA__ 为终止密码子。'
+      '① 从第 1 个碱基起，**每 3 个为一组**，两段用同一套切法。',
+      '② 逐组对照，找出**第几组**开始不同；不同的那组，差在第几个字母。',
+      '③ 氨基酸变了 → __错义__；提前出现终止码 → __无义__；字母数不是 3 的倍数 → __移码__。'
     ],
-    end: '按密码子表逐组翻译，并核对起始与终止密码子。'
+    end: '两段各译 6 组，再按「氨基酸是否改变」归类变异效应。'
   },
   {
-    n: 5, no: 'CASE 05 · 系谱', title: '家族的秘密',
-    plot: '一个大家族前来求助：祖母、父亲、姑姑先后确诊同一种__罕见病__，姐弟俩担心自己是否「中招」。没有测序仪的年代，遗传学家靠一张__家族树__就能**锁定遗传方式**。',
-    client: '王家 · 全体家属',
-    task: '王家三代__系谱__记录在卷：判断它符合哪种__遗传方式__，**从四个选项中选出来**',
-    hintTitle: '锦囊 · 家族树怎么看', hintSrc: '见手册第 6 页',
+    n: 5, no: 'CASE 05 · 基因编辑', title: '剪在何处',
+    plot: '问题变成「**能不能修**」。__CRISPR-Cas9__ 靠 20 个字母的__向导 RNA__ 认路：向导配到哪，剪刀落在哪。四段候选等你筛。',
+    client: '基因编辑实验室 · 设计组',
+    task: '**算四段向导的 GC 档位**，选出**盖住变异且 GC 合格**的那段',
+    hintTitle: '锦囊 · 向导怎么筛', hintSrc: '见手册第 6 页',
     hints: [
-      '① 每代都有患者 → __显性__；隔代出现 → __隐性__。',
-      '② 男女均患病 → __常染色体__；仅男性患病 → 警惕 __X 连锁__。',
-      '③ 父亲传给儿子 → 排除__线粒体遗传__（仅母系传递）。'
+      '① 剪刀只在 __NGG__ 旁下刀；PAM 前面紧挨的 **20 个字母** 就是向导。',
+      '② __GC%__ = （G 个数 + C 个数）× 5：< 40% 偏低、> 60% 偏高、**40–60% 合格**。',
+      '③ 向导还必须**盖住第 41 位**——盖不住，剪的就不是病灶。'
     ],
-    end: '依次判断连续性、性别分布与传递路径，即可确定遗传方式。'
+    end: 'PAM 扫描 → GC 筛选 → 覆盖判定，三条都过才是一段能用的向导。'
   },
   {
     n: 6, no: 'CASE 06 · 精准用药', title: '最后的处方',
-    plot: '收官委托：68 岁的__肺腺癌__患者王阿姨，基因检测检出 __EGFR L858R__。肿瘤科医生摆出**三套治疗方案**，需要确定：哪套方案与该__基因结果__匹配？',
+    plot: '收官委托：__肺腺癌__患者王阿姨检出 __EGFR L858R__。**三套方案**哪套与__基因结果__匹配？',
     client: '肿瘤科 · 会诊室',
-    task: '先读 __EGFR L858R__ 变异档案，再从三套方案中**选出最适合王阿姨的一线治疗**',
-    hintTitle: '锦囊 · 药怎么选', hintSrc: '见手册第 8 页',
+    task: '取报告里的__生物标志物__，选**标志物一致**的方案',
+    hintTitle: '锦囊 · 标志物怎么对', hintSrc: '见手册第 8 页',
     hints: [
-      '① 有靶点吗？检出 __EGFR__ 这类__敏感突变__，就优先__靶向药__。',
-      '② 和化疗比：有__驱动突变__时，靶向药通常**更有效、反应更轻**。',
-      '③ 不看基因结果就开药，今天就**几乎一定是错的**。'
+      '① 报告关键词是 __EGFR 敏感突变__——它同时说明病因和「可被哪种药打中」。',
+      '② __靶向药__要敏感突变；__免疫药__要 PD-L1 高表达且 EGFR 野生；__化疗__不挑标志物。',
+      '③ 标志物对不上 → 方案再强也不能当一线。'
     ],
-    end: '检出敏感突变且存在对应药物时，首选靶向治疗。'
+    end: '标志物一致才成立：有靶点、有对应药物 → 对基因下药。'
   }
 ];
 
@@ -715,7 +737,7 @@ var CASES = [
   'use strict';
 
   var LINES = [
-    '六份卷宗都摊在桌上了。红线是办案顺序，顺着走就不会乱。',
+    '六份卷宗都摊在桌上了——质控、比对、判定、翻译、设计、用药，正好是一条完整的生物计算流水线。红线是办案顺序。',
     '想看哪份就点开哪份，右边会替你翻开案情，不着急，慢慢来。',
     '还没走到红线那头的卷宗先封着——办完一宗，下一份自然就解封了。'
   ];
@@ -826,11 +848,18 @@ var CASES = [
 
   function drawStrings() {
     if (!svg || !board) return;
-    while (svg.firstChild) svg.removeChild(svg.firstChild);
-    if (window.matchMedia('(max-width: 980px)').matches) return;
-
     var br = board.getBoundingClientRect();
-    if (!br.width || !br.height) return;
+    if (!br.width || !br.height) return;   /* 布局未就绪：保留已画的线，别清空 */
+
+    var frag = document.createDocumentFragment();
+    var drew = drawStringsInto(frag, br);
+    if (!drew) return;                     /* 没算出任何连线：同样保留旧线 */
+    while (svg.firstChild) svg.removeChild(svg.firstChild);
+    svg.appendChild(frag);
+  }
+
+  /* 把 1→6 的连线画进 fragment；返回是否画出了至少一条 */
+  function drawStringsInto(frag, br) {
     svg.setAttribute('viewBox', '0 0 ' + br.width + ' ' + br.height);
 
     var geo = [];
@@ -841,24 +870,50 @@ var CASES = [
       geo.push({ r: r, cx: r.left + r.width / 2, cy: r.top + r.height / 2 });
     }
 
+    var drew = false;
+    var MOBILE = window.matchMedia('(max-width: 980px)').matches;
     for (var i = 1; i < 6; i++) {
       var A = geo[i - 1], B = geo[i];
       if (!A || !B) continue;
-      var pa = edgePoint(A.r, A.cx, A.cy, B.cx, B.cy, br);
-      var pb = edgePoint(B.r, B.cx, B.cy, A.cx, A.cy, br);
-
-      /* 手拉的绳子不会绷直：给一点垂坠 */
-      var dx = pb.x - pa.x, dy = pb.y - pa.y;
-      var len = Math.hypot(dx, dy) || 1;
-      var sag = Math.min(16, len * 0.08);
-      var cx = (pa.x + pb.x) / 2 + (dy / len) * sag;
-      var cy = (pa.y + pb.y) / 2 + (dx / len) * sag;
+      var pa, pb, d;
+      if (MOBILE) {
+        /* 手机版纵列：从上一案空白侧的边中部出发，先向外甩进空白通道（凸向空白），
+           再以四分之一圆式的弧线收回、落在下一案顶部；相邻两段弧度微变避免死板 */
+        var midX2 = br.left + br.width / 2;
+        var leftChan = (A.r.left + A.r.width / 2) >= midX2;   /* 卡片偏右 → 空白在左 */
+        var ax = leftChan ? (A.r.left - br.left) : (A.r.right - br.left);
+        pa = { x: ax, y: A.r.top + A.r.height * 0.55 - br.top };
+        /* 落点避开「CASE XX」索引签（贴在卡顶左上）：左通道落到卡顶远端 */
+        var bx = leftChan
+          ? (B.r.right - br.left - Math.max(20, B.r.width * 0.14))
+          : Math.max(B.r.left - br.left + 14, Math.min(ax, B.r.right - br.left - 14));
+        pb = { x: bx, y: B.r.top - br.top };
+        var varK = 1 + (i % 2 ? 0.16 : -0.12);
+        var bmax = (leftChan ? ax - 8 : br.width - ax - 8);
+        var bulge = Math.max(24, Math.min(64, bmax)) * varK;  /* 向空白甩出的幅度 */
+        var sign = leftChan ? -1 : 1;
+        var dir = (pb.x >= pa.x) ? 1 : -1;                    /* 落点趋近方向 */
+        d = 'M' + pa.x + ' ' + pa.y +
+            ' C' + (ax + sign * bulge) + ' ' + (pa.y + (pb.y - pa.y) * 0.52) + ' ' +
+            (pb.x - dir * 18) + ' ' + (pb.y - 36) + ' ' + pb.x + ' ' + pb.y;
+      } else {
+        pa = edgePoint(A.r, A.cx, A.cy, B.cx, B.cy, br);
+        pb = edgePoint(B.r, B.cx, B.cy, A.cx, A.cy, br);
+        /* 手拉的绳子不会绷直：给一点垂坠 */
+        var dx = pb.x - pa.x, dy = pb.y - pa.y;
+        var len = Math.hypot(dx, dy) || 1;
+        var sag = Math.min(16, len * 0.08);
+        var cx = (pa.x + pb.x) / 2 + (dy / len) * sag;
+        var cy = (pa.y + pb.y) / 2 + (dx / len) * sag;
+        d = 'M' + pa.x + ' ' + pa.y + ' Q' + cx + ' ' + cy + ' ' + pb.x + ' ' + pb.y;
+      }
 
       var path = document.createElementNS(SVGNS, 'path');
-      path.setAttribute('d', 'M' + pa.x + ' ' + pa.y + ' Q' + cx + ' ' + cy + ' ' + pb.x + ' ' + pb.y);
+      path.setAttribute('d', d);
       var lk = statusOf(i + 1) === 'locked';
       if (lk) path.setAttribute('class', 'lk');
-      svg.appendChild(path);
+      frag.appendChild(path);
+      drew = true;
 
       [[pa.x, pa.y], [pb.x, pb.y]].forEach(function (pt) {
         var dot = document.createElementNS(SVGNS, 'circle');
@@ -866,9 +921,10 @@ var CASES = [
         dot.setAttribute('cy', pt[1]);
         dot.setAttribute('r', 3.2);
         if (lk) dot.setAttribute('class', 'lk');
-        svg.appendChild(dot);
+        frag.appendChild(dot);
       });
     }
+    return drew;
   }
 
   /* ==========================================================
@@ -1176,7 +1232,7 @@ var CASES = [
         GDGate.play({
           force: true,
           lines: [
-            '这宗还封着呢，案子得一宗一宗来。',
+            '这宗还封着呢，流水线得一站一站走。',
             '先把第 ' + fn + ' 案办结，这宗的封条才会松开。'
           ],
           kicker: '接案提醒 · 陈探长',
@@ -1192,7 +1248,7 @@ var CASES = [
       if (mid && window.GD.isManualRead && !GD.isManualRead(mid)) {
         GDGate.play({
           force: true,
-          lines: ['先去把手册里对应的那一页读透——判定规则都写在里头，没读就上手，容易办岔。'],
+          lines: ['先去把手册里对应的那一页读透——这宗案子用的是什么算法，都写在里头，没读就上手，容易办岔。'],
           kicker: '接案提醒 · 陈探长',
           choices: [
             { label: '好，去翻手册', onClick: function () { location.href = 'science.html#' + mid; } }
@@ -1238,7 +1294,10 @@ var CASES = [
     clearTimeout(rt);
     rt = setTimeout(drawStrings, 140);
   });
-  window.addEventListener('load', function () { setTimeout(drawStrings, 80); });
+  window.addEventListener('load', function () {
+    setTimeout(drawStrings, 80);
+    setTimeout(drawStrings, 1300);   /* 卡片浮起动效/字体就绪后再补一次，避免竞态把线清空 */
+  });
 
   window.GDBoard = { redraw: drawStrings, open: openDrawer, close: closeDrawer,
     first: function () { return state.first; } };

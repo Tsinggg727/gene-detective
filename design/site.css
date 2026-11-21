@@ -521,8 +521,18 @@ html.gd-locked { overflow: hidden; }
 }
 @media (max-width: 420px) {
   .logo .word { display: none; }
-  .nav-links a { padding: 9px 7px; font-size: 12px; }
-  .nav-links a .ic { display: none; }
+  /* 白条几乎通栏：五个链接在 logo 与用户区之间均匀摊开，右边不剩大片空白 */
+  nav.top { width: calc(100% - 16px); padding: 6px 7px 6px 11px; gap: 6px; }
+  .nav-links { flex: 1; justify-content: space-between;
+    margin-left: 2px; margin-right: 2px; gap: 0; }
+  /* 图标叠在文字上方；文字缩小，底部留出呼吸位再画下划线 */
+  .nav-links a { flex: 1 1 auto; align-items: center; flex-direction: column;
+    gap: 3px; padding: 6px 4px 7px; font-size: 10px; line-height: 1; }
+  .nav-links a .ic { display: block; width: 14px; height: 14px; }
+  .nav-links a.on::after { left: 10px; right: 10px; bottom: 1px; }
+  .nav-user { margin-left: 0; }
+  .nu-me { padding: 2px 3px 2px 2px; gap: 3px; }
+  .nu-chev { display: none; }
 }
 
 /* ==========================================================
@@ -810,4 +820,38 @@ mark.tx-duo { color: #2c3c66; font-weight: 700;
   .gd-bubble .gd-portrait { width: 40px; height: 40px; border-radius: 12px 10px 14px 12px; }
   .gd-bubble .gd-main { padding: 14px 16px 12px; }
   .gd-bubble .gd-line { padding-left: 34px; }
+}
+
+/* ==========================================================
+   手机竖屏（≤560）：压缩页头/页脚占比，各页正文尽量一屏放下
+   ========================================================== */
+@media (max-width: 560px) {
+  footer { padding: 26px 0 20px; }
+  footer .wrap { gap: 4px; font-size: 11.5px; }
+  footer b { font-size: 13.5px; }
+  .page-head { padding-top: calc(var(--nav-h) + 4px); }
+  .kicker { font-size: 10.5px; }
+  h2 { font-size: 22px; }
+  .page-head h2 { margin: 6px 0 6px; }
+  .lead { font-size: 13px; margin-top: 2px; }
+  .brief { margin-top: 14px; padding: 12px 14px; gap: 10px; }
+  .brief p { font-size: 12.5px; line-height: 1.6; }
+  section { padding: 24px 0; }
+}
+
+/* ==========================================================
+   滚动条：手机隐藏；电脑保留 6px 极淡细条（默认淡到几乎看不见）
+   ========================================================== */
+* { scrollbar-width: thin; scrollbar-color: rgb(84 106 156 / .25) transparent; }
+::-webkit-scrollbar { width: 6px; height: 6px; }
+::-webkit-scrollbar-track, ::-webkit-scrollbar-corner { background: transparent; }
+::-webkit-scrollbar-button { display: none; height: 0; width: 0; }
+::-webkit-scrollbar-thumb {
+  border-radius: 99px; border: 2px solid transparent;
+  background: rgb(84 106 156 / .22); background-clip: padding-box; }
+::-webkit-scrollbar-thumb:hover {
+  background: rgb(84 106 156 / .45); background-clip: padding-box; }
+@media (max-width: 900px) {
+  * { scrollbar-width: none; }
+  ::-webkit-scrollbar { width: 0; height: 0; display: none; }
 }

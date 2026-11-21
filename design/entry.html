@@ -196,7 +196,18 @@ body { min-height: 100vh; }
   .idc-name { font-size: 22px; }
   .idc-seal { width: 62px; height: 62px; font-size: 9px; right: 12px; bottom: 8px; }
   .idc-band, .idc-foot { padding-left: 16px; padding-right: 16px; }
-  .idc-slots { padding-left: 16px; padding-right: 16px; }
+  /* 六枚圆章在窄屏放不下（46×6 + 间距 > 卡宽），按档缩号保证六枚齐全 */
+  .idc-slots { padding-left: 16px; padding-right: 16px; gap: 6px; }
+  .idc-slots .medal { --m-size: 40px; }
+  /* 头衔阶梯压缩占位：小头像小间距、藏掉箭头，压成两行 */
+  .ladder { gap: 4px; margin-top: 12px; }
+  .ladder span { gap: 3px; font-size: 9.5px; padding: 2px 6px 2px 3px; }
+  .ladder span img { width: 14px; height: 14px; }
+  .ladder i { display: none; }
+}
+@media (max-width: 380px) {
+  .idc-slots { gap: 5px; }
+  .idc-slots .medal { --m-size: 36px; }
 }
 </style>
 </head>

@@ -423,27 +423,10 @@
 .cd-aa.start { color: var(--benign); }
 .cd-aa.stop { color: var(--pathogenic); }
 
-/* 第 6 页 · 三代系谱 */
-.ped-svg { width: 100%; max-width: 400px; margin: 0 auto; display: block; }
-/* 系谱页整体上移一点：图与图注一起，不挤上方标题 */
-.pg-fig:has(.ped-svg) .k-fig, .pg-fig:has(.ped-svg) .fig-cap { transform: translateY(-10px); }
-.ped-svg line { stroke: rgb(var(--wc-blue-deep) / .5); stroke-width: 1.5; stroke-linecap: round; }
-.ped-svg line.mar { stroke-width: 2; }
-.ped-svg rect, .ped-svg circle { fill: #fffdf8;
-  stroke: rgb(var(--wc-blue-deep) / .68); stroke-width: 1.6; }
-.ped-svg .dis { fill: rgb(206 112 122 / .78); stroke: #a0535d; }
-/* SVG 文字按 viewBox 260 → 400 渲染（×1.54），7.5px 落地约 11.5px，与图注一致 */
-.ped-svg text { font-family: var(--font-body); font-size: 7.5px; font-weight: 600;
-  fill: var(--text-2); text-anchor: middle; }
-.ped-svg text.gen { font-family: var(--font-mono); font-size: 7.5px; font-weight: 700;
-  fill: rgb(var(--wc-blue-deep) / .55); text-anchor: start; }
-.ped-legend { display: flex; gap: 16px; margin-top: 9px; justify-content: center;
-  font-family: var(--font-mono); font-size: 11.5px; font-weight: 700; color: var(--text-2); }
-.ped-legend i { display: inline-block; width: 10px; height: 10px; margin-right: 5px;
-  border: 1.5px solid rgb(var(--wc-blue-deep) / .68); background: #fffdf8; vertical-align: -1px; }
-.ped-legend i.sq { border-radius: 2px; }
-.ped-legend i.ci { border-radius: 50%; }
-.ped-legend i.dis { background: rgb(206 112 122 / .78); border-color: #a0535d; }
+/* 第 6 页 · CRISPR 向导设计 */
+.crispr-svg { width: 100%; max-width: 400px; margin: 0 auto; display: block; }
+/* 这一页图示偏高：整体上移一点，图与图注一起，别挤上方标题 */
+.pg-fig:has(.crispr-svg) .k-fig, .pg-fig:has(.crispr-svg) .fig-cap { transform: translateY(-6px); }
 
 /* ---------- 窄屏：单页模式 ---------- */
 @media (max-width: 900px) {
@@ -483,11 +466,17 @@
   .pg-points { padding-top: 10px; }
   .pg-points li { font-size: 12.8px; line-height: 1.8; }
   .pg-foot { padding-top: 8px; }
-  /* 窄屏 SVG 更小（约 310px，×1.19），字号提到 9.5px 才能维持图注同级大小 */
-  .ped-svg text { font-size: 9.5px; }
+  /* 窄屏图示缩到约 310px（×1.16），字号相应放大，与图注同级别 */
+  .crispr-svg { max-width: 310px; }
 }
 @media (prefers-reduced-motion: reduce) {
   .bk-cover, .bk-leaf, .cv-cta { transition: none !important; animation: none !important; }
+}
+/* 手机竖屏：页头压紧，但书高不压（压了目录/正文会被截断） */
+@media (max-width: 560px) {
+  .bk-desk { padding-top: calc(var(--nav-h) + 2px); padding-bottom: 10px; }
+  .bk-desk h2 { font-size: 22px; margin: 5px 0 3px; }
+  .bk-desk .lead { font-size: 12.5px; margin-top: 2px; }
 }
 </style>
 </head>
@@ -729,41 +718,76 @@
 
 <template id="fig-c8">
   <div class="k-fig">
-    <svg class="ped-svg" viewBox="0 0 260 192">
-      <!-- 世代标号 -->
-      <text x="7" y="30" class="gen">Ⅰ</text>
-      <text x="7" y="100" class="gen">Ⅱ</text>
-      <text x="7" y="164" class="gen">Ⅲ</text>
-      <!-- 第一代：形状在上，名字空开，同胞线再往下一格，互不相压 -->
-      <line x1="92" y1="26" x2="164" y2="26" class="mar"/>
-      <circle cx="80" cy="26" r="12" class="dis"/>
-      <rect x="164" y="14" width="24" height="24" rx="3"/>
-      <text x="80" y="50">祖母</text><text x="176" y="50">祖父</text>
-      <line x1="128" y1="26" x2="128" y2="76"/>
-      <line x1="56" y1="76" x2="204" y2="76"/>
-      <line x1="56" y1="76" x2="56" y2="84"/>
-      <line x1="128" y1="76" x2="128" y2="84"/>
-      <line x1="204" y1="76" x2="204" y2="84"/>
-      <!-- 第二代：父亲名字让开下降线，挂在竖线右侧 -->
-      <rect x="44" y="84" width="24" height="24" rx="3" class="dis"/>
-      <circle cx="128" cy="96" r="12" class="dis"/>
-      <rect x="192" y="84" width="24" height="24" rx="3"/>
-      <text x="72" y="126">父亲</text><text x="128" y="126">姑姑</text><text x="204" y="126">叔叔</text>
-      <!-- 父亲一支往下 -->
-      <line x1="56" y1="108" x2="56" y2="140"/>
-      <line x1="34" y1="140" x2="78" y2="140"/>
-      <line x1="34" y1="140" x2="34" y2="148"/>
-      <line x1="78" y1="140" x2="78" y2="148"/>
-      <circle cx="34" cy="160" r="11"/>
-      <rect x="67" y="149" width="22" height="22" rx="3"/>
-      <text x="34" y="186">姐</text><text x="78" y="186">弟</text>
+    <svg class="crispr-svg" viewBox="0 0 268 150" width="100%" role="img"
+         aria-label="CRISPR 向导设计示意：20 个字母的向导盯住变异位点，剪刀落在 PAM 上">
+      <!-- 向导 RNA 括号 -->
+      <path d="M22 32 v-6 H192 v6" fill="none" stroke="#7a8ad1" stroke-width="1.2"/>
+      <text x="22" y="19" font-size="8.4" fill="#4c577d" font-family="monospace"
+            letter-spacing=".06em">向导 RNA · 20 个字母</text>
+
+      <!-- 剪刀：落在 PAM 上方 -->
+      <g stroke="#8a6a12" stroke-width="1.5" fill="none" transform="translate(231 37)">
+        <circle cx="0" cy="0" r="2.4"/><circle cx="0" cy="8.8" r="2.4"/>
+        <path d="M2 1.4 L11.4 10.3 M11.4 0.2 L2 9.1"/>
+      </g>
+
+      <!-- 序列：20 向导 + 3 PAM -->
+      <g font-family="monospace" font-size="9" text-anchor="middle">
+        <text x="27" y="62" fill="#2d3550">A</text>
+        <text x="37" y="62" fill="#2d3550">C</text>
+        <text x="47" y="62" fill="#2d3550">G</text>
+        <text x="57" y="62" fill="#2d3550">C</text>
+        <text x="67" y="62" fill="#2d3550">G</text>
+        <text x="77" y="62" fill="#2d3550">C</text>
+        <text x="87" y="62" fill="#2d3550">G</text>
+        <text x="97" y="62" fill="#2d3550">A</text>
+        <text x="107" y="62" fill="#2d3550">G</text>
+        <text x="117" y="62" fill="#c0392b" font-weight="700">T</text>
+        <text x="127" y="62" fill="#2d3550">G</text>
+        <text x="137" y="62" fill="#2d3550">A</text>
+        <text x="147" y="62" fill="#2d3550">G</text>
+        <text x="157" y="62" fill="#2d3550">A</text>
+        <text x="167" y="62" fill="#2d3550">G</text>
+        <text x="177" y="62" fill="#2d3550">G</text>
+        <text x="187" y="62" fill="#2d3550">T</text>
+        <text x="197" y="62" fill="#2d3550">A</text>
+        <text x="207" y="62" fill="#2d3550">T</text>
+        <text x="217" y="62" fill="#2d3550">A</text>
+        <text x="227" y="62" fill="#8a6a12" font-weight="700">A</text>
+        <text x="237" y="62" fill="#8a6a12" font-weight="700">G</text>
+        <text x="247" y="62" fill="#8a6a12" font-weight="700">G</text>
+      </g>
+      <rect x="112" y="52" width="10" height="13" rx="2" fill="rgb(192 57 43 / .18)"
+            stroke="#c0392b" stroke-width=".6"/>
+      <rect x="222" y="52" width="30" height="13" rx="2" fill="rgb(195 150 39 / .22)"
+            stroke="#c39627" stroke-width=".6"/>
+
+      <!-- 注释 -->
+      <path d="M117 74 v8" stroke="#c0392b" stroke-width=".8"/>
+      <text x="117" y="92" font-size="7.8" fill="#a63d45" font-family="monospace"
+            text-anchor="middle">变异位点</text>
+      <text x="237" y="74" font-size="7.8" fill="#8a6a12" font-family="monospace"
+            text-anchor="middle">PAM</text>
+
+      <!-- 三道筛子 -->
+      <g font-family="monospace" font-size="8">
+        <rect x="14" y="106" width="72" height="22" rx="3" fill="rgb(84 106 156 / .1)"
+              stroke="rgb(84 106 156 / .34)" stroke-width=".7"/>
+        <text x="50" y="114" text-anchor="middle" fill="#4c577d">① 扫 NGG</text>
+        <text x="50" y="124" text-anchor="middle" fill="#6b7490" font-size="7">找落点</text>
+
+        <rect x="98" y="106" width="72" height="22" rx="3" fill="rgb(84 106 156 / .1)"
+              stroke="rgb(84 106 156 / .34)" stroke-width=".7"/>
+        <text x="134" y="114" text-anchor="middle" fill="#4c577d">② 取 20 字母</text>
+        <text x="134" y="124" text-anchor="middle" fill="#6b7490" font-size="7">成向导</text>
+
+        <rect x="182" y="106" width="72" height="22" rx="3" fill="rgb(84 106 156 / .1)"
+              stroke="rgb(84 106 156 / .34)" stroke-width=".7"/>
+        <text x="218" y="114" text-anchor="middle" fill="#4c577d">③ 算 GC</text>
+        <text x="218" y="124" text-anchor="middle" fill="#6b7490" font-size="7">40–60%</text>
+      </g>
     </svg>
-    <div class="ped-legend">
-      <span><i class="ci"></i>女</span>
-      <span><i class="sq"></i>男</span>
-      <span><i class="ci dis"></i>患病</span>
-    </div>
-    <div class="fig-cap">图示 · 三代系谱：涂满的是患者，顺着连线看怎么传</div>
+    <div class="fig-cap">图示 · 向导盯住变异位点，剪刀落在 PAM 旁边：先扫 NGG、再取 20 个字母、最后算 GC</div>
   </div>
 </template>
 
@@ -800,10 +824,10 @@ function gdUserKey(base){var u='';try{u=(window.GD&&GD.getUser())||'';}catch(e){
   'use strict';
 
   var LINES = [
-    '这本《侦探须知》是我特意给你备的，收好。往后办案拿不准的时候，它顶得上半个师父。',
-    '一共九页：四页打地基，两页教破案新招，两页开眼界，最后一页把全程串起来。目录上只写了题目，想看得细一点，随时翻开就好。',
+    '这本《侦探须知》是我给你备的，收好。往后每宗案子靠什么算法破，里面都写得明明白白。',
+    '一共九页：四页打底子，两页教新的计算招，两页开眼界，最后一页把整条生物计算流水线串起来。目录上只写题目，想看得细一点，随时翻开就好。',
     '哪页要紧、哪页可以先跳过，我在页边都替你标好了。慢慢看，读完一页点一下「已读」，对应的案子自然就开了。',
-    '那就这样，我替你翻开第一页——讲基因的。看完这一页，后面几页你就能看明白了。'
+    '那就这样，我替你翻开第一页——先弄懂什么叫“把生命读成数据来算”。看完它，后面几页你就能看明白了。'
   ];
 
   function play() {

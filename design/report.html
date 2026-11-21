@@ -362,8 +362,26 @@ html.report-sealed .sheet { transform: translateY(76px) scale(.986); }
 }
 
 @media (max-width: 460px) {
-  /* 极窄屏：宫格改单列 */
-  .sum-list { grid-template-columns: 1fr; }
+  /* 极窄屏：宫格保持两列（单列会拉太长），卡片再收一号 */
+  .sum-row .k { font-size: 14px; }
+}
+/* 手机竖屏：报告单尽量塞进一屏（内容多时允许少量滚动） */
+@media (max-width: 560px) {
+  /* 行内页头（nav-h + 52px）在手机上留白过大，压回紧贴导航；
+     导语与报告卡之间保留呼吸间距 */
+  .page-head { padding-top: calc(var(--nav-h) + 2px); }
+  .report-wrap { padding: 34px 0 40px; }
+  .sheet { padding: 26px 18px 22px 26px; }
+  .sum-list { gap: 10px; }
+  /* 汇总卡改成正方形；描述小字在窄屏挤成两三行，直接不显示 */
+  .sum-row { aspect-ratio: 1 / 1; padding: 12px 8px 11px; gap: 5px; }
+  .sum-row .k { font-size: 15px; }
+  .sum-row .k em { display: none; }
+  .sum-row .medal-cell .medal { --m-size: 42px; }
+  .honor-bar { padding: 12px 14px; gap: 12px; }
+  .honor-title { font-size: 20px; }
+  /* 评定副标题一行放不下会从「分」处断行，缩一号保住整句 */
+  .honor-sub { font-size: 11.5px; margin-top: 4px; }
 }
 </style>
 </head>
@@ -383,6 +401,7 @@ html.report-sealed .sheet { transform: translateY(76px) scale(.986); }
   <symbol id="i-code" viewBox="0 0 24 24"><path d="M9 7.4 4 12l5 4.6"/><path d="M15 7.4 20 12l-5 4.6"/><path d="M13.4 5l-2.8 14"/></symbol>
   <symbol id="i-family" viewBox="0 0 24 24"><circle cx="7" cy="6.4" r="2.4"/><circle cx="17" cy="6.4" r="2.4"/><circle cx="12" cy="17.6" r="2.4"/><path d="M7 8.8v3.4h10V8.8M12 12.2v3"/></symbol>
   <symbol id="i-pill" viewBox="0 0 24 24"><rect x="2.6" y="8.6" width="18.8" height="6.8" rx="3.4"/><path d="M12 8.6v6.8" stroke-dasharray="1.8 2"/></symbol>
+  <symbol id="i-target" viewBox="0 0 24 24"><circle cx="12" cy="12" r="7.4"/><circle cx="12" cy="12" r="2.3"/><path d="M12 2.6v3.6M12 17.8v3.6M2.6 12h3.6M17.8 12h3.6"/></symbol>
   <symbol id="i-reset" viewBox="0 0 24 24"><path d="M20 12a8 8 0 1 1-2.6-5.9"/><path d="M20.4 4v4.6h-4.6"/></symbol>
   <symbol id="i-share" viewBox="0 0 24 24"><path d="M12 15.6V4.4"/><path d="M8 8.2 12 4.2l4 4"/><path d="M5 14.4v4.2a1.6 1.6 0 0 0 1.6 1.6h10.8a1.6 1.6 0 0 0 1.6-1.6v-4.2"/></symbol>
 </defs></svg>
@@ -409,7 +428,7 @@ html.report-sealed .sheet { transform: translateY(76px) scale(.986); }
   <div class="wrap">
     <span class="kicker rv">Final Report · 结案报告</span>
     <h2 class="rv" style="--i:1">你的结案报告</h2>
-    <p class="lead rv" style="--i:2">六宗案件全部告破后，这里会自动汇总你的判定结果，并在每宗已结案的位置盖上对应的徽章。</p>
+    <p class="lead rv" style="--i:2">六案全破后，你的判定结果与徽章都会汇总在这里。</p>
   </div>
 </section>
 
@@ -487,7 +506,7 @@ html.report-sealed .sheet { transform: translateY(76px) scale(.986); }
     <div class="sum-list">
       <div class="sum-row" data-level="1">
         <span class="n">01</span>
-        <span class="k">潦草的抄本<em>修剪量 · 低质量区段起点</em></span>
+        <span class="k">潦草的抄本<em>修剪量 · 修剪前后平均 Q</em></span>
         <span class="v blank">—</span>
         <span class="medal-cell">
           <span class="medal" data-level="1"><svg class="ic"><use href="#i-scissors"/></svg></span>
@@ -496,7 +515,7 @@ html.report-sealed .sheet { transform: translateY(76px) scale(.986); }
       </div>
       <div class="sum-row" data-level="2">
         <span class="n">02</span>
-        <span class="k">失踪的字母<em>匹配率 · 缺口位置</em></span>
+        <span class="k">失踪的字母<em>比对得分 · 缺口位置 · 匹配率</em></span>
         <span class="v blank">—</span>
         <span class="medal-cell">
           <span class="medal" data-level="2"><svg class="ic"><use href="#i-align"/></svg></span>
@@ -505,7 +524,7 @@ html.report-sealed .sheet { transform: translateY(76px) scale(.986); }
       </div>
       <div class="sum-row" data-level="3">
         <span class="n">03</span>
-        <span class="k">三个嫌疑人<em>三嫌疑人判定 · 与 AI 评分对比</em></span>
+        <span class="k">三个嫌疑人<em>ACMG 规则判定 · 与 AI 评分对比</em></span>
         <span class="v blank">—</span>
         <span class="medal-cell">
           <span class="medal" data-level="3"><svg class="ic"><use href="#i-search"/></svg></span>
@@ -514,7 +533,7 @@ html.report-sealed .sheet { transform: translateY(76px) scale(.986); }
       </div>
       <div class="sum-row" data-level="4">
         <span class="n">04</span>
-        <span class="k">无声的暗号<em>破译的氨基酸明文</em></span>
+        <span class="k">一字之差<em>两段蛋白序列 · 变异效应</em></span>
         <span class="v blank">—</span>
         <span class="medal-cell">
           <span class="medal" data-level="4"><svg class="ic"><use href="#i-code"/></svg></span>
@@ -523,16 +542,16 @@ html.report-sealed .sheet { transform: translateY(76px) scale(.986); }
       </div>
       <div class="sum-row" data-level="5">
         <span class="n">05</span>
-        <span class="k">家族的秘密<em>遗传方式</em></span>
+        <span class="k">剪在何处<em>CRISPR 向导 · GC 含量</em></span>
         <span class="v blank">—</span>
         <span class="medal-cell">
-          <span class="medal" data-level="5"><svg class="ic"><use href="#i-family"/></svg></span>
-          <span class="medal-name">系谱分析师</span>
+          <span class="medal" data-level="5"><svg class="ic"><use href="#i-target"/></svg></span>
+          <span class="medal-name">基因编辑师</span>
         </span>
       </div>
       <div class="sum-row" data-level="6">
         <span class="n">06</span>
-        <span class="k">最后的处方<em>一线治疗选择</em></span>
+        <span class="k">最后的处方<em>生物标志物匹配</em></span>
         <span class="v blank">—</span>
         <span class="medal-cell">
           <span class="medal" data-level="6"><svg class="ic"><use href="#i-pill"/></svg></span>
@@ -621,9 +640,17 @@ html.report-sealed .sheet { transform: translateY(76px) scale(.986); }
     if (!r) return '';
     var t = (typeof r.elapsedSec === 'number') ? ' · 用时 ' + GD.fmtSec(r.elapsedSec) : '';
     if (i === 1 && typeof r.trimBp === 'number') {
-      return '修剪 ' + r.trimBp + ' bp · 保留 ' + (typeof r.remaining === 'number' ? r.remaining : '—') + ' bp' + t;
+      var q = (r.avgQBefore != null && r.avgQAfter != null)
+        ? ' · 平均 Q ' + r.avgQBefore + '→' + r.avgQAfter : '';
+      return '修剪 ' + r.trimBp + ' bp · 保留 ' + (typeof r.remaining === 'number' ? r.remaining : '—') + ' bp' + q + t;
     }
-    if (i === 2 && typeof r.matchRate === 'number') return '匹配率 ' + r.matchRate + '%' + t;
+    if (i === 2) {
+      if (typeof r.gapPos1 === 'number') {
+        return '比对得分 ' + r.score + ' · 缺口第 ' + r.gapPos1 + ' 位（' + r.missingBase + '）' +
+          ' · 匹配率 ' + r.matchRate + '%' + t;
+      }
+      if (typeof r.matchRate === 'number') return '匹配率 ' + r.matchRate + '%' + t;
+    }
     if (i === 3) {
       var keys = Object.keys(r).filter(function (k) {
         return r[k] && typeof r[k] === 'object' && 'passed' in r[k];
@@ -632,9 +659,27 @@ html.report-sealed .sheet { transform: translateY(76px) scale(.986); }
       var ok = keys.filter(function (k) { return r[k].passed; }).length;
       return ok + ' / ' + keys.length + ' 名嫌疑人判定正确' + t;
     }
-    if (i === 4 && r.protein) return '蛋白序列 ' + cut(r.protein, 26) + t;
-    if (i === 5 && r.choice) return '遗传方式：' + cut(r.choice, 22) + t;
-    if (i === 6 && r.choice) return '一线方案：' + cut(r.choice, 22) + t;
+    if (i === 4) {
+      if (r.fromCodon && r.toCodon) {
+        return '第 ' + r.changedCodon + ' 组 ' + r.fromCodon + '→' + r.toCodon +
+          ' · ' + (r.effect || '') + t;
+      }
+      if (r.wildProtein && r.patientProtein) {
+        return cut(r.wildProtein, 16) + ' → ' + cut(r.patientProtein, 16) +
+          (r.effect ? ' · ' + r.effect : '') + t;
+      }
+      if (r.protein) return '蛋白序列 ' + cut(r.protein, 26) + t;
+    }
+    if (i === 5) {
+      if (typeof r.gcPct === 'number') {
+        return 'CRISPR 向导 · GC ' + r.gcPct + '% · PAM 第 ' + r.pamPos1 + ' 位' + t;
+      }
+      if (r.choice) return '遗传方式：' + cut(r.choice, 22) + t;
+    }
+    if (i === 6 && r.choice) {
+      var tg = String(r.tag || '').replace(/^要求标志物：/, '');
+      return '标志物吻合：' + cut(tg || r.choice, 24) + t;
+    }
     return t.replace(/^ · /, '');
   }
 
@@ -776,7 +821,7 @@ html.report-sealed .sheet { transform: translateY(76px) scale(.986); }
         var last = document.querySelector('.sum-row:last-of-type');
         if (last && last.parentNode) last.parentNode.insertBefore(tot, last.nextSibling);
       }
-      tot.innerHTML = '六案平均 <b>' + avg + '</b> 分 · 全员满星 · <b>传奇侦探</b>';
+      tot.innerHTML = '<span style="white-space:nowrap">六案平均 <b>' + avg + ' 分</b></span> · <span style="white-space:nowrap">全员满星</span> · <span style="white-space:nowrap"><b>传奇侦探</b></span>';
       tot.hidden = false;
     } else {
       if (tot) tot.hidden = true;

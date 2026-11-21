@@ -16,10 +16,11 @@
 .case-top { display: flex; align-items: center; gap: 12px; max-width: 940px;
   margin: 0 auto 12px; padding: 0 2px; }
 .back-link { display: inline-flex; align-items: center; gap: 6px; font-size: 12.5px;
-  white-space: nowrap; color: var(--text-3); text-decoration: none; padding: 5px 11px 5px 8px;
-  border-radius: 3px; transition: color .2s, background .2s; }
-.back-link:hover { color: var(--blue-900); background: rgb(var(--wc-blue) / .16); }
-.back-link .ic { width: 14px; height: 14px; transform: rotate(180deg); opacity: .7; }
+  font-weight: 600; white-space: nowrap; color: var(--blue-700); text-decoration: none;
+  padding: 5px 8px; border-radius: 3px; background: none;
+  transition: color .2s, transform .2s; }
+.back-link:hover { color: var(--blue-900); transform: translateX(-2px); }
+.back-link .ic { width: 14px; height: 14px; transform: rotate(180deg); opacity: .85; }
 .case-top .ct-r { margin-left: auto; font-family: var(--font-mono); font-size: 10.5px;
   letter-spacing: .1em; color: var(--text-3); white-space: nowrap; }
 
@@ -28,7 +29,7 @@
    与全站「纸 + 墨 + 朱红」设计语言对齐；左上角一道朱红索引签。 */
 .deck { position: relative; display: flex; flex-direction: column;
   max-width: 940px; margin: 0 auto; overflow: hidden;
-  height: clamp(500px, 68vh, 620px);
+  height: clamp(520px, 72vh, 680px);
   border-radius: 6px;
   background: linear-gradient(180deg, #fffefa 0%, #fdf9f1 100%);
   border: 1px solid rgb(84 106 156 / .30);
@@ -132,13 +133,14 @@
 .dz { display: flex; flex-direction: column; flex: 1; min-height: 0; position: relative; }
 /* 卷宗页左下角：返回案件簿（只要一个箭头，无框） */
 .dz-back { align-self: flex-start; margin-top: 10px; display: inline-flex;
-  align-items: center; gap: 5px; color: var(--text-3); text-decoration: none;
-  font-size: 12.5px; letter-spacing: .03em; transition: color .2s, transform .2s; }
+  align-items: center; gap: 5px; color: var(--blue-700); text-decoration: none;
+  font-size: 12.5px; font-weight: 600; letter-spacing: .03em;
+  transition: color .2s, transform .2s; }
 .dz-back:hover { color: var(--blue-900); transform: translateX(-3px); }
-.dz-back .ic { width: 15px; height: 15px; transform: rotate(180deg); opacity: .65; }
-.dz-back b { font-weight: 600; }
+.dz-back .ic { width: 15px; height: 15px; transform: rotate(180deg); opacity: .85; }
+.dz-back b { font-weight: 700; }
 .dz-story { font-size: 15px; line-height: 1.9; color: var(--text-2); }
-.dz-meta { display: flex; flex-wrap: wrap; gap: 6px 24px; margin: 13px 0 0;
+.dz-meta { display: flex; flex-wrap: wrap; gap: 6px 24px; margin: 24px 0 0;
   padding: 10px 16px 10px 14px; border-radius: 3px;
   background: rgb(var(--wc-blue) / .07);
   border: 1px solid rgb(var(--wc-blue-deep) / .16);
@@ -181,6 +183,8 @@
 .qz-body::-webkit-scrollbar { display: none; }
 .qz-body > *:first-child { margin-top: auto; }
 .qz-body > *:last-child { margin-bottom: auto; }
+/* 玩法区是定高容器：内容超出就整页滚动，绝不允许把表格/卡片压扁 */
+.qz-body > * { flex: 0 0 auto; }
 .fbf { display: none; margin-top: 8px; font-size: 13.5px; line-height: 1.62;
   color: #a63d45; padding: 8px 14px 8px 13px;
   background: rgb(var(--wc-blue) / .07); border-left: 3px solid #c96a72; }
@@ -295,7 +299,7 @@
 .codon-row .opt-row { display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); gap: 6px; }
 .codon-row .opt-btn { padding: 7px 8px; font-size: 13px; text-align: center; }
 
-/* 系谱 */
+/* 分块单选（沿用旧的 ped-line 样式类） */
 .ped-line { display: flex; align-items: baseline; gap: 10px; font-size: 13.8px;
   color: var(--text-1); padding: 7px 14px 7px 12px; border-radius: 2px;
   background: rgb(var(--wc-blue) / .06); border-left: 3px solid rgb(var(--wc-blue-deep) / .34); }
@@ -518,8 +522,181 @@
   animation-delay: calc(.1s + var(--i, 0) * .06s); }
 @keyframes pouch-row { to { opacity: 1; transform: none; } }
 
+/* ============================================================
+   生物计算内核：矩阵 / 候选向导 / 双列翻译 / 方案卡 / ACMG
+   ============================================================ */
+@keyframes shake { 25% { transform: translateX(-3px); } 75% { transform: translateX(3px); } }
+
+/* 案件二 · 打分矩阵 */
+.dp-scroll { overflow-x: auto; padding: 2px 0 4px; }
+.dp { border-collapse: separate; border-spacing: 3px; font-family: var(--font-mono); }
+.dp th, .dp td { width: 54px; height: 28px; padding: 0; text-align: center;
+  font-size: 13.5px; border-radius: 3px; }
+.dp thead th { font-size: 11px; font-weight: 700; letter-spacing: .04em; color: var(--text-3);
+  background: transparent; }
+.dp tbody th { background: transparent; color: var(--text-3); font-size: 11px; font-weight: 700; }
+.dp th.sq, .dp thead th.sq { background: rgb(var(--wc-blue) / .18);
+  border: 1px solid rgb(var(--wc-blue-deep) / .26); color: var(--blue-900);
+  font-size: 13.5px; font-weight: 700; }
+.dp td.bord { background: #f4f0e6; border: 1px dashed rgb(84 106 156 / .32);
+  color: var(--text-3); font-size: 12px; }
+.dp td.cell { background: #fffdf8; border: 1px solid rgb(84 106 156 / .3);
+  color: var(--text-3); font-size: 12px; cursor: default; }
+.dp td.cell.foc { border-color: var(--blue-500); background: rgb(var(--wc-blue) / .1);
+  box-shadow: 0 0 0 2px rgb(var(--wc-blue) / .2); }
+.dp td.cell.done { background: rgb(var(--wc-blue) / .2); border-color: var(--blue-500);
+  color: var(--blue-900); font-weight: 700; font-size: 12px; }
+.dp td.cell .ar { display: block; font-size: 9px; line-height: 1; color: var(--blue-500); }
+.dp td.cell.path { background: rgb(127 174 148 / .3); border-color: #3d7a56;
+  color: #2f5c45; font-weight: 700; }
+.dp td.cell.cur { background: #cfe3d6; border-color: #3d7a56;
+  box-shadow: 0 0 0 2px rgb(61 122 86 / .3); }
+.dp td.cell.pick { cursor: pointer; }
+.dp td.cell.pick:hover { border-color: #3d7a56; background: rgb(127 174 148 / .16); }
+.dp td.bord.pick { cursor: pointer; }
+.dp td.bord.pick:hover { border-color: #3d7a56; background: #ece7d9; }
+.dp-legend { display: flex; gap: 13px; flex-wrap: wrap; margin-top: 6px;
+  font-size: 11.2px; color: var(--text-3); }
+.dp-legend span { display: inline-flex; align-items: center; gap: 5px; }
+.dp-legend i { width: 9px; height: 9px; border-radius: 2px; display: block;
+  border: 1px solid rgb(84 106 156 / .3); }
+.dp-legend i.f { background: #f4f0e6; border-style: dashed; }
+.dp-legend i.d { background: rgb(var(--wc-blue) / .2); border-color: var(--blue-500); }
+.dp-legend i.p { background: rgb(127 174 148 / .3); border-color: #3d7a56; }
+.cand-row { display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); gap: 7px;
+  margin-top: 8px; }
+.cand { padding: 6px 6px 5px; border-radius: 3px; cursor: pointer; text-align: center;
+  font-family: var(--font-mono); color: var(--text-2); background: #fffdf8;
+  border: 1px solid rgb(63 74 107 / .3);
+  transition: border-color .16s, transform .14s; }
+.cand:hover { border-color: rgb(63 74 107 / .62); transform: translateY(-1px); }
+.cand .tag { display: block; font-size: 10.5px; letter-spacing: .06em; color: var(--text-3); margin-bottom: 1px; }
+.cand b { display: block; font-size: 16px; color: var(--blue-900); line-height: 1.25; }
+.cand i { font-style: normal; font-size: 10.5px; color: var(--text-3); letter-spacing: .04em; }
+.cand.bad { animation: shake .3s; border-color: #c0392b; }
+
+/* 案二 · 一行式窗口序列 */
+.dp-ctx { display: flex; align-items: center; gap: 4px; flex-wrap: wrap; margin: 2px 0 4px; }
+.dp-ctx .bc { width: 26px; min-height: 26px; cursor: default; }
+.dp-ctx .bc .lt { font-size: 12px; }
+.dp-ctx .lbl { font-family: var(--font-mono); font-size: 10.5px; letter-spacing: .04em;
+  color: var(--text-3); margin: 0 5px 0 2px; }
+
+/* 案件三 · ACMG 代码 */
+.ev-codes { display: flex; gap: 6px; flex-wrap: wrap; margin: 8px 0 2px; }
+.ev-code { font-family: var(--font-mono); font-size: 10.5px; font-weight: 700;
+  letter-spacing: .05em; padding: 3px 8px; border-radius: 2px; }
+.ev-code.patho { color: #a63d45; background: rgb(201 106 114 / .16);
+  border: 1px solid rgb(192 57 43 / .34); }
+.ev-code.benign { color: #3d7a56; background: rgb(127 174 148 / .2);
+  border: 1px solid rgb(61 122 86 / .34); }
+.rule-note { margin-top: 11px; padding: 9px 13px; border-radius: 3px; font-size: 12.5px;
+  line-height: 1.7; color: var(--text-2); background: rgb(var(--wc-blue) / .07);
+  border-left: 3px solid var(--blue-500); }
+.rule-note b { color: var(--blue-900); }
+
+/* 紧凑证据卡：案三 / 案六页内容多，证据区收一收 */
+.ev-grid.tight { margin: 9px 0 10px; gap: 8px; }
+.ev-grid.tight .ev { padding: 7px 10px 6px; }
+.ev-grid.tight .ev-t { font-size: 9.6px; }
+.ev-grid.tight .ev-v { font-size: 13.4px; margin: 1px 0 2px; }
+.ev-grid.tight .ev-d { font-size: 11.2px; line-height: 1.5; }
+
+/* 案件四 · 野生 / 患者双列 */
+.cd-head, .cd-row { display: grid; grid-template-columns: 22px 60px minmax(0, 1fr) 60px minmax(0, 1fr);
+  gap: 7px; align-items: center; }
+.cd-head { font-family: var(--font-mono); font-size: 10px; letter-spacing: .06em;
+  color: var(--text-3); margin-bottom: 4px; }
+.cd-body { display: grid; gap: 5px; }
+.cd-row { padding: 3px 7px; border-radius: 3px; background: rgb(var(--wc-blue) / .05);
+  border-left: 3px solid rgb(var(--wc-blue-deep) / .3); }
+.cd-row.diff { background: rgb(201 106 114 / .08); border-left-color: #c0392b; }
+.cd-no { font-family: var(--font-mono); font-size: 9.5px; color: var(--text-3); text-align: center; }
+.cd-row .codon-code { font-size: 12px; padding: 3px 0; letter-spacing: .1em; }
+.cd-row .opt-row { display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); gap: 4px; }
+.cd-row .opt-btn { padding: 4px 2px; font-size: 11px; text-align: center; }
+.eff-opts { margin-top: 7px; }
+.eff-opts .opt-row { display: grid; grid-template-columns: repeat(4, minmax(0, 1fr)); gap: 6px; }
+.eff-opts .opt-btn { padding: 7px 2px; font-size: 12.2px; text-align: center; }
+
+/* 案件五 · 序列 + 候选向导 */
+.crispr-seq { display: grid; grid-template-columns: repeat(20, minmax(0, 1fr)); gap: 3px; }
+.crispr-seq .bc { min-height: 26px; cursor: default; }
+.crispr-seq .bc .lt { font-size: 11.5px; }
+.bc.mut { background: rgb(201 106 114 / .24); border-color: #c0392b; }
+.bc.mut .lt { color: #a63d45; }
+.bc.pam { background: rgb(195 150 39 / .24); border-color: #c39627; }
+.bc.pam .lt { color: #8a6a12; }
+.bc.guide { background: rgb(var(--wc-blue) / .16); border-color: rgb(var(--wc-blue-deep) / .45); }
+.guide-list { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 7px; margin-top: 10px; }
+.guide-card { padding: 7px 11px 8px; border-radius: 3px; background: #fffdf8;
+  border: 1px solid rgb(84 106 156 / .3); transition: border-color .16s, background .16s; }
+.guide-card.on { border-color: var(--blue-500); background: rgb(var(--wc-blue) / .11);
+  box-shadow: 2px 2px 0 rgb(84 106 156 / .18); }
+.guide-top { display: flex; align-items: center; gap: 8px; flex-wrap: wrap;
+  font-family: var(--font-mono); font-size: 10.5px; color: var(--text-3); letter-spacing: .05em; }
+.guide-top b { color: var(--blue-700); font-size: 11.5px; }
+.guide-seq { font-family: var(--font-mono); font-size: 11.4px; letter-spacing: .07em;
+  color: var(--blue-900); word-break: break-all; line-height: 1.55; margin: 2px 0 0; }
+.guide-bot { display: flex; align-items: center; gap: 8px; margin-top: 5px; flex-wrap: wrap; }
+.buckets { display: flex; gap: 5px; }
+.bk { padding: 4px 9px; font-size: 11.2px; border-radius: 2px; cursor: pointer;
+  font-family: var(--font-body); color: var(--text-2); background: #fffdf8;
+  border: 1px solid rgb(63 74 107 / .3); }
+.bk.on { background: rgb(var(--wc-blue) / .3); border-color: var(--blue-500);
+  color: var(--blue-900); font-weight: 700; }
+.pick-btn { margin-left: auto; padding: 4px 11px; font-size: 11.2px; border-radius: 2px;
+  cursor: pointer; color: var(--text-2); background: transparent;
+  border: 1px dashed rgb(63 74 107 / .42); }
+.pick-btn.on { background: #3d7a56; border: 1px solid #3d7a56; color: #fff; font-weight: 700; }
+
+/* 案件六 · 方案卡 */
+.rx-list { display: grid; gap: 7px; margin-top: 8px; }
+.rx-card { padding: 7px 13px 8px; border-radius: 3px; cursor: pointer; background: #fffdf8;
+  border: 1px solid rgb(63 74 107 / .32); transition: border-color .16s, background .16s; }
+.rx-card:hover { border-color: rgb(63 74 107 / .58); }
+.rx-card.on { border-color: var(--blue-500); background: rgb(var(--wc-blue) / .16);
+  box-shadow: 2px 2px 0 rgb(84 106 156 / .2); }
+.rx-name { font-size: 13.4px; font-weight: 700; color: var(--blue-900); }
+.rx-tag { display: inline-block; margin-top: 3px; font-family: var(--font-mono);
+  font-size: 10.2px; letter-spacing: .03em; color: var(--text-2);
+  padding: 3px 8px; border-radius: 2px; background: rgb(var(--wc-blue) / .1);
+  border: 1px dashed rgb(var(--wc-blue-deep) / .3); }
+
+@media (max-width: 900px) {
+  .cd-head, .cd-row { grid-template-columns: 16px 52px minmax(0, 1fr) 52px minmax(0, 1fr); gap: 4px; }
+  .cd-row .opt-btn { font-size: 9.6px; padding: 4px 1px; }
+  .eff-opts .opt-row { grid-template-columns: repeat(2, minmax(0, 1fr)); }
+  .crispr-seq { grid-template-columns: repeat(10, minmax(0, 1fr)); }
+  .guide-list { grid-template-columns: 1fr; }
+  .guide-seq { font-size: 11px; letter-spacing: .06em; }
+  .cand-row { gap: 5px; }
+  .cand b { font-size: 13px; }
+  .dp th, .dp td { width: 34px; height: 30px; font-size: 11px; }
+  .guide-seq { font-size: 10.5px; }
+}
+
 @media (max-width: 900px) {
   .case-wrap { padding-top: calc(var(--nav-h) + 24px); }
+  /* 右上角的 CASE FILE 长文案在窄屏放不下（nowrap 会伸出屏幕），截断省略 */
+  .case-top { flex-wrap: nowrap; }
+  .case-top .ct-r { flex: 1 1 auto; min-width: 0; max-width: none;
+    overflow: hidden; text-overflow: ellipsis; text-align: right; font-size: 9.5px; }
+  /* 卷宗正文手机版缩小一档，别占满整卡 */
+  .dz-story { font-size: 13.5px; line-height: 1.78; }
+  .dz-how { padding: 11px 15px 10px; }
+  .dz-how p { font-size: 13.5px; line-height: 1.78; min-height: 0; }
+  .dz-how-t { margin-left: 64px; margin-bottom: 7px; }
+  .dz-how::before { font-size: 34px; top: -4px; }
+  .dz-meta { margin-top: 18px; padding: 8px 13px 8px 12px; }
+  .dz-meta span { font-size: 12.5px; }
+  .dz-meta i { font-size: 9.5px; }
+  .qz-lead { font-size: 12.5px; margin-bottom: 9px; }
+  /* 图例三项并成一行 */
+  .q-legend { flex-wrap: nowrap; gap: 8px; margin-top: 8px; font-size: 11px; }
+  .q-legend span { gap: 4px; white-space: nowrap; }
+  .q-legend i { width: 8px; height: 8px; }
   .deck { height: auto; min-height: 74vh; }
   .dk-page { position: relative; inset: auto; padding: 16px 18px 12px; }
   .dk-page:not(.on) { position: absolute; inset: 0; }
@@ -532,8 +709,15 @@
   .dk-pouch-tx { font-size: 12px; }
   .dk-pouch-arrow { width: 26px; }
   .dk-pouch .ic { width: 17px; height: 17px; }
-  .dk-nav { margin-left: auto; }
-  .dk-nav .btn { text-align: center; justify-content: center; }
+  /* 底部按钮缩一号并排一行：上一步 · 锦囊 · 提交 */
+  .dk-foot { flex-wrap: nowrap; gap: 6px; }
+  #dk-prev { font-size: 12px; padding: 6px 10px; }
+  .dk-pouch { margin-left: auto; padding: 4px 4px 4px 0; }
+  .dk-pouch-tx { font-size: 11px; }
+  .dk-pouch-arrow { width: 20px; }
+  .dk-pouch .ic { width: 15px; height: 15px; }
+  .dk-nav { margin-left: 0; }
+  .dk-nav .btn { font-size: 12px; padding: 7px 12px; text-align: center; justify-content: center; }
   .pouch { padding: 12px; }
   .pouch-card { width: 100%; max-height: 86vh; }
   .pouch-head { padding: 15px 16px 11px; }
@@ -579,6 +763,7 @@
   <symbol id="i-code" viewBox="0 0 24 24"><path d="M9 7.4 4 12l5 4.6"/><path d="M15 7.4 20 12l-5 4.6"/><path d="M13.4 5l-2.8 14"/></symbol>
   <symbol id="i-family" viewBox="0 0 24 24"><circle cx="7" cy="6.4" r="2.4"/><circle cx="17" cy="6.4" r="2.4"/><circle cx="12" cy="17.6" r="2.4"/><path d="M7 8.8v3.4h10V8.8M12 12.2v3"/></symbol>
   <symbol id="i-pill" viewBox="0 0 24 24"><rect x="2.6" y="8.6" width="18.8" height="6.8" rx="3.4"/><path d="M12 8.6v6.8" stroke-dasharray="1.8 2"/></symbol>
+  <symbol id="i-target" viewBox="0 0 24 24"><circle cx="12" cy="12" r="7.4"/><circle cx="12" cy="12" r="2.3"/><path d="M12 2.6v3.6M12 17.8v3.6M2.6 12h3.6M17.8 12h3.6"/></symbol>
   <symbol id="i-check" viewBox="0 0 24 24"><path d="M4.6 12.4 9.4 17l10-10"/></symbol>
   <symbol id="i-user" viewBox="0 0 24 24"><circle cx="12" cy="8.4" r="3.6"/><path d="M5 20c0-3.6 3.1-5.6 7-5.6s7 2 7 5.6"/></symbol>
   <symbol id="i-chip" viewBox="0 0 24 24"><rect x="5.4" y="5.4" width="13.2" height="13.2" rx="2.4"/><path d="M9.4 9.4h5.2v5.2H9.4z"/><path d="M12 2.6v2.8M12 18.6v2.8M2.6 12h2.8M18.6 12h2.8"/></symbol>
@@ -677,14 +862,14 @@
   function gdUserKey(base){var u='';try{u=(window.GD&&GD.getUser())||'';}catch(e){u='';}if(u&&typeof u==='object')u=u.username||'';return base+(u||'guest');}
 if (!GD.getToken()) { location.replace(GD.loginUrl('case.html?n=' + n)); return; }
 
-  var TAGS = { 1: '质控', 2: '比对', 3: '变异判定', 4: '翻译', 5: '系谱', 6: '精准用药' };
+  var TAGS = { 1: '质控', 2: '比对算法', 3: 'ACMG 判定', 4: '翻译', 5: '基因编辑', 6: '精准用药' };
   var LEAD = {
     1: '点两个字母选出要剪的区间：第一下起点，第二下终点。',
-    2: '左右挪动患者序列，在缺口前垫一个 gap（—），让字母一一归位。',
-    3: '看完三张证据卡，给这位嫌疑人一个判定。',
-    4: '对照密码子表，为每组三个字母选一个氨基酸。',
-    5: '读三代家族记录，选出这种病的遗传方式。',
-    6: '看完变异档案，为王阿姨选出你的处方。'
+    2: '逐格填表：每格在「左上 / 上 / 左」三个候选里挑出最大值。',
+    3: '先读证据代码，再按规则表把代码拼成结论。',
+    4: '左右两段分别翻译，最后判断这一字之差属于哪类变异。',
+    5: '先算四段候选的 GC 档位，再选能盖住变异的那一段。',
+    6: '把报告里的标志物，和每套方案要求的标志物对上。'
   };
 
   var deck = document.getElementById('deck');
@@ -907,7 +1092,7 @@ if (!GD.getToken()) { location.replace(GD.loginUrl('case.html?n=' + n)); return;
   /* ============================================================
      判定
      ============================================================ */
-  function judge(url, payload, summaryFn) {
+  function judge(url, payload, summaryFn, failFn) {
     if (busy) return;
     busy = true;
     btnNext.disabled = true;
@@ -920,7 +1105,8 @@ if (!GD.getToken()) { location.replace(GD.loginUrl('case.html?n=' + n)); return;
         showResult(resp, summaryFn ? summaryFn(resp) : '');
       } else {
         var p = pages[cur];
-        showErr(p && p.node.querySelector('.fbf'), resp.feedback || '这次没对，再想想。');
+        var msg = (failFn && failFn(resp)) || resp.feedback || '这次没对，再想想。';
+        showErr(p && p.node.querySelector('.fbf'), msg);
       }
     }).catch(function (e) {
       busy = false;
@@ -952,7 +1138,7 @@ if (!GD.getToken()) { location.replace(GD.loginUrl('case.html?n=' + n)); return;
     /* 新版结案徽章：珐琅章，放头行右侧 */
     var badge = h('span', 'rs-badge');
     var BADGE_IC = { 1: '#i-scissors', 2: '#i-align', 3: '#i-search',
-                     4: '#i-code', 5: '#i-family', 6: '#i-pill' };
+                     4: '#i-code', 5: '#i-target', 6: '#i-pill' };
     var medal = h('span', 'rs-medal');
     medal.innerHTML = '<svg class="ic"><use href="' + (BADGE_IC[n] || '#i-medal') + '"/></svg>';
     var badgeName = h('span', 'rs-medal-name', r.badge || '侦破徽章');
@@ -1107,12 +1293,6 @@ if (!GD.getToken()) { location.replace(GD.loginUrl('case.html?n=' + n)); return;
 
     wrap.appendChild(how);
 
-    /* 左下角：返回案件簿（箭头） */
-    var back = h('a', 'dz-back');
-    back.href = 'cases.html';
-    back.innerHTML = '<svg class="ic"><use href="#i-arrow"/></svg><b>返回案件簿</b>';
-    wrap.appendChild(back);
-
     var typed = false;
     addPage(wrap, {
       nextLabel: '开始侦办',
@@ -1215,126 +1395,285 @@ if (!GD.getToken()) { location.replace(GD.loginUrl('case.html?n=' + n)); return;
         var r = range();
         if (!r || sel.length < 2) { showErr(fbf, '还没选好——先点两个字母，框出一段要剪掉的位置。'); return; }
         var bp = r[1] - r[0] + 1;
-        judge('/levels/1/judge', { start: r[0], end: r[1] }, function () {
-          return '修剪 ' + bp + ' bp · 保留 ' + (d.read.length - bp) + ' bp';
+        judge('/levels/1/judge', { start: r[0], end: r[1] }, function (resp) {
+          var x = resp.result || {};
+          var q = (x.avgQBefore != null && x.avgQAfter != null)
+            ? ' · 平均 Q ' + x.avgQBefore + ' → ' + x.avgQAfter : '';
+          return '修剪 ' + bp + ' bp · 保留 ' + (d.read.length - bp) + ' bp' + q;
         });
       }
     });
   }
 
-  /* ---------- 案件二：序列比对 ---------- */
+  /* ---------- 案件二：动态规划比对（Needleman–Wunsch 教学版） ---------- */
   function buildAlign(d) {
-    var node = pageHead('ACTION · 对齐患者序列');
+    var node = pageHead('ACTION · 填表 + 回溯，让算法定位缺口');
     var wrap = h('div', 'qz-body');
-    var cols = d.ref.length + d.maxOffset;
-    var offset = 0, gapPos = null, touched = false;
+    var W = d.window, refw = W.refSeq, patw = W.patSeq;
+    var m = refw.length, n = patw.length;
+    var SC = d.scoring, NEG = -9999;
 
-    function gridOf(cls) {
-      var g = h('div', 'seq-grid ' + cls);
-      g.style.gridTemplateColumns = 'repeat(' + cols + ', minmax(0, 1fr))';
-      return g;
+    /* 本地按同一套规则把矩阵算一遍。
+       题面给的是规则，玩家要做的是执行它——所以这里算的是「正确答案」，
+       只为逐格即时反馈；提交后服务端会用同一份数据独立复算，防止前端伪造。 */
+    var F = [], best = {};
+    for (var i = 0; i <= m; i++) {
+      F.push([]);
+      for (var j = 0; j <= n; j++) F[i].push(NEG);
+    }
+    F[0][0] = 0;
+    for (i = 1; i <= m; i++) F[i][0] = F[i - 1][0] + SC.gap;
+    for (j = 1; j <= n; j++) F[0][j] = F[0][j - 1] + SC.gap;
+    for (i = 1; i <= m; i++) {
+      for (j = 1; j <= n; j++) {
+        var sc = refw.charAt(i - 1) === patw.charAt(j - 1) ? SC.match : SC.mismatch;
+        var cand0 = { D: F[i - 1][j - 1] + sc, U: F[i - 1][j] + SC.gap, L: F[i][j - 1] + SC.gap };
+        var mx = Math.max(cand0.D, cand0.U, cand0.L);
+        F[i][j] = mx;
+        best[i + ',' + j] = ['D', 'U', 'L'].filter(function (k) { return cand0[k] === mx; });
+      }
     }
 
-    var labRef = h('p', 'seq-label');
-    labRef.appendChild(document.createTextNode('参考序列'));
-    labRef.appendChild(h('b', null, 'REF · ' + d.ref.length + ' bp'));
-    var refRow = gridOf();
-    d.ref.split('').forEach(function (b) {
+    function num(v) { return v < 0 ? '−' + Math.abs(v) : String(v); }
+    function sgn(v) { return (v < 0 ? '− ' : '+ ') + Math.abs(v); }
+    var AR = { D: '↖', U: '↑', L: '←' };
+    var NAME = { D: '对角', U: '上格', L: '左格' };
+
+    /* ---------- 窗口序列（一行紧凑展示，把高度让给矩阵） ---------- */
+    var ctx = h('div', 'dp-ctx');
+    ctx.appendChild(h('span', 'lbl', '参考 ' + (W.refStart + 1) + '–' + (W.refStart + m) + ' 位'));
+    refw.split('').forEach(function (b) {
       var c = h('span', 'bc');
       c.appendChild(h('span', 'lt', b));
-      refRow.appendChild(c);
+      ctx.appendChild(c);
     });
-    for (var k = d.ref.length; k < cols; k++) {
-      var v = h('span', 'bc void'); v.innerHTML = '&nbsp;'; refRow.appendChild(v);
+    ctx.appendChild(h('span', 'lbl', '患者同起点'));
+    patw.split('').forEach(function (b) {
+      var c = h('span', 'bc');
+      c.appendChild(h('span', 'lt', b));
+      ctx.appendChild(c);
+    });
+    ctx.appendChild(h('span', 'lbl', '少 ' + (m - n) + ' 个字母'));
+    wrap.appendChild(ctx);
+
+    /* ---------- 矩阵 ---------- */
+    var dpLab = h('p', 'seq-label');
+    dpLab.style.marginTop = '12px';
+    dpLab.appendChild(h('b', null, '打分矩阵'));
+    dpLab.appendChild(document.createTextNode('行 = 参考字母 · 列 = 患者字母 · 空行空列是起手'));
+
+    var scroll = h('div', 'dp-scroll');
+    var table = document.createElement('table');
+    table.className = 'dp';
+    var thead = document.createElement('thead');
+    var htr = document.createElement('tr');
+    htr.appendChild(h('th', null, ''));
+    htr.appendChild(h('th', null, ''));
+    patw.split('').forEach(function (b) { htr.appendChild(h('th', 'sq', b)); });
+    thead.appendChild(htr);
+    table.appendChild(thead);
+    var tbody = document.createElement('tbody');
+    var cells = {};
+    for (i = 0; i <= m; i++) {
+      var tr = document.createElement('tr');
+      tr.appendChild(h('th', i === 0 ? null : 'sq', i === 0 ? '' : refw.charAt(i - 1)));
+      var b0 = h('td', 'bord', num(F[i][0]));
+      b0.setAttribute('data-i', i);
+      b0.setAttribute('data-j', 0);
+      cells[i + ',0'] = b0;
+      tr.appendChild(b0);
+      for (j = 1; j <= n; j++) {
+        var td = document.createElement('td');
+        td.className = i === 0 ? 'bord' : 'cell';
+        td.textContent = i === 0 ? num(F[0][j]) : '';
+        td.setAttribute('data-i', i);
+        td.setAttribute('data-j', j);
+        cells[i + ',' + j] = td;
+        tr.appendChild(td);
+      }
+      tbody.appendChild(tr);
     }
+    table.appendChild(tbody);
+    scroll.appendChild(table);
 
-    var ruler = h('div', 'seq-ruler');
-    ruler.style.gridTemplateColumns = 'repeat(' + cols + ', minmax(0, 1fr))';
-    for (var ri = 1; ri <= d.ref.length; ri++) {
-      var mark = (ri === 1 || ri % 5 === 0 || ri === d.ref.length) ? String(ri) : '';
-      ruler.appendChild(h('span', null, mark));
-    }
-    for (var rj = d.ref.length; rj < cols; rj++) ruler.appendChild(h('span'));
+    var legend = h('div', 'dp-legend');
+    legend.innerHTML = '<span><i class="f"></i>起手（只垫 gap）</span>' +
+      '<span><i class="d"></i>你填的格</span>' +
+      '<span><i class="p"></i>回溯路径</span>';
+    var note = h('p', 'seq-note', '');
+    add(wrap, dpLab, scroll, legend, note);
 
-    var labPat = h('p', 'seq-label');
-    labPat.appendChild(document.createTextNode('患者序列'));
-    labPat.appendChild(h('b', null, 'PATIENT · 点字母垫 gap'));
-    var patRow = gridOf();
-
-    var rateRow = h('div', 'rate-row');
-    rateRow.appendChild(h('span', null, '匹配率'));
-    var bar = h('div', 'rate-bar'), fill = h('i');
-    bar.appendChild(fill);
-    rateRow.appendChild(bar);
-    var rateTxt = h('b', null, '--%');
-    rateRow.appendChild(rateTxt);
-
-    var acts = h('div', 'act-row');
-    var left = h('button', 'btn btn-ghost', '← 左移');
-    var right = h('button', 'btn btn-ghost', '右移 →');
-    left.type = right.type = 'button';
-    add(acts, left, right);
-
-    add(wrap, labRef, refRow, ruler, labPat, patRow, rateRow, acts);
+    var candBox = h('div');
+    wrap.appendChild(candBox);
     node.appendChild(wrap);
 
     var fbf = h('p', 'fbf');
     node.appendChild(fbf);
 
-    function aligned() {
-      var arr = d.patient.split('');
-      if (gapPos !== null) arr.splice(gapPos, 0, '-');
-      return arr;
-    }
-    function matchRate() {
-      var compared = 0, matched = 0;
-      aligned().forEach(function (c, j) {
-        var r = d.ref[j + offset];
-        if (r === undefined || c === '-') return;
-        compared++;
-        if (c === r) matched++;
-      });
-      return compared ? Math.round(matched / compared * 100) : 0;
-    }
-    function paint() {
-      patRow.innerHTML = '';
-      for (var k2 = 0; k2 < offset; k2++) {
-        var sp = h('span', 'bc void'); sp.innerHTML = '&nbsp;'; patRow.appendChild(sp);
+    /* ---------- 状态机：先填表，再回溯 ---------- */
+    var dirs = {}, filled = 0, phase = 'fill';
+    var path = [], curCell = null;
+    var order = [];
+    for (i = 1; i <= m; i++) for (j = 1; j <= n; j++) order.push([i, j]);
+
+    function focusOf() {
+      for (var q = 0; q < order.length; q++) {
+        var key = order[q][0] + ',' + order[q][1];
+        if (!dirs[key]) return order[q];
       }
-      aligned().forEach(function (c, j) {
-        var isGap = c === '-';
-        var cell = h('span', 'bc' + (isGap ? ' dash' : ''));
-        cell.appendChild(h('span', 'lt', isGap ? '—' : c));
-        var r = d.ref[j + offset];
-        if (touched && r !== undefined) cell.classList.add(isGap || c !== r ? 'miss' : 'hit');
-        cell.addEventListener('click', function () {
-          if (isGap) gapPos = null;
-          else gapPos = (gapPos !== null && j > gapPos) ? j - 1 : j;
-          touched = true;
-          paint();
-          clearErr(fbf);
-        });
-        patRow.appendChild(cell);
-      });
-      var rate = matchRate();
-      rateTxt.textContent = rate + '%';
-      fill.style.width = rate + '%';
-      left.disabled = offset <= 0;
-      right.disabled = offset >= d.maxOffset;
+      return null;
     }
 
-    left.addEventListener('click', function () { if (offset > 0) { offset--; touched = true; paint(); } });
-    right.addEventListener('click', function () { if (offset < d.maxOffset) { offset++; touched = true; paint(); } });
+    function baseCls(ci, cj) { return (ci === 0 || cj === 0) ? 'bord' : 'cell'; }
+
+    function paint() {
+      Object.keys(cells).forEach(function (key) {
+        var ij = key.split(','), ci = +ij[0], cj = +ij[1];
+        var td = cells[key];
+        td.className = baseCls(ci, cj);
+        td.innerHTML = '';
+        td.appendChild(document.createTextNode(num(F[ci][cj])));
+        if (dirs[key]) {
+          td.className = baseCls(ci, cj) + ' done';
+          td.appendChild(h('span', 'ar', AR[dirs[key]]));
+        }
+      });
+      if (phase === 'fill') {
+        var f = focusOf();
+        if (f) cells[f[0] + ',' + f[1]].className = 'cell foc';
+        return;
+      }
+      /* 回溯阶段：每一格都可点（含第 0 行 / 第 0 列） */
+      Object.keys(cells).forEach(function (key) {
+        var ij = key.split(','), ci = +ij[0], cj = +ij[1];
+        if (cells[key].className.indexOf('foc') >= 0) return;
+        cells[key].className = baseCls(ci, cj) + (dirs[key] ? ' done' : '') + ' pick';
+      });
+      path.forEach(function (p) {
+        var td = cells[p[0] + ',' + p[1]];
+        if (td) td.className = 'cell done path';
+      });
+      if (path.length) {
+        var lc = path[path.length - 1];
+        var c1 = cells[lc[0] + ',' + lc[1]];
+        if (c1) c1.className = 'cell done cur';
+      }
+    }
+
+    function renderCands() {
+      candBox.innerHTML = '';
+      if (phase !== 'fill') { renderPathHint(); return; }
+      var f = focusOf();
+      if (!f) return;
+      var ci = f[0], cj = f[1];
+      var sc = refw.charAt(ci - 1) === patw.charAt(cj - 1) ? SC.match : SC.mismatch;
+      var opts = {
+        D: { from: F[ci - 1][cj - 1], delta: sc, txt: num(F[ci - 1][cj - 1]) + ' ' + sgn(sc) },
+        U: { from: F[ci - 1][cj], delta: SC.gap, txt: num(F[ci - 1][cj]) + ' ' + sgn(SC.gap) },
+        L: { from: F[ci][cj - 1], delta: SC.gap, txt: num(F[ci][cj - 1]) + ' ' + sgn(SC.gap) }
+      };
+      var lab = h('p', 'seq-label');
+      lab.style.marginTop = '12px';
+      lab.appendChild(h('b', null, '第 ' + ci + ' 行 · 第 ' + cj + ' 列'));
+      lab.appendChild(document.createTextNode(patw.charAt(cj - 1) + ' 对 ' + refw.charAt(ci - 1) + ' —— 三个候选取最大的那个'));
+      candBox.appendChild(lab);
+
+      var row = h('div', 'cand-row');
+      ['D', 'U', 'L'].forEach(function (dir) {
+        var o = opts[dir];
+        var b = h('button', 'cand');
+        b.type = 'button';
+        b.appendChild(h('span', 'tag', AR[dir] + ' ' + NAME[dir]));
+        b.appendChild(h('b', null, num(o.from + o.delta)));
+        b.appendChild(h('i', null, o.txt));
+        b.addEventListener('click', function () {
+          if (best[ci + ',' + cj].indexOf(dir) >= 0) {
+            dirs[ci + ',' + cj] = dir;
+            filled++;
+            clearErr(fbf);
+            if (filled >= m * n) {           // 表填满了，进入回溯
+              phase = 'back';
+              path = [[m, n]];
+            }
+            paint();
+            renderCands();
+          } else {
+            b.classList.add('bad');
+            setTimeout(function () { b.classList.remove('bad'); }, 320);
+            showErr(fbf, '这一格最大的不是它——三个候选分数都写在按钮上，比一比谁高。');
+          }
+        });
+        row.appendChild(b);
+      });
+      candBox.appendChild(row);
+      note.textContent = '已填 ' + filled + ' / ' + (m * n) + ' 格';
+    }
+
+    function renderPathHint() {
+      var lab = h('p', 'seq-label');
+      lab.style.marginTop = '12px';
+      lab.appendChild(h('b', null, '回溯'));
+      lab.appendChild(document.createTextNode('从右下角走到左上角：点出当前格的前一个格'));
+      candBox.appendChild(lab);
+      var tip = h('p', 'seq-note');
+      var last = path[path.length - 1];
+      var b2 = best[last[0] + ',' + last[1]] || [];
+      tip.textContent = '当前格 (' + last[0] + ', ' + last[1] + ') 的最优方向：' +
+        b2.map(function (k) { return AR[k] + NAME[k]; }).join(' / ') +
+        '　—— 点对应的那一格';
+      candBox.appendChild(tip);
+      note.textContent = '路径 ' + path.length + ' 步';
+    }
+
+    Object.keys(cells).forEach(function (key) {
+      cells[key].addEventListener('click', function () {
+        if (phase !== 'back' ) return;
+        var ij = key.split(',');
+        var ci = +ij[0], cj = +ij[1];
+        var last = path[path.length - 1];
+        if (!last) return;
+        var step = (ci === last[0] - 1 && cj === last[1] - 1) ? 'D'
+          : (ci === last[0] - 1 && cj === last[1]) ? 'U'
+            : (ci === last[0] && cj === last[1] - 1) ? 'L' : null;
+        if (!step || best[last[0] + ',' + last[1]].indexOf(step) < 0) {
+          showErr(fbf, '这一步不在最优路径上——只能往左上、上、左三个方向走，而且必须是最优方向。');
+          return;
+        }
+        clearErr(fbf);
+        path.push([ci, cj]);
+        paint();
+        candBox.innerHTML = '';
+        if (ci === 0 && cj === 0) { phase = 'done'; renderDone(); }
+        else renderPathHint();
+      });
+    });
+
+    function renderDone() {
+      var lab = h('p', 'seq-label');
+      lab.style.marginTop = '12px';
+      lab.appendChild(h('b', null, '回溯完成'));
+      lab.appendChild(document.createTextNode('整条路径都记下来了，提交看结果'));
+      candBox.appendChild(lab);
+      var t = h('p', 'seq-note');
+      t.textContent = path.map(function (p) { return '(' + p[0] + ',' + p[1] + ')'; }).join(' → ');
+      candBox.appendChild(t);
+    }
 
     addPage(node, {
       lead: LEAD[2],
-      hint: '挪位置 + 垫 gap，让两行字母对上',
+      hint: '逐格取最大 → 回溯 → 提交 · 计分：对上 +1 / 错配 −1 / gap −2',
       nextLabel: '提交比对',
-      onEnter: function () { paint(); },
+      onEnter: function () { paint(); renderCands(); },
       onNext: function () {
-        if (gapPos === null) { showErr(fbf, '还没垫 gap——患者序列少了一个字母，先补一个占位符（—）。'); return; }
-        judge('/levels/2/judge', { offset: offset, gapPos: gapPos }, function (resp) {
-          return '匹配率 ' + (resp.result ? resp.result.matchRate : matchRate()) + '%';
+        if (phase === 'fill') {
+          showErr(fbf, '矩阵还没填完——还有 ' + (m * n - filled) + ' 格。');
+          return;
+        }
+        if (phase !== 'done') { showErr(fbf, '还没回溯到左上角。'); return; }
+        judge('/levels/2/judge', { dirs: dirs, path: path }, function (resp) {
+          var r = resp.result || {};
+          return '得分 ' + r.score + ' · 缺口在第 ' + r.gapPos1 + ' 位（' + r.missingBase +
+            '）· 匹配率 ' + r.matchRate + '%';
         });
       }
     });
@@ -1356,7 +1695,19 @@ if (!GD.getToken()) { location.replace(GD.loginUrl('case.html?n=' + n)); return;
       wrap.appendChild(head);
       wrap.appendChild(h('div', 'sp-src', s.protein + '｜' + s.source));
 
-      var ev = h('div', 'ev-grid');
+      /* ACMG 证据代码：临床判变异的标准「话语」 */
+      if (s.acmg && s.acmg.length) {
+        var codes = h('div', 'ev-codes');
+        s.acmg.forEach(function (a) {
+          var chip = h('span', 'ev-code ' + (a.code.charAt(0) === 'B' ? 'benign' : 'patho'),
+            a.code + ' · ' + a.kind);
+          chip.title = a.text || '';
+          codes.appendChild(chip);
+        });
+        wrap.appendChild(codes);
+      }
+
+      var ev = h('div', 'ev-grid tight');
       s.evidence.forEach(function (e) {
         var c = h('div', 'ev');
         c.appendChild(h('div', 'ev-t', e.title));
@@ -1402,6 +1753,13 @@ if (!GD.getToken()) { location.replace(GD.loginUrl('case.html?n=' + n)); return;
             var keys = Object.keys(resp.results || {});
             var ok = keys.filter(function (k) { return resp.results[k].passed; }).length;
             return ok + ' / ' + keys.length + ' 名判定正确';
+          }, function (resp) {
+            /* 判错时把服务器推出的规则链摊出来：错在哪一条规则，比只说「错了」有用 */
+            var res = resp.results || {};
+            var bad = Object.keys(res).filter(function (k) { return !res[k].passed; })[0];
+            if (!bad) return resp.feedback;
+            var name = (d.suspects.filter(function (x) { return x.id === bad; })[0] || {}).gene || bad;
+            return '「' + name + '」判错了。规则表推出的结论是「' + res[bad].verdict + '」：' + res[bad].rule;
           });
         }
       });
@@ -1409,31 +1767,66 @@ if (!GD.getToken()) { location.replace(GD.loginUrl('case.html?n=' + n)); return;
     });
   }
 
-  /* ---------- 案件四：密码子 ---------- */
+  /* ---------- 案件四：野生 / 患者双序列翻译 + 变异效应 ---------- */
   function buildCodon(d) {
-    var node = pageHead('ACTION · 把电报译成氨基酸');
+    var node = pageHead('ACTION · 两段序列各自翻译，再判断影响');
     var wrap = h('div', 'qz-body');
 
     var table = h('div', 'codon-table');
+    /* 同义的密码子（三个终止码）合并成一格，表格才不会撑成两行 */
+    var grouped = [];
     Object.keys(d.codonTable).forEach(function (k) {
+      var hit = grouped.filter(function (g) { return g.v === d.codonTable[k]; })[0];
+      if (hit) hit.k += ' / ' + k;
+      else grouped.push({ k: k, v: d.codonTable[k] });
+    });
+    grouped.forEach(function (g) {
       var chip = h('span');
-      chip.appendChild(h('b', null, k));
-      chip.appendChild(document.createTextNode(' → ' + d.codonTable[k]));
+      chip.appendChild(h('b', null, g.k));
+      chip.appendChild(document.createTextNode(' → ' + g.v));
       table.appendChild(chip);
     });
     wrap.appendChild(table);
 
-    var picks = [];
-    d.codons.forEach(function (codon, gi) {
-      var row = h('div', 'codon-row');
-      row.appendChild(h('span', 'codon-code', codon));
-      var opts = optRow(d.aminoOptions[gi] || [], function (v) {
-        picks[gi] = v;
-        clearErr(fbf);
-      });
-      row.appendChild(opts.row);
-      wrap.appendChild(row);
-    });
+    var rows = Math.min(d.wildCodons.length, d.patientCodons.length);
+    var head = h('div', 'cd-head');
+    head.innerHTML = '<span></span><span>野生</span><span>健康人的读法</span>' +
+      '<span>患者</span><span>同一个位置的读法</span>';
+    wrap.appendChild(head);
+
+    var body = h('div', 'cd-body');
+    var pWild = [], pPat = [];
+    for (var gi = 0; gi < rows; gi++) {
+      (function (gi) {
+        var row = h('div', 'cd-row');
+        row.appendChild(h('span', 'cd-no', String(gi + 1)));
+        row.appendChild(h('span', 'codon-code', d.wildCodons[gi]));
+
+        var optsW = optRow(d.aminoOptions[gi] || [], function (v) {
+          pWild[gi] = v; clearErr(fbf);
+        });
+        row.appendChild(optsW.row);
+
+        row.appendChild(h('span', 'codon-code', d.patientCodons[gi]));
+        var optsP = optRow(d.aminoOptions[gi] || [], function (v) {
+          pPat[gi] = v; clearErr(fbf);
+        });
+        row.appendChild(optsP.row);
+        body.appendChild(row);
+      })(gi);
+    }
+    wrap.appendChild(body);
+
+    var eLab = h('p', 'seq-label');
+    eLab.style.marginTop = '14px';
+    eLab.appendChild(h('b', null, '这一字之差'));
+    eLab.appendChild(document.createTextNode('属于哪一类变异？'));
+    wrap.appendChild(eLab);
+    var effect = null;
+    var effBox = h('div', 'eff-opts');
+    var o = optRow(d.effects, function (v) { effect = v; clearErr(fbf); });
+    effBox.appendChild(o.row);
+    wrap.appendChild(effBox);
     node.appendChild(wrap);
 
     var fbf = h('p', 'fbf');
@@ -1441,47 +1834,117 @@ if (!GD.getToken()) { location.replace(GD.loginUrl('case.html?n=' + n)); return;
 
     addPage(node, {
       lead: LEAD[4],
-      hint: '五组密码子都要选，选完提交',
+      hint: '两列各有 ' + rows + ' 组密码子，全部选完再判变异类型',
       nextLabel: '提交破译',
       onNext: function () {
-        if (picks.length < d.codons.length || picks.some(function (p) { return !p; })) {
-          showErr(fbf, '还有密码子没翻译——每组都要选一个氨基酸。');
+        var missW = pWild.filter(function (x) { return !x; }).length;
+        var missP = pPat.filter(function (x) { return !x; }).length;
+        if (missW || missP) {
+          showErr(fbf, '还有密码子没翻译——' +
+            (missW ? '野生型缺 ' + missW + ' 组' : '') +
+            (missW && missP ? '，' : '') +
+            (missP ? '患者缺 ' + missP + ' 组' : '') + '。');
           return;
         }
-        judge('/levels/4/judge', { aminoAcids: picks }, function (resp) {
-          return '明文 ' + (resp.result ? resp.result.protein : '');
+        if (!effect) { showErr(fbf, '最后一问还没答——这一字之差属于哪类变异？'); return; }
+        judge('/levels/4/judge', { wild: pWild, patient: pPat, effect: effect }, function (resp) {
+          var r = resp.result || {};
+          return '野生 ' + r.wildProtein + '　→　患者 ' + r.patientProtein;
         });
       }
     });
   }
 
-  /* ---------- 案件五：系谱 ---------- */
-  function buildPedigree(d) {
-    var node = pageHead('ACTION · 判断遗传方式');
+  /* ---------- 案件五：CRISPR 向导设计 ---------- */
+  function buildCrispr(d) {
+    var node = pageHead('ACTION · 扫描 PAM、算 GC、选向导');
     var wrap = h('div', 'qz-body');
-    var choice = null;
+    var seq = d.sequence, L = d.guideLen, MUT = d.mutationIndex;
 
-    var ped = h('div', 'block-opts');
-    ped.style.gap = '7px';
-    d.pedigreeDesc.forEach(function (line, i) {
-      var row = h('div', 'ped-line');
-      row.appendChild(h('span', 'g', ['Ⅰ', 'Ⅱ', 'Ⅲ'][i] || '·'));
-      row.appendChild(h('span', null, line));
-      ped.appendChild(row);
+    /* 序列：标出变异位与全部 PAM 三联体 */
+    var pamBase = {};
+    d.candidates.forEach(function (c) {
+      pamBase[c.pamPos + 1] = true;
+      pamBase[c.pamPos + 2] = true;
     });
-    wrap.appendChild(ped);
+    var grid = h('div', 'crispr-seq');
+    var cellEls = [];
+    seq.split('').forEach(function (b, i) {
+      var c = h('span', 'bc' + (i === MUT ? ' mut' : '') + (pamBase[i] ? ' pam' : ''));
+      c.appendChild(h('span', 'lt', b));
+      cellEls[i] = c;
+      grid.appendChild(c);
+    });
+    wrap.appendChild(grid);
 
-    var pLab = h('p', 'seq-label');
-    pLab.style.marginTop = '14px';
-    pLab.appendChild(h('b', null, '你的判定'));
-    pLab.appendChild(document.createTextNode('这种病的遗传方式是？'));
-    wrap.appendChild(pLab);
+    var legend = h('div', 'dp-legend');
+    legend.style.marginTop = '8px';
+    legend.innerHTML = '<span><i style="background:rgb(201 106 114/.24);border-color:#c0392b"></i>' +
+      '第 ' + (MUT + 1) + ' 位 · 变异碱基（患者 ' + d.mutationPatient + ' / 野生 ' + d.mutationWild + '）</span>' +
+      '<span><i style="background:rgb(195 150 39/.24);border-color:#c39627"></i>NGG · PAM</span>';
+    wrap.appendChild(legend);
 
-    var opts = h('div', 'block-opts');
-    opts.style.marginTop = '8px';
-    var o = optRow(d.options, function (v) { choice = v; clearErr(fbf); });
-    opts.appendChild(o.row);
-    wrap.appendChild(opts);
+    var codonNote = h('p', 'seq-note', '变异所在密码子：患者 ' + d.codon + '（野生 ' + d.codonWild +
+      '）—— 第 40–42 位。本段为教学改编序列，只扫正链。');
+    wrap.appendChild(codonNote);
+
+    var buckets = {}, pick = null;
+
+    var list = h('div', 'guide-list');
+    d.candidates.forEach(function (c) {
+      var card = h('div', 'guide-card');
+
+      var top = h('div', 'guide-top');
+      top.appendChild(h('b', null, 'PAM 第 ' + (c.pamPos + 1) + '–' + (c.pamPos + 3) + ' 位'));
+      top.appendChild(h('span', null, c.pam));
+
+      var pkTop = h('button', 'pick-btn', '选它');
+      pkTop.type = 'button';
+      top.appendChild(pkTop);
+      card.appendChild(top);
+
+      card.appendChild(h('p', 'guide-seq', c.guide));
+
+      var bot = h('div', 'guide-bot');
+      var bl = h('span', 'seq-label');
+      bl.style.margin = '0';
+      bl.appendChild(h('b', null, 'GC'));
+      bot.appendChild(bl);
+
+      var bs = h('div', 'buckets');
+      d.buckets.forEach(function (b) {
+        var btn = h('button', 'bk', b);
+        btn.type = 'button';
+        btn.addEventListener('click', function () {
+          buckets[c.pamPos] = b;
+          Array.prototype.forEach.call(bs.children, function (x) { x.classList.remove('on'); });
+          btn.classList.add('on');
+          clearErr(fbf);
+        });
+        bs.appendChild(btn);
+      });
+      bot.appendChild(bs);
+
+      var pk = pkTop;
+      pk.addEventListener('click', function () {
+        pick = c.pamPos;
+        Array.prototype.forEach.call(list.children, function (x) {
+          x.classList.remove('on');
+          x.querySelector('.pick-btn').classList.remove('on');
+          x.querySelector('.pick-btn').textContent = '选它';
+        });
+        card.classList.add('on');
+        pk.classList.add('on');
+        pk.textContent = '已选';
+        cellEls.forEach(function (el, i) {
+          el.classList.toggle('guide', i >= c.pamPos - L && i < c.pamPos);
+        });
+        clearErr(fbf);
+      });
+      card.appendChild(bot);
+      list.appendChild(card);
+    });
+    wrap.appendChild(list);
     node.appendChild(wrap);
 
     var fbf = h('p', 'fbf');
@@ -1489,20 +1952,25 @@ if (!GD.getToken()) { location.replace(GD.loginUrl('case.html?n=' + n)); return;
 
     addPage(node, {
       lead: LEAD[5],
-      hint: '四种遗传方式选一种',
-      nextLabel: '提交判定',
+      hint: '四段都要标 GC 档位，再选一段提交',
+      nextLabel: '提交设计',
       onNext: function () {
-        if (!choice) { showErr(fbf, '先选一种遗传方式。'); return; }
-        judge('/levels/5/judge', { choice: choice }, function (resp) {
-          return resp.result ? resp.result.choice : choice;
+        if (Object.keys(buckets).length < d.candidates.length) {
+          showErr(fbf, '还有候选没标 GC 档位——四段都要算。');
+          return;
+        }
+        if (pick === null) { showErr(fbf, '还没选向导——挑一段你认为能用的。'); return; }
+        judge('/levels/5/judge', { buckets: buckets, pick: pick }, function (resp) {
+          var r = resp.result || {};
+          return '向导 GC ' + r.gc + '/' + L + ' ≈ ' + r.gcPct + '% · 下刀点在 PAM 第 ' + r.pamPos1 + ' 位';
         });
       }
     });
   }
 
-  /* ---------- 案件六：处方 ---------- */
+  /* ---------- 案件六：生物标志物匹配 ---------- */
   function buildRx(d) {
-    var node = pageHead('ACTION · 选出你的处方');
+    var node = pageHead('ACTION · 标志物对上了，方案才成立');
     var wrap = h('div', 'qz-body');
     var choice = null;
     var v = d.variant;
@@ -1511,10 +1979,11 @@ if (!GD.getToken()) { location.replace(GD.loginUrl('case.html?n=' + n)); return;
     head.appendChild(h('b', null, v.gene));
     head.appendChild(h('span', 'sp-hgvs', v.hgvs));
     head.appendChild(h('span', 'sp-type', v.type));
+    if (v.biomarker) head.appendChild(h('span', 'ev-code patho', '标志物 · ' + v.biomarker));
     wrap.appendChild(head);
     wrap.appendChild(h('div', 'sp-src', v.protein + '｜' + v.source));
 
-    var ev = h('div', 'ev-grid');
+    var ev = h('div', 'ev-grid tight');
     v.evidence.forEach(function (e) {
       var c = h('div', 'ev');
       c.appendChild(h('div', 'ev-t', e.title));
@@ -1527,13 +1996,23 @@ if (!GD.getToken()) { location.replace(GD.loginUrl('case.html?n=' + n)); return;
     var rLab = h('p', 'seq-label');
     rLab.style.marginTop = '2px';
     rLab.appendChild(h('b', null, '你的处方'));
-    rLab.appendChild(document.createTextNode('一线治疗方案选？'));
+    rLab.appendChild(document.createTextNode('哪套方案的标志物与报告对得上？'));
     wrap.appendChild(rLab);
 
-    var rxOpts = h('div', 'block-opts');
-    var o = optRow(d.options, function (x) { choice = x; clearErr(fbf); });
-    rxOpts.appendChild(o.row);
-    wrap.appendChild(rxOpts);
+    var list = h('div', 'rx-list');
+    d.options.forEach(function (o) {
+      var card = h('div', 'rx-card');
+      card.appendChild(h('div', 'rx-name', o.name));
+      card.appendChild(h('div', 'rx-tag', o.tag));
+      card.addEventListener('click', function () {
+        choice = o.id;
+        Array.prototype.forEach.call(list.children, function (x) { x.classList.remove('on'); });
+        card.classList.add('on');
+        clearErr(fbf);
+      });
+      list.appendChild(card);
+    });
+    wrap.appendChild(list);
     node.appendChild(wrap);
 
     var fbf = h('p', 'fbf');
@@ -1541,18 +2020,19 @@ if (!GD.getToken()) { location.replace(GD.loginUrl('case.html?n=' + n)); return;
 
     addPage(node, {
       lead: LEAD[6],
-      hint: '三套方案选一套',
+      hint: '三套方案选一套 · 看标志物是否吻合',
       nextLabel: '提交判定',
       onNext: function () {
         if (!choice) { showErr(fbf, '先选一套方案。'); return; }
         judge('/levels/6/judge', { choice: choice }, function (resp) {
-          return resp.result ? resp.result.choice : choice;
+          var r = resp.result || {};
+          return '标志物吻合：' + String(r.tag || '').replace(/^要求标志物：/, '');
         });
       }
     });
   }
 
-  var GAMES = { 1: buildTrim, 2: buildAlign, 3: buildSuspects, 4: buildCodon, 5: buildPedigree, 6: buildRx };
+  var GAMES = { 1: buildTrim, 2: buildAlign, 3: buildSuspects, 4: buildCodon, 5: buildCrispr, 6: buildRx };
 
   /* ============================================================
      锦囊
@@ -1660,7 +2140,7 @@ if (!GD.getToken()) { location.replace(GD.loginUrl('case.html?n=' + n)); return;
     tag.textContent = TAGS[n] || '';
     tag.hidden = false;
     document.getElementById('ct-r').textContent =
-      'CASE FILE · 第 ' + n + ' / 6 宗 · ' + (solved ? '已侦破 · 可重演' : '待侦办');
+      'CASE FILE · 第 ' + n + ' / 6 宗 · ' + (solved ? '已侦破' : '待侦办');
 
     renderGuide(D.judgementGuide);
 
