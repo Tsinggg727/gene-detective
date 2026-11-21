@@ -25,3 +25,6 @@ design/_login_test.png
 # 系统
 .DS_Store
 Thumbs.db
+
+# 工作日志（本地备忘，不入库）
+工作日志.md

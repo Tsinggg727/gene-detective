@@ -144,17 +144,32 @@ def test_levels_structure_and_no_answer_leak():
         assert "reward" not in lv and "clue" not in lv
 
     # 各案敏感字段
-    for k in ("trimStart", "trimEnd", "expected"):
-        assert k not in j["level1"] and k not in j["level4"]
-    for k in ("answerOffset", "gapPos"):
-        assert k not in j["level2"]
+    for k in ("trimStart", "trimEnd"):
+        assert k not in j["level1"]
+    for k in ("expectedWild", "expectedPatient", "answerEffect"):
+        assert k not in j["level4"]
+    # 案件二：矩阵答案（gap 落点）不下发
+    assert "answerGapPos" not in j["level2"]
+    assert set(j["level2"]["window"]) >= {"refStart", "refLen", "patStart", "patLen",
+                                          "refSeq", "patSeq"}
     # 案件三：嫌疑人不带 ai / answer
     for suspect in j["level3"]["suspects"]:
         assert "ai" not in suspect and "answer" not in suspect
+        assert suspect["acmg"], "案件三必须下发 ACMG 证据代码"
     assert len(j["level3"]["suspects"]) == 3
-    # 案件五 / 六：不下发答案与解析
-    for k in ("answer", "explain"):
-        assert k not in j["level5"] and k not in j["level6"]
+    # 案件五：只下发向导序列，GC 数值与答案留给自己算
+    assert "answerPam" not in j["level5"]
+    for cand in j["level5"]["candidates"]:
+        assert "gc" not in cand and "bucket" not in cand
+        assert len(cand["guide"]) == 20
+    # 案件六：不下发「哪套匹配」
+    for k in ("answer", "explain", "mismatchExplain"):
+        assert k not in j["level6"]
+    for opt in j["level6"]["options"]:
+        assert set(opt) == {"id", "name", "tag"}
+    # 每案都要有 algo（点破生物计算定位）
+    for key in ALL_LEVELS:
+        assert j[key]["algo"], f"{key} 缺少 algo 字段"
 
 
 def test_story_framework():
@@ -172,6 +187,9 @@ def test_level1_pass():
     j = r.json()
     assert r.status_code == 200 and j["passed"] is True
     assert j["result"]["remaining"] == 27
+    # 修剪前后平均 Q 对比（「看得见计算」的关键一行）
+    assert j["result"]["avgQAfter"] > j["result"]["avgQBefore"]
+    assert j["result"]["minQAfter"] >= 20
     assert "clue" in j["reward"]          # 通关给线索
 
 
@@ -191,29 +209,60 @@ def test_level1_out_of_range():
     assert r.json()["passed"] is False
 
 
-# ---------- 案件二：比对 ----------
+# ---------- 案件二：动态规划比对 ----------
+
+# 窗口 ref=CAGT / pat=CAT，最优路径唯一：D U D D（gap 落在参考第 5 位）
+RIGHT_DIRS = {"1,1": "D", "1,2": "L", "1,3": "L",
+              "2,1": "U", "2,2": "D", "2,3": "L",
+              "3,1": "U", "3,2": "U", "3,3": "D",
+              "4,1": "U", "4,2": "U", "4,3": "D"}
+RIGHT_PATH = [[4, 3], [3, 2], [2, 2], [1, 1], [0, 0]]
+
 
 def test_level2_pass():
-    r = client.post("/api/levels/2/judge", json={"offset": 0, "gapPos": 4})
+    r = client.post("/api/levels/2/judge",
+                    json={"dirs": RIGHT_DIRS, "path": RIGHT_PATH})
     j = r.json()
-    assert j["passed"] is True
+    assert r.status_code == 200 and j["passed"] is True
+    assert j["result"]["score"] == 1
+    assert j["result"]["gapPos"] == 4 and j["result"]["missingBase"] == "G"
     assert j["result"]["matchRate"] == 100
     assert j["reward"]["badge"] == "比对达人"
 
 
-def test_level2_gap_tolerance():
-    r = client.post("/api/levels/2/judge", json={"offset": 0, "gapPos": 3})
-    assert r.json()["passed"] is True
+def test_level2_wrong_cell_rejected():
+    bad = dict(RIGHT_DIRS)
+    bad["2,2"] = "U"          # 该格最大方向是 D
+    j = client.post("/api/levels/2/judge", json={"dirs": bad, "path": RIGHT_PATH}).json()
+    assert j["passed"] is False
+    assert "第 2 行第 2 格" in j["feedback"]
 
 
-def test_level2_fail_no_gap():
-    r = client.post("/api/levels/2/judge", json={"offset": 0, "gapPos": None})
-    assert r.json()["passed"] is False
+def test_level2_wrong_path_rejected():
+    bad_path = [[4, 3], [4, 2], [4, 1], [3, 1], [2, 1], [1, 1], [0, 0]]
+    j = client.post("/api/levels/2/judge",
+                    json={"dirs": RIGHT_DIRS, "path": bad_path}).json()
+    assert j["passed"] is False
 
 
-def test_level2_bad_offset_rejected():
-    r = client.post("/api/levels/2/judge", json={"offset": 99, "gapPos": 4})
-    assert r.status_code == 422
+def test_level2_path_must_span_matrix():
+    j = client.post("/api/levels/2/judge",
+                    json={"dirs": RIGHT_DIRS, "path": [[4, 3], [3, 2]]}).json()
+    assert j["passed"] is False
+
+
+def test_level2_bad_direction_rejected():
+    bad = dict(RIGHT_DIRS)
+    bad["1,1"] = "X"
+    assert client.post("/api/levels/2/judge",
+                       json={"dirs": bad, "path": RIGHT_PATH}).status_code == 422
+
+
+def test_level2_out_of_range_cell_rejected():
+    bad = dict(RIGHT_DIRS)
+    bad["9,9"] = "D"
+    assert client.post("/api/levels/2/judge",
+                       json={"dirs": bad, "path": RIGHT_PATH}).status_code == 422
 
 
 # ---------- 案件三：三个嫌疑人 ----------
@@ -222,14 +271,25 @@ RIGHT_ANSWERS = {"TP53_R175H": "致病", "MTHFR_A222V": "良性", "EXAMPLE_VUS":
 
 
 def test_level3_partial_progress():
-    """只审讯一名嫌疑人：不通关，但揭示该嫌疑人的 AI 预测"""
+    """只审讯一名嫌疑人：不通关，但揭示该嫌疑人的 AI 预测与 ACMG 规则"""
     r = client.post("/api/levels/3/judge",
                     json={"answers": {"TP53_R175H": "致病"}})
     j = r.json()
     assert j["passed"] is False
     assert j["results"]["TP53_R175H"]["passed"] is True
     assert j["results"]["TP53_R175H"]["ai"]["label"] == "致病"
+    assert "强" in j["results"]["TP53_R175H"]["rule"]
     assert "reward" not in j
+
+
+def test_level3_acmg_rule_branches():
+    """三名嫌疑人各走一条不同规则：PS+PM / BA1 / 证据冲突"""
+    j = client.post("/api/levels/3/judge", json={"answers": RIGHT_ANSWERS}).json()
+    assert "PS1" in j["results"]["TP53_R175H"]["rule"]
+    assert "BA1" in j["results"]["MTHFR_A222V"]["rule"]
+    assert "意义不明" in j["results"]["EXAMPLE_VUS"]["rule"]
+    for vid, item in j["results"].items():
+        assert item["verdict"] == RIGHT_ANSWERS[vid]
 
 
 def test_level3_wrong_choice_reveals_ai():
@@ -263,58 +323,119 @@ def test_level3_invalid_choice_rejected():
     assert r.status_code == 422
 
 
-# ---------- 案件四：密码子翻译 ----------
+# ---------- 案件四：双序列翻译 + 变异效应 ----------
+
+WILD_AA = ["Met（起始）", "Val", "His", "Leu", "Thr", "Glu"]
+PAT_AA = ["Met（起始）", "Val", "His", "Leu", "Thr", "Val"]
+
+
+def _l4(wild=None, patient=None, effect="错义变异"):
+    return client.post("/api/levels/4/judge",
+                       json={"wild": wild or WILD_AA, "patient": patient or PAT_AA,
+                             "effect": effect})
+
 
 def test_level4_pass():
-    amino = ["Met（起始）", "Gly", "Lys", "Phe", "Stop（终止）"]
-    r = client.post("/api/levels/4/judge", json={"aminoAcids": amino})
+    r = _l4()
     j = r.json()
-    assert j["passed"] is True
-    assert j["result"]["protein"] == "Met-Gly-Lys-Phe-Stop"
+    assert r.status_code == 200 and j["passed"] is True
+    assert j["result"]["wildProtein"] == "Met-Val-His-Leu-Thr-Glu"
+    assert j["result"]["patientProtein"] == "Met-Val-His-Leu-Thr-Val"
+    assert j["result"]["changedCodon"] == 6
+    assert j["result"]["fromCodon"] == "GAG" and j["result"]["toCodon"] == "GTG"
+    assert j["result"]["effect"] == "错义变异"
 
 
 def test_level4_fail_with_position_hint():
-    amino = ["Met（起始）", "Lys", "Lys", "Phe", "Stop（终止）"]  # 第 2 组错
-    j = client.post("/api/levels/4/judge", json={"aminoAcids": amino}).json()
+    bad = list(PAT_AA)
+    bad[1] = "Glu"                      # 第 2 组错
+    j = _l4(patient=bad).json()
     assert j["passed"] is False
     assert "第 2 组" in j["feedback"]
 
 
+def test_level4_fail_names_both_columns():
+    bad = list(WILD_AA)
+    bad[5] = "Val"                      # 把野生型第 6 组也写成患者的值
+    j = _l4(wild=bad).json()
+    assert j["passed"] is False
+    assert "野生型第 6 组" in j["feedback"]
+
+
+def test_level4_wrong_effect():
+    j = _l4(effect="移码变异").json()
+    assert j["passed"] is False
+    assert "变异类型" in j["feedback"]
+
+
 def test_level4_wrong_length():
-    j = client.post("/api/levels/4/judge", json={"aminoAcids": ["Met（起始）"]}).json()
+    j = _l4(patient=["Met（起始）"]).json()
     assert j["passed"] is False and "数量" in j["feedback"]
 
 
-# ---------- 案件五：系谱 ----------
+# ---------- 案件五：CRISPR 向导设计 ----------
 
-def test_level5_pass_with_explain():
-    r = client.post("/api/levels/5/judge", json={"choice": "常染色体显性"})
+RIGHT_BUCKETS = {"25": "合格", "44": "偏高", "51": "合格", "58": "偏低"}
+
+
+def test_level5_pass():
+    r = client.post("/api/levels/5/judge",
+                    json={"buckets": RIGHT_BUCKETS, "pick": 51})
     j = r.json()
-    assert j["passed"] is True
-    assert "显性" in j["result"]["explain"]
+    assert r.status_code == 200 and j["passed"] is True
+    assert j["result"]["gcPct"] == 55 and j["result"]["covers"] is True
+    assert j["result"]["pam"] == "AGG"
+    assert j["reward"]["badge"] == "基因编辑师"
 
 
-def test_level5_fail_guides_retry():
-    j = client.post("/api/levels/5/judge", json={"choice": "X 连锁隐性"}).json()
-    assert j["passed"] is False and "reward" not in j
+def test_level5_bucket_wrong_rejected():
+    bad = dict(RIGHT_BUCKETS)
+    bad["51"] = "偏高"
+    j = client.post("/api/levels/5/judge",
+                    json={"buckets": bad, "pick": 51}).json()
+    assert j["passed"] is False
+    assert "GC" in j["feedback"]
 
 
-def test_level5_invalid_choice():
-    assert client.post("/api/levels/5/judge", json={"choice": "别的"}).status_code == 200  # 引导重选，不报错
+def test_level5_pick_outside_mutation_rejected():
+    """GC 合格但不覆盖变异位点的那段"""
+    j = client.post("/api/levels/5/judge",
+                    json={"buckets": RIGHT_BUCKETS, "pick": 25}).json()
+    assert j["passed"] is False
+    assert "盖不住" in j["feedback"]
 
 
-# ---------- 案件六：选药 ----------
+def test_level5_pick_bad_gc_rejected():
+    j = client.post("/api/levels/5/judge",
+                    json={"buckets": RIGHT_BUCKETS, "pick": 44}).json()
+    assert j["passed"] is False
+    assert "GC 不合格" in j["feedback"]
+
+
+def test_level5_invalid_bucket_rejected():
+    assert client.post("/api/levels/5/judge",
+                       json={"buckets": {"51": "刚好"}, "pick": 51}).status_code == 422
+
+
+# ---------- 案件六：生物标志物匹配 ----------
 
 def test_level6_pass():
-    r = client.post("/api/levels/6/judge", json={"choice": "口服 EGFR 靶向药（如吉非替尼）"})
+    r = client.post("/api/levels/6/judge", json={"choice": "tki"})
     j = r.json()
     assert j["passed"] is True
-    assert "靶向" in j["result"]["explain"]
+    assert "EGFR-TKI" in j["result"]["explain"]
+    assert "EGFR" in j["result"]["tag"]
 
 
-def test_level6_fail():
-    j = client.post("/api/levels/6/judge", json={"choice": "不考虑基因结果，直接全身化疗"}).json()
+def test_level6_mismatch_explains_marker():
+    j = client.post("/api/levels/6/judge", json={"choice": "io"}).json()
     assert j["passed"] is False
+    assert "标志物不符" in j["feedback"] and "PD-L1" in j["feedback"]
+
+
+def test_level6_unknown_option_rejected():
+    j = client.post("/api/levels/6/judge", json={"choice": "随便"}).json()
+    assert j["passed"] is False and "请从给定方案" in j["feedback"]
 
 
 # ---------- AI 预测器 ----------

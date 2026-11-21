@@ -9,9 +9,12 @@ class TrimIn(BaseModel):
 
 
 class AlignIn(BaseModel):
-    """案件二提交：位置偏移与 gap 插入位置"""
-    offset: int = Field(ge=0, description="患者序列相对参考序列的右移量")
-    gapPos: int | None = Field(default=None, ge=0, description="gap 插入位置（患者序列索引，未插入为 null）")
+    """案件二提交：打分矩阵每个内部格子的方向 + 回溯路径"""
+    dirs: dict[str, str] = Field(
+        description='每一格取到的方向，键为 "i,j"（从 1 起），值为 D/U/L：'
+                    'D=对角（两两相对）、U=上（参考位垫 gap）、L=左（患者位垫 gap）')
+    path: list[list[int]] = Field(
+        description="回溯路径，从右下角 (m,n) 走到左上角 (0,0)，含首尾")
 
 
 class SuspectsIn(BaseModel):
@@ -20,13 +23,22 @@ class SuspectsIn(BaseModel):
 
 
 class TranslateIn(BaseModel):
-    """案件四提交：每组密码子对应的氨基酸（按序）"""
-    aminoAcids: list[str] = Field(description="长度与密码子组数一致的氨基酸列表")
+    """案件四提交：野生型 / 患者的氨基酸序列 + 变异效应分类"""
+    wild: list[str] = Field(description="野生型逐组氨基酸，按序")
+    patient: list[str] = Field(description="患者逐组氨基酸，按序")
+    effect: str = Field(description="同义变异 / 错义变异 / 无义变异 / 移码变异")
+
+
+class GuideIn(BaseModel):
+    """案件五提交：四段候选向导的 GC 档位 + 最终选定的一段"""
+    buckets: dict[str, str] = Field(
+        description='各 PAM 起点的 GC 档位，键为 PAM 起点索引（字符串），值为 偏低/合格/偏高')
+    pick: int = Field(ge=0, description="选定向导对应的 PAM 起点索引")
 
 
 class ChoiceIn(BaseModel):
-    """案件五 / 案件六提交：单选"""
-    choice: str = Field(description="所选项原文")
+    """案件六提交：选定的方案 id"""
+    choice: str = Field(description="方案 id，如 tki / io / chemo")
 
 
 class RegisterIn(BaseModel):
