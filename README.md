@@ -34,6 +34,7 @@
 
 - **后端**：FastAPI + Pydantic。JWT 登录（7 天有效期）、PBKDF2 密码哈希、文件型玩家存档、按进度校验的头像解锁（越级 403）、排行榜聚合接口。判题函数与关卡数据分离，`data/game.json` 为唯一的关卡内容源。
 - **前端**：无框架原生 JS 多页应用（水彩档案风），含打字机对话层、翻书手册、底部抽屉、锦囊、彩蛋动画；术语标注系统（专有名词着色 + 定义高亮）贯穿全站。
+- **移动端适配**：全站媒体查询覆盖——卷宗字号与间距、底部上滑式接案抽屉（固定高度、正文与装饰互不遮挡）、导航图标叠排、徽章与领奖台紧凑化；滚动条按端策略区分（移动端隐藏 / 桌面极淡细条）。
 - **测试**：`pytest` 60 项，覆盖认证、六案判题（含边界与容差）、数据自洽性（最优解唯一性 / PAM 唯一性 / 唯一合格向导）、进度隔离、排行榜排序。
 
 ## 四、快速开始
@@ -63,7 +64,21 @@ cd backend
 .venv/Scripts/python -m pytest tests/ -v
 ```
 
-## 五、项目结构
+**在线演示**：https://guo.pythonanywhere.com （PythonAnywhere 部署）
+
+## 五、部署（PythonAnywhere）
+
+站点采用 Command 型 Web 应用直接以 uvicorn 启动：
+
+```
+/home/<user>/.virtualenvs/<venv>/bin/uvicorn --app-dir /home/<user>/gene-detective/backend <站点参数>
+```
+
+- **同步更新**：Bash 控制台 `git pull origin main && pip install --user -r backend/requirements.txt`，再到 Web 页签 Reload 即可；玩家数据（users.json / players/，均不入库）不受影响。
+- **JWT 密钥**：仓库已公开默认密钥，部署时须覆盖——支持环境变量 `GD_SECRET_KEY`，或直接写 `backend/.secret_key` 文件（已加入 .gitignore），后者无需改动启动命令。
+- **无缓存策略**：应用中间件为全部静态响应加 Cache-Control: no-cache，代码更新后用户强刷即可看到新版。
+
+## 六、项目结构
 
 ```
 backend/
@@ -88,7 +103,7 @@ design/                # 原生 JS 多页前端（同源托管）
   ...                  # home / login / entry(工牌) / ranking
 ```
 
-## 六、说明
+## 七、说明
 
 - 本项目为课程作业，变异与临床数据做了**教学化简**，数据来源参考 NCBI ClinVar 公开子集；**不构成任何医学建议**。
 - 项目在 AI 工具辅助下开发：代码由人工智能辅助生成并经人工审核、重构与测试补充；关卡文案、算法教学设计与交互设计由团队主导完成。
